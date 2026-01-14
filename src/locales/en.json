@@ -1,0 +1,616 @@
+{
+  "Header": {
+    "features": "Features",
+    "cases": "Cases",
+    "community": "Community",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "login": "Login",
+    "try_now": "Try Now"
+  },
+  "RootLayout": {
+    "home_link": "Home",
+    "about_link": "About",
+    "counter_link": "Counter",
+    "portfolio_link": "Portfolio",
+    "sign_in_link": "Sign in",
+    "sign_up_link": "Sign up"
+  },
+  "BaseTemplate": {
+    "description": "LannaMirror3 - Production-ready Next.js SaaS Starter",
+    "made_with": "Crafted with <author></author>."
+  },
+  "Index": {
+    "meta_title": "LannaMirror3 - Production-ready Next.js SaaS Starter",
+    "meta_description": "A full-stack SaaS template built with Next.js 15, Supabase, and Tailwind CSS. Start your next project in minutes.",
+    "sponsors_title": "Partners"
+  },
+  "Counter": {
+    "meta_title": "Counter",
+    "meta_description": "An example of DB operation",
+    "loading_counter": "Loading counter...",
+    "security_powered_by": "Security, bot detection and rate limiting powered by"
+  },
+  "CounterForm": {
+    "presentation": "The counter is stored in the database and incremented by the value you provide.",
+    "label_increment": "Increment by",
+    "button_increment": "Increment",
+    "error_increment_range": "Value must be between 1 and 3",
+    "loading_submit": "Updating...",
+    "submitting": "Submitting..."
+  },
+  "CurrentCount": {
+    "count": "Count: {count}"
+  },
+  "About": {
+    "meta_title": "About",
+    "meta_description": "Learn about LannaMirror3 template and the Lovstudio team",
+    "about_paragraph": "Welcome to LannaMirror3! This is a production-ready Next.js SaaS starter built by the Lovstudio team to help developers build modern web applications quickly.",
+    "translation_powered_by": "Translation powered by"
+  },
+  "Portfolio": {
+    "meta_title": "Portfolio",
+    "meta_description": "Welcome to my portfolio page!",
+    "presentation": "Welcome to my portfolio page! Here you will find a carefully curated collection of my work and accomplishments. Through this portfolio, I'm to showcase my expertise, creativity, and the value I can bring to your projects.",
+    "portfolio_name": "Portfolio {name}",
+    "error_reporting_powered_by": "Error reporting powered by",
+    "coverage_powered_by": "Code coverage powered by"
+  },
+  "PortfolioSlug": {
+    "meta_title": "Portfolio {slug}",
+    "meta_description": "Portfolio {slug} description",
+    "header": "Portfolio {slug}",
+    "content": "Created a set of promotional materials and branding elements for a corporate event. Crafted a visually unified theme, encompassing a logo, posters, banners, and digital assets. Integrated the client's brand identity while infusing it with a contemporary and innovative approach.",
+    "code_review_powered_by": "Code review powered by"
+  },
+  "Dashboard": {
+    "meta_title": "Dashboard",
+    "hello_message": "Hello {email}!",
+    "alternative_message": "Want to build your SaaS faster using the same stack? Try <url></url>.",
+    "welcome": "Welcome back, {name}!",
+    "welcome_subtitle": "This is your dashboard. Manage your projects and settings here.",
+    "stats": {
+      "projects": "Projects",
+      "tasks": "Tasks",
+      "storage": "Storage"
+    },
+    "quick_actions": {
+      "title": "Quick Actions",
+      "profile": "Edit Profile",
+      "profile_desc": "Update your personal information and preferences",
+      "settings": "Account Settings",
+      "settings_desc": "Manage your account and security settings",
+      "docs": "View Documentation",
+      "docs_desc": "Learn how to use and customize the template"
+    },
+    "getting_started": {
+      "title": "Getting Started",
+      "description": "This is a demo dashboard. In a real project, you can display key data and actions here.",
+      "cta": "View on GitHub"
+    }
+  },
+  "Footer": {
+    "company_title": "Company",
+    "product_title": "Product",
+    "support_title": "Support",
+    "newsletter_title": "Newsletter",
+    "newsletter_description": "Get the latest product updates and insights.",
+    "email_placeholder": "Enter your email",
+    "subscribe_button": "Subscribe",
+    "rights_reserved": "All rights reserved.",
+    "links": {
+      "company": {
+        "about": "About Us",
+        "careers": "Careers",
+        "press": "Press",
+        "blog": "Blog"
+      },
+      "product": {
+        "platform": "LannaMirror3 Platform",
+        "pricing": "Pricing",
+        "api_docs": "API Documentation",
+        "help_docs": "Help Center"
+      },
+      "support": {
+        "help_center": "Help Center",
+        "contact": "Contact Us",
+        "status": "Status",
+        "privacy": "Privacy Policy"
+      },
+      "legal": {
+        "terms": "Terms of Service",
+        "privacy": "Privacy Policy",
+        "cookies": "Cookie Policy"
+      }
+    }
+  },
+  "DashboardLayout": {
+    "dashboard_link": "Dashboard",
+    "user_profile_link": "Manage your account",
+    "sign_out": "Sign out"
+  },
+  "HomePage": {
+    "hero_badge": "Production Ready",
+    "hero_title": "Build Your Next SaaS",
+    "hero_description": "A full-stack template built with Next.js 15, Supabase, and Tailwind CSS v4. Authentication, database, UI components - all ready out of the box.",
+    "get_started": "Get Started",
+    "view_github": "View on GitHub",
+    "features_title": "Everything You Need",
+    "features_description": "We've configured everything you need to build a SaaS, so you can focus on your business logic.",
+    "features": {
+      "auth": {
+        "title": "Authentication",
+        "description": "Supabase Auth provides complete authentication with email login, social login, and SSO support."
+      },
+      "database": {
+        "title": "Database",
+        "description": "DrizzleORM + PostgreSQL for type-safe database operations with automatic migrations."
+      },
+      "ui": {
+        "title": "UI Components",
+        "description": "shadcn/ui + Tailwind CSS v4 for beautiful and customizable components."
+      },
+      "i18n": {
+        "title": "Internationalization",
+        "description": "next-intl provides complete i18n support with Chinese and English by default."
+      },
+      "monitoring": {
+        "title": "Monitoring",
+        "description": "Sentry error tracking, PostHog analytics, and Better Stack logging."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Arcjet provides WAF, bot detection, and rate limiting protection."
+      }
+    },
+    "tech": {
+      "nextjs": "App Router",
+      "typescript": "Type Safe",
+      "tailwind": "Utility CSS",
+      "supabase": "BaaS",
+      "drizzle": "Type-safe ORM",
+      "shadcn": "UI Components"
+    },
+    "included_title": "What's Included",
+    "included_description": "All the core features you need to build a SaaS",
+    "included": {
+      "auth": "Complete auth flow (login/signup/reset password)",
+      "dashboard": "User dashboard layout",
+      "profile": "User profile management",
+      "i18n": "Chinese & English internationalization",
+      "seo": "SEO optimization",
+      "forms": "React Hook Form integration",
+      "validation": "Zod validation",
+      "dark_mode": "Dark mode support (coming soon)"
+    },
+    "demo_title": "Explore the Demo",
+    "demo_description": "See the template in action. Experience the complete user flow.",
+    "demo_signup": "Try Sign Up",
+    "demo_pricing": "View Pricing",
+    "demo_counter": "Counter Demo",
+    "cta_title": "Ready to Get Started?",
+    "cta_description": "Clone the repository and launch your SaaS project in minutes.",
+    "cta_clone": "Clone Repository",
+    "cta_try_demo": "Try the Demo"
+  },
+  "DemoBanner": {
+    "demo_text": "Next.js Template Demo - Built by Lovstudio",
+    "try_auth": "Try Authentication"
+  },
+  "notifications": {
+    "close": "Close",
+    "success_title": "Success",
+    "error_title": "Error",
+    "warning_title": "Warning",
+    "info_title": "Information",
+    "save_success": "Saved successfully",
+    "save_error": "Failed to save",
+    "delete_success": "Deleted successfully",
+    "delete_error": "Failed to delete",
+    "update_success": "Updated successfully",
+    "update_error": "Failed to update",
+    "create_success": "Created successfully",
+    "create_error": "Failed to create",
+    "network_error": "Network connection failed",
+    "server_error": "Server error occurred",
+    "validation_error": "Please check your input",
+    "permission_error": "You don't have permission to perform this action",
+    "file_upload_success": "File uploaded successfully",
+    "file_upload_error": "File upload failed",
+    "copy_success": "Copied to clipboard",
+    "copy_error": "Failed to copy",
+    "loading": "Loading...",
+    "please_wait": "Please wait",
+    "operation_completed": "Operation completed",
+    "changes_saved": "Changes saved",
+    "no_changes": "No changes to save",
+    "confirm_delete": "Confirm deletion?",
+    "confirm_action": "Confirm this action?",
+    "action_cannot_be_undone": "This action cannot be undone"
+  },
+  "button_states": {
+    "loading": "Loading...",
+    "submitting": "Submitting...",
+    "saving": "Saving...",
+    "deleting": "Deleting...",
+    "updating": "Updating...",
+    "processing": "Processing...",
+    "disabled_loading": "Operation in progress, please wait...",
+    "disabled_permission": "You don't have permission to perform this action",
+    "disabled_form_invalid": "Please fill in all required form fields",
+    "disabled_other_loading": "Another operation is in progress, please wait...",
+    "success": "Operation successful",
+    "error": "Operation failed"
+  },
+  "Legal": {
+    "effective_date": "Effective Date",
+    "last_updated": "Last Updated",
+    "contact_us": "Contact Us",
+    "back_to_top": "Back to Top",
+    "table_of_contents": "Table of Contents"
+  },
+  "TermsOfService": {
+    "meta_title": "Terms of Service",
+    "meta_description": "Terms of Service for LannaMirror3 AI creation platform",
+    "title": "Terms of Service",
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of Terms",
+        "content": "By accessing and using LannaMirror3, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service."
+      },
+      "description": {
+        "title": "2. Description of Service",
+        "content": "LannaMirror3 is an AI-powered intelligent creation platform designed specifically for knowledge bloggers and content creators. Our service provides tools for content creation, collaboration, and publishing."
+      },
+      "user_accounts": {
+        "title": "3. User Accounts and Registration",
+        "content": "You must register for an account to access certain features. You are responsible for maintaining the confidentiality of your account and password and for restricting access to your computer."
+      },
+      "user_content": {
+        "title": "4. User Content and Conduct",
+        "content": "You retain ownership of content you create using our platform. You grant us a license to use, modify, publicly perform, publicly display, reproduce, and distribute such content on and through the service."
+      },
+      "intellectual_property": {
+        "title": "5. Intellectual Property Rights",
+        "content": "The service and its original content, features, and functionality are and will remain the exclusive property of LannaMirror3 and its licensors."
+      },
+      "ai_usage": {
+        "title": "6. AI and Data Usage",
+        "content": "Our AI services may use your content to improve our models and services. We implement appropriate safeguards to protect your intellectual property and privacy."
+      },
+      "termination": {
+        "title": "7. Termination",
+        "content": "We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms."
+      },
+      "disclaimers": {
+        "title": "8. Disclaimers and Limitations",
+        "content": "The information on this service is provided on an 'as is' basis. To the fullest extent permitted by law, we exclude all representations, warranties, and conditions relating to our service."
+      },
+      "governing_law": {
+        "title": "9. Governing Law",
+        "content": "These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which LannaMirror3 operates."
+      },
+      "contact": {
+        "title": "10. Contact Information",
+        "content": "If you have any questions about these Terms, please contact us at mark@cs-magic.com"
+      }
+    }
+  },
+  "PrivacyPolicy": {
+    "meta_title": "Privacy Policy",
+    "meta_description": "Privacy Policy for LannaMirror3 AI creation platform",
+    "title": "Privacy Policy",
+    "sections": {
+      "introduction": {
+        "title": "1. Introduction",
+        "content": "LannaMirror3 respects your privacy and is committed to protecting your personal data. This privacy policy explains how we collect, use, and share information about you when you use our services."
+      },
+      "information_collected": {
+        "title": "2. Information We Collect",
+        "content": "We collect information you provide directly to us, information we obtain automatically when you use our services, and information from third-party sources."
+      },
+      "how_we_use": {
+        "title": "3. How We Use Information",
+        "content": "We use the information we collect to provide, maintain, and improve our services, process transactions, send communications, and protect against fraud and abuse."
+      },
+      "information_sharing": {
+        "title": "4. Information Sharing and Disclosure",
+        "content": "We may share your information in certain limited circumstances, including with your consent, to comply with laws, or to protect rights and safety."
+      },
+      "data_retention": {
+        "title": "5. Data Retention",
+        "content": "We retain personal information for as long as necessary to provide our services, comply with legal obligations, resolve disputes, and enforce our agreements."
+      },
+      "security": {
+        "title": "6. Security Measures",
+        "content": "We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction."
+      },
+      "ai_processing": {
+        "title": "7. AI and Machine Learning",
+        "content": "Our AI services process your content to provide intelligent creation assistance. We implement privacy-preserving techniques to protect your data during AI processing."
+      },
+      "third_party": {
+        "title": "8. Third-Party Services",
+        "content": "Our service integrates with third-party services for authentication, data storage, and analytics. These services have their own privacy policies."
+      },
+      "your_rights": {
+        "title": "9. Your Rights and Choices",
+        "content": "Depending on your location, you may have certain rights regarding your personal information, including the right to access, update, delete, or restrict processing."
+      },
+      "international_transfers": {
+        "title": "10. International Data Transfers",
+        "content": "Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place for such transfers."
+      },
+      "changes": {
+        "title": "11. Changes to Privacy Policy",
+        "content": "We may update this privacy policy from time to time. We will notify you of any material changes by posting the new policy on our website."
+      },
+      "contact": {
+        "title": "12. Contact Information",
+        "content": "If you have any questions about this Privacy Policy, please contact us at mark@cs-magic.com"
+      }
+    }
+  },
+  "CookiePolicy": {
+    "meta_title": "Cookie Policy",
+    "meta_description": "Cookie Policy for LannaMirror3 AI creation platform",
+    "title": "Cookie Policy",
+    "sections": {
+      "what_are_cookies": {
+        "title": "1. What Are Cookies",
+        "content": "Cookies are small text files that are stored on your computer or mobile device when you visit our website. They help us provide you with a better experience by remembering your preferences."
+      },
+      "types_of_cookies": {
+        "title": "2. Types of Cookies We Use",
+        "content": "We use essential cookies for basic functionality, performance cookies to analyze usage, and preference cookies to remember your settings."
+      },
+      "third_party_cookies": {
+        "title": "3. Third-Party Cookies",
+        "content": "We use third-party services for analytics, authentication, and other features. These services may set their own cookies on your device."
+      },
+      "cookie_consent": {
+        "title": "4. Cookie Consent Management",
+        "content": "You can manage your cookie preferences through our cookie consent banner and settings. You may accept or reject non-essential cookies."
+      },
+      "control_cookies": {
+        "title": "5. How to Control Cookies",
+        "content": "You can control and delete cookies through your browser settings. Please note that disabling cookies may affect the functionality of our service."
+      },
+      "updates": {
+        "title": "6. Updates to Cookie Policy",
+        "content": "We may update this Cookie Policy from time to time. Any changes will be posted on this page with an updated effective date."
+      },
+      "contact": {
+        "title": "7. Contact Information",
+        "content": "If you have any questions about our use of cookies, please contact us at mark@cs-magic.com"
+      }
+    }
+  },
+  "Auth": {
+    "loading": "Loading..."
+  },
+  "SignIn": {
+    "meta_title": "Sign In - LannaMirror3",
+    "meta_description": "Sign in to your LannaMirror3 account to access AI-powered content creation tools",
+    "title": "Sign In",
+    "subtitle": "Welcome back! Please sign in to your account",
+    "email_label": "Email Address",
+    "email_placeholder": "Enter your email address",
+    "password_label": "Password",
+    "password_placeholder": "Enter your password",
+    "remember_me": "Remember me",
+    "forgot_password": "Forgot password?",
+    "sign_in_button": "Sign In",
+    "signing_in": "Signing in...",
+    "or": "or",
+    "no_account": "Don't have an account?",
+    "sign_up_link": "Sign up"
+  },
+  "SignUp": {
+    "meta_title": "Sign Up - LannaMirror3",
+    "meta_description": "Create your LannaMirror3 account and start building amazing content with AI assistance",
+    "title": "Create Account",
+    "subtitle": "Join thousands of creators using LannaMirror3",
+    "full_name_label": "Full Name",
+    "full_name_placeholder": "Enter your full name",
+    "email_label": "Email Address",
+    "email_placeholder": "Enter your email address",
+    "password_label": "Password",
+    "password_placeholder": "Create a secure password",
+    "confirm_password_label": "Confirm Password",
+    "confirm_password_placeholder": "Confirm your password",
+    "accept_terms_part1": "I agree to the",
+    "terms_of_service": "Terms of Service",
+    "and": "and",
+    "privacy_policy": "Privacy Policy",
+    "sign_up_button": "Create Account",
+    "creating_account": "Creating account...",
+    "or": "or",
+    "have_account": "Already have an account?",
+    "sign_in_link": "Sign in",
+    "check_email_title": "Check Your Email",
+    "check_email_message": "We've sent a verification link to your email address. Please check your email and click the link to activate your account.",
+    "back_to_sign_in": "Back to Sign In"
+  },
+  "ResetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your email address and we'll send you a link to reset your password",
+    "email_label": "Email Address",
+    "email_placeholder": "Enter your email address",
+    "send_reset_email": "Send Reset Email",
+    "sending": "Sending...",
+    "back_to_sign_in": "Back to Sign In",
+    "email_sent_title": "Email Sent",
+    "email_sent_message": "If an account with that email exists, we've sent you a password reset link."
+  },
+  "UserProfile": {
+    "meta_title": "Profile Settings - LannaMirror3",
+    "title": "Profile Settings",
+    "loading": "Loading profile...",
+    "profile_updated_success": "Profile updated successfully",
+    "email_label": "Email Address",
+    "email_help": "Contact support to change your email address",
+    "full_name_label": "Full Name",
+    "full_name_placeholder": "Enter your full name",
+    "avatar_url_label": "Avatar URL",
+    "avatar_url_placeholder": "https://example.com/avatar.jpg",
+    "locale_label": "Language",
+    "locale_zh": "中文 (Chinese)",
+    "locale_en": "English",
+    "timezone_label": "Timezone",
+    "timezone_shanghai": "Asia/Shanghai (GMT+8)",
+    "timezone_new_york": "America/New_York (GMT-5)",
+    "timezone_london": "Europe/London (GMT+0)",
+    "timezone_tokyo": "Asia/Tokyo (GMT+9)",
+    "timezone_sydney": "Australia/Sydney (GMT+10)",
+    "update_profile": "Update Profile",
+    "updating": "Updating...",
+    "account_info_title": "Account Information",
+    "user_id": "User ID",
+    "created_at": "Created",
+    "email_verified": "Email Verified",
+    "verified": "Yes",
+    "not_verified": "No"
+  },
+  "Pricing": {
+    "meta_title": "Pricing - LannaMirror3 AI Creation Platform",
+    "meta_description": "Flexible pricing plans for content creators and teams. Start free with 3 projects, upgrade for unlimited AI-powered content creation and collaboration.",
+    "hero_title": "Flexible pricing for everyone",
+    "hero_description": "Choose the perfect plan for your content creation needs. Start free and scale as you grow.",
+    "billing_monthly": "Monthly",
+    "billing_yearly": "Yearly",
+    "billing_save": "Save 20%",
+    "projects_label": "Projects",
+    "recommended": "Recommended",
+    "get_started": "Get Started",
+    "start_free_trial": "Start 14-day free trial",
+    "contact_sales": "Contact Sales",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "price_monthly": "0",
+        "price_yearly": "0",
+        "price_label": "Free forever",
+        "description": "Perfect for getting started with AI-powered content creation",
+        "cta": "Let's go",
+        "features": [
+          "Up to 3 projects",
+          "Basic AI writing assistant",
+          "10 content generations per month",
+          "1 user account",
+          "Community support",
+          "Basic templates"
+        ]
+      },
+      "essentials": {
+        "name": "Essentials",
+        "price_monthly": "15",
+        "price_yearly": "12",
+        "price_label_monthly": "$15/month",
+        "price_label_yearly": "$12/month, billed annually",
+        "description": "Everything you need for professional content creation",
+        "cta": "Start 14-day free trial",
+        "features": [
+          "Unlimited projects",
+          "Advanced AI writing assistant",
+          "Unlimited content generations",
+          "SEO optimization tools",
+          "Advanced templates library",
+          "Priority email support",
+          "Content analytics",
+          "Export to multiple formats"
+        ]
+      },
+      "team": {
+        "name": "Team",
+        "price_monthly": "29",
+        "price_yearly": "24",
+        "price_label_monthly": "$29/month",
+        "price_label_yearly": "$24/month, billed annually",
+        "description": "Enhanced collaboration and management features for teams",
+        "cta": "Start 14-day free trial",
+        "features": [
+          "Everything in Essentials",
+          "Unlimited users",
+          "Team collaboration tools",
+          "Content approval workflows",
+          "Advanced analytics & reporting",
+          "Custom branding",
+          "Priority support",
+          "SSO integration (coming soon)"
+        ]
+      }
+    },
+    "enterprise_note": "Need more than 50 users? Contact us for enterprise pricing.",
+    "features_title": "Connect your favorite platforms",
+    "features_description": "Publish and manage your content across all major platforms",
+    "supported_platforms": [
+      { "name": "WordPress", "description": "Blog publishing" },
+      { "name": "Medium", "description": "Article publishing" },
+      { "name": "LinkedIn", "description": "Professional content" },
+      { "name": "Twitter/X", "description": "Social media posts" },
+      { "name": "Facebook", "description": "Social media marketing" },
+      { "name": "Instagram", "description": "Visual content" },
+      { "name": "YouTube", "description": "Video descriptions" },
+      { "name": "TikTok", "description": "Short-form content" }
+    ],
+    "testimonial": {
+      "quote": "LannaMirror3 has transformed how we create content. The AI assistance is incredibly intuitive and helps us maintain consistency across all our channels.",
+      "author": "Sarah Chen",
+      "company": "Digital Marketing Agency",
+      "avatar": "/avatars/sarah-chen.jpg"
+    },
+    "comparison_title": "Compare all features",
+    "comparison_categories": {
+      "content_creation": "Content Creation",
+      "ai_features": "AI Features",
+      "collaboration": "Collaboration",
+      "analytics": "Analytics",
+      "integrations": "Integrations",
+      "support": "Support"
+    },
+    "comparison_features": {
+      "projects": "Projects",
+      "ai_generations": "AI Content Generations",
+      "templates": "Templates",
+      "seo_tools": "SEO Tools",
+      "content_analytics": "Content Analytics",
+      "export_formats": "Export Formats",
+      "users": "Users",
+      "collaboration": "Team Collaboration",
+      "approval_workflows": "Approval Workflows",
+      "custom_branding": "Custom Branding",
+      "integrations": "Platform Integrations",
+      "api_access": "API Access",
+      "support": "Support Level",
+      "sso": "SSO Integration"
+    },
+    "faq_title": "Frequently Asked Questions",
+    "faq": [
+      {
+        "question": "What platforms does LannaMirror3 support?",
+        "answer": "LannaMirror3 supports content creation for all major platforms including WordPress, Medium, LinkedIn, Twitter/X, Facebook, Instagram, YouTube, and TikTok. We're constantly adding support for new platforms."
+      },
+      {
+        "question": "Can I change my plan at any time?",
+        "answer": "Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate your billing accordingly."
+      },
+      {
+        "question": "Is there a free trial?",
+        "answer": "Yes, we offer a 14-day free trial for both Essentials and Team plans. No credit card required to start your trial."
+      },
+      {
+        "question": "Do you offer discounts for nonprofits or education?",
+        "answer": "Yes! We offer special pricing for qualified nonprofit organizations and educational institutions. Contact us at mark@cs-magic.com for more information."
+      },
+      {
+        "question": "What payment methods do you accept?",
+        "answer": "We accept all major credit cards (Visa, MasterCard, American Express) and PayPal. For enterprise plans, we also accept bank transfers and purchase orders."
+      },
+      {
+        "question": "Is my data secure?",
+        "answer": "Absolutely. We use enterprise-grade security measures including encryption at rest and in transit, regular security audits, and comply with GDPR and other privacy regulations."
+      }
+    ]
+  }
+}
