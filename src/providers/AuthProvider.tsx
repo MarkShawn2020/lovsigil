@@ -255,7 +255,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { session, error } = await AuthClientService.getSession();
 
         if (error) {
-          console.error('Error getting session:', error);
+          console.warn('Error getting session:', error);
+          // If we have cached user and this is a timeout, keep cached state
+          if (cachedState.user && error.includes('timed out')) {
+            console.log('Session timed out but have cached user, keeping cached state');
+            if (isMounted) {
+              dispatch({ type: 'SET_LOADING', payload: false });
+            }
+            return;
+          }
           if (isMounted) {
             dispatch({ type: 'SIGN_IN_ERROR', payload: error });
           }
