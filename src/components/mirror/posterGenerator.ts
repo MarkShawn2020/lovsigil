@@ -392,108 +392,75 @@ export async function generateLannaPoster(options: PosterOptions): Promise<strin
   // 2. 绘制装饰边框
   drawLannaBorder(ctx, POSTER_WIDTH, POSTER_HEIGHT, COLORS.gold)
 
-  // 3. 标题区域
+  // 3. 顶部标题区域（压缩，类似游戏王卡名区）
   ctx.textAlign = 'center'
 
-  // 主标题
-  ctx.font = 'bold 72px serif'
+  // 主标题（缩小）
+  ctx.font = 'bold 48px serif'
   ctx.fillStyle = COLORS.gold
   ctx.shadowColor = COLORS.gold
-  ctx.shadowBlur = 20
-  ctx.fillText('LANNA SPIRIT', POSTER_WIDTH / 2, 180)
+  ctx.shadowBlur = 15
+  ctx.fillText('LANNA SPIRIT', POSTER_WIDTH / 2, 100)
   ctx.shadowBlur = 0
 
-  // 副标题
-  ctx.font = '32px serif'
+  // 副标题（缩小）
+  ctx.font = '22px serif'
   ctx.fillStyle = COLORS.whiteTranslucent
-  ctx.fillText('กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, 230)
+  ctx.fillText('กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, 135)
 
-  // 4. 加载图片
-  const [originalImg, generatedImg] = await Promise.all([
-    loadImage(options.originalImage),
-    loadImage(options.generatedImage),
-  ])
+  // 4. 加载生成图
+  const generatedImg = await loadImage(options.generatedImage)
 
-  // 5. 绘制原图（圆形，较小，顶部）
-  const originalY = 380
-  drawCircularImage(ctx, originalImg, POSTER_WIDTH / 2, originalY, 100, spiritColor)
+  // 5. 绘制生成图（主体 - 最大化，像游戏王卡图）
+  // 主图区域：y=160 到 y=1420，高度 1260px，宽度 980px
+  drawMainImage(ctx, generatedImg, POSTER_WIDTH / 2, 790, 980, 1200, spiritColor)
 
-  // 6. 绘制变形箭头
-  drawTransformArrow(ctx, POSTER_WIDTH / 2, 530, spiritColor)
+  // 6. 底部信息区域（压缩，类似游戏王描述区）
+  const infoY = 1480
 
-  // 7. 绘制生成图（主体）
-  drawMainImage(ctx, generatedImg, POSTER_WIDTH / 2, 880, 700, 550, spiritColor)
-
-  // 8. 守护灵信息区域
-  const infoY = 1280
-
-  // 守护灵名称
-  ctx.font = 'bold 64px serif'
+  // 守护灵 emoji + 泰文名
+  ctx.font = 'bold 52px serif'
   ctx.fillStyle = spiritColor
   ctx.shadowColor = spiritColor
-  ctx.shadowBlur = 15
-  ctx.fillText(spiritInfo?.emoji || '✨', POSTER_WIDTH / 2, infoY)
+  ctx.shadowBlur = 12
+  const spiritThaiName = spiritInfo?.name || options.spiritName || options.spiritId
+  ctx.fillText(`${spiritInfo?.emoji || '✨'} ${spiritThaiName}`, POSTER_WIDTH / 2, infoY)
   ctx.shadowBlur = 0
 
-  // 泰语名 + 英文名
-  ctx.font = 'bold 48px serif'
-  ctx.fillStyle = COLORS.white
-  const spiritThaiName = spiritInfo?.name || options.spiritName || options.spiritId
-  ctx.fillText(spiritThaiName, POSTER_WIDTH / 2, infoY + 70)
-
+  // 英文名
   ctx.font = '36px serif'
   ctx.fillStyle = COLORS.goldLight
   const spiritEnName = spiritInfo?.nameEn || options.spiritNameEn || ''
-  ctx.fillText(spiritEnName, POSTER_WIDTH / 2, infoY + 120)
+  ctx.fillText(spiritEnName, POSTER_WIDTH / 2, infoY + 55)
 
-  // 元素符号
-  if (spiritInfo?.element) {
-    drawElementSymbol(ctx, POSTER_WIDTH / 2, infoY + 180, spiritInfo.element, spiritColor)
-    ctx.font = '24px sans-serif'
-    ctx.fillStyle = COLORS.whiteTranslucent
-    const elementNames: Record<string, string> = {
-      water: 'น้ำ · Water',
-      fire: 'ไฟ · Fire',
-      earth: 'ดิน · Earth',
-      air: 'ลม · Air',
-      spirit: 'จิตวิญญาณ · Spirit',
-    }
-    ctx.fillText(elementNames[spiritInfo.element] || '', POSTER_WIDTH / 2, infoY + 220)
+  // 特质翻译映射（泰 -> 英）
+  const traitTranslations: Record<string, string> = {
+    'ปัญญา': 'Wisdom', 'ปกป้อง': 'Protection', 'ลึกซึ้ง': 'Depth', 'ลึกลับ': 'Mystery',
+    'กล้าหาญ': 'Courage', 'พลัง': 'Power', 'ผู้นำ': 'Leader', 'ผู้พิทักษ์': 'Guardian',
+    'สง่างาม': 'Grace', 'บริสุทธิ์': 'Purity', 'ศิลปะ': 'Art', 'อิสระ': 'Freedom',
+    'มั่นคง': 'Stability', 'เจริญ': 'Prosperity', 'ซื่อสัตย์': 'Loyalty', 'ฉลาด': 'Wisdom',
+    'ศักดิ์สิทธิ์': 'Sacred', 'รวดเร็ว': 'Swift', 'ยุติธรรม': 'Justice', 'สูงส่ง': 'Noble',
   }
 
-  // 特质标签
+  // 特质标签（双语）
   const traits = spiritInfo?.traits || options.spiritTraits || []
   if (traits.length > 0) {
-    ctx.font = '24px sans-serif'
-    const traitY = infoY + 280
-    const traitWidth = 180
-    const totalWidth = Math.min(traits.length, 4) * traitWidth
-    const startX = (POSTER_WIDTH - totalWidth) / 2 + traitWidth / 2
-
-    traits.slice(0, 4).forEach((trait, i) => {
-      const tx = startX + i * traitWidth
-      // 标签背景
-      ctx.fillStyle = `${spiritColor}30`
-      ctx.beginPath()
-      ctx.roundRect(tx - 70, traitY - 20, 140, 40, 20)
-      ctx.fill()
-      ctx.strokeStyle = spiritColor
-      ctx.lineWidth = 1
-      ctx.stroke()
-
-      // 标签文字
-      ctx.fillStyle = COLORS.white
-      ctx.fillText(trait.split(' / ')[0] || trait, tx, traitY + 8)
-    })
+    const traitY = infoY + 115
+    // 泰文特质
+    ctx.font = '22px sans-serif'
+    ctx.fillStyle = COLORS.whiteTranslucent
+    ctx.fillText(traits.slice(0, 4).join(' · '), POSTER_WIDTH / 2, traitY)
+    // 英文特质
+    ctx.font = '18px sans-serif'
+    ctx.fillStyle = COLORS.goldDark
+    const engTraits = traits.slice(0, 4).map(t => traitTranslations[t] || t)
+    ctx.fillText(engTraits.join(' · '), POSTER_WIDTH / 2, traitY + 30)
   }
 
-  // 9. 底部水印
-  ctx.font = '20px sans-serif'
+  // 7. 底部水印（双语）
+  ctx.font = '18px sans-serif'
   ctx.fillStyle = COLORS.goldDark
-  ctx.fillText('Lanna Spirit Mirror · 兰纳灵境', POSTER_WIDTH / 2, POSTER_HEIGHT - 80)
-  ctx.font = '16px sans-serif'
-  ctx.fillStyle = 'rgba(255,255,255,0.3)'
-  ctx.fillText('Generated with AI', POSTER_WIDTH / 2, POSTER_HEIGHT - 55)
+  ctx.fillText('Lanna Spirit Mirror · กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, POSTER_HEIGHT - 50)
 
   return canvas.toDataURL('image/png', 1.0)
 }

@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
 import { matchSpiritByExpression, SPIRIT_INFO } from './facsAnalyzer'
 import { PersonTracker } from './personTracker'
 import type { TrackedPerson } from './personTracker'
-import { downloadImage, generateLannaPoster, getImageDataUrl } from './posterGenerator'
+import { downloadImage, generateLannaPoster } from './posterGenerator'
 import { LANNA_SPIRITS } from './spiritData'
 import type { LannaSpirit } from './types'
 
@@ -82,45 +82,24 @@ export function LannaMirror() {
     userPhoto: string | null
     spiritId: string
   } | null>(null)
-  const [isGeneratingPoster, setIsGeneratingPoster] = useState(false)
+  const [previewPoster, setPreviewPoster] = useState<string | null>(null)
+  const [showOriginal, setShowOriginal] = useState(false)
 
-  // 下载处理函数
-  const handleDownloadOriginal = async () => {
-    if (!previewRecord?.userPhoto) return
-    try {
-      const dataUrl = await getImageDataUrl(previewRecord.userPhoto)
-      downloadImage(dataUrl, `lanna-original-${Date.now()}.png`)
-    } catch (err) {
-      console.error('Download failed:', err)
+  // 预览时自动生成海报
+  useEffect(() => {
+    setShowOriginal(false)
+    if (!previewRecord?.generatedImage || !previewRecord.userPhoto) {
+      setPreviewPoster(null)
+      return
     }
-  }
-
-  const handleDownloadGenerated = async () => {
-    if (!previewRecord?.generatedImage) return
-    try {
-      const dataUrl = await getImageDataUrl(previewRecord.generatedImage)
-      downloadImage(dataUrl, `lanna-spirit-${previewRecord.spiritId}-${Date.now()}.png`)
-    } catch (err) {
-      console.error('Download failed:', err)
-    }
-  }
-
-  const handleDownloadPoster = async () => {
-    if (!previewRecord?.generatedImage || !previewRecord.userPhoto) return
-    setIsGeneratingPoster(true)
-    try {
-      const posterDataUrl = await generateLannaPoster({
-        originalImage: previewRecord.userPhoto,
-        generatedImage: previewRecord.generatedImage,
-        spiritId: previewRecord.spiritId,
-      })
-      downloadImage(posterDataUrl, `lanna-spirit-poster-${previewRecord.spiritId}-${Date.now()}.png`)
-    } catch (err) {
-      console.error('Poster generation failed:', err)
-    } finally {
-      setIsGeneratingPoster(false)
-    }
-  }
+    generateLannaPoster({
+      originalImage: previewRecord.userPhoto,
+      generatedImage: previewRecord.generatedImage,
+      spiritId: previewRecord.spiritId,
+    })
+      .then(setPreviewPoster)
+      .catch(console.error)
+  }, [previewRecord])
 
   // 初始化摄像头
   const initCamera = useCallback(async () => {
@@ -787,15 +766,28 @@ export function LannaMirror() {
               )}
 
               {/* 操作按钮 */}
-              <div className="space-y-2 pt-2">
+              <div className="pt-2">
                 {generatedImage ? (
-                  <Button
-                    onClick={downloadCurrentImage}
-                    className="w-full"
-                    style={{ backgroundColor: matchedSpirit.color }}
-                  >
-                    ดาวน์โหลด / Download
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setPreviewRecord({
+                        generatedImage,
+                        userPhoto: capturedPhoto || '',
+                        spiritId: matchedSpirit.id,
+                      })}
+                      className="flex-1"
+                      style={{ backgroundColor: matchedSpirit.color }}
+                    >
+                      Preview
+                    </Button>
+                    <Button
+                      onClick={restart}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Another One
+                    </Button>
+                  </div>
                 ) : (
                   <Button
                     onClick={generateSpiritImage}
@@ -805,13 +797,6 @@ export function LannaMirror() {
                     สร้างภาพวิญญาณ / Generate Portrait
                   </Button>
                 )}
-                <Button
-                  onClick={restart}
-                  variant="outline"
-                  className="w-full"
-                >
-                  ทดสอบอีกครั้ง / Try Again
-                </Button>
               </div>
             </div>
           )}
@@ -939,96 +924,55 @@ export function LannaMirror() {
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setPreviewRecord(null)}
         >
-          <div className="relative flex flex-col items-center gap-4 max-w-4xl" onClick={e => e.stopPropagation()}>
-            {/* 图片展示区 */}
-            <div className="flex items-center gap-6">
-              {/* 原始头像 */}
-              {previewRecord.userPhoto && (
-                <div className="text-center">
-                  <p className="text-white/50 text-sm mb-2">ต้นฉบับ / Original</p>
-                  <div
-                    className="w-32 h-32 rounded-full overflow-hidden border-2"
-                    style={{
-                      borderColor: SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37',
-                      background: `radial-gradient(circle, ${SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color}40 0%, ${SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color}20 100%)`,
-                    }}
-                  >
-                    <img src={previewRecord.userPhoto} alt="Original" className="w-full h-full object-contain" />
-                  </div>
-                </div>
-              )}
-              {/* 箭头 */}
-              {previewRecord.userPhoto && (
-                <div className="text-white/40 text-3xl">→</div>
-              )}
-              {/* 生成结果 */}
-              <div className="text-center">
-                <p className="text-white/50 text-sm mb-2">วิญญาณ / Spirit</p>
-                <img
-                  src={previewRecord.generatedImage}
-                  alt="Generated"
-                  className="max-w-md max-h-[60vh] object-contain rounded-lg border-2"
-                  style={{ borderColor: SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37' }}
-                />
+          <div className="relative flex flex-col items-center gap-4" onClick={e => e.stopPropagation()}>
+            {/* 图片展示 */}
+            {showOriginal && previewRecord.userPhoto ? (
+              <img
+                src={previewRecord.userPhoto}
+                alt="Original"
+                className="max-h-[80vh] object-contain rounded-lg shadow-2xl"
+              />
+            ) : previewPoster ? (
+              <img
+                src={previewPoster}
+                alt="Lanna Spirit Poster"
+                className="max-h-[80vh] object-contain rounded-lg shadow-2xl"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent" />
+                <p className="text-white/60 text-sm">生成海报中...</p>
               </div>
-            </div>
+            )}
 
-            {/* 下载按钮组 */}
-            <div className="flex items-center gap-3 mt-4 p-3 bg-black/50 rounded-xl backdrop-blur-sm">
-              {/* 下载原图 */}
-              {previewRecord.userPhoto && (
+            {/* 操作按钮 */}
+            {previewPoster && (
+              <div className="flex gap-3 p-3 bg-black/50 rounded-xl backdrop-blur-sm">
+                {previewRecord.userPhoto && (
+                  <Button
+                    onClick={() => setShowOriginal(!showOriginal)}
+                    className="bg-white/20 text-white border border-white/30 hover:bg-white/30"
+                  >
+                    {showOriginal ? 'Poster' : 'Original'}
+                  </Button>
+                )}
                 <Button
-                  size="sm"
-                  onClick={handleDownloadOriginal}
-                  className="bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:border-white/50"
-                >
-                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  原图
-                </Button>
-              )}
-              {/* 下载生成图 */}
-              <Button
-                size="sm"
-                onClick={handleDownloadGenerated}
-                className="bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:border-white/50"
-              >
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                灵图
-              </Button>
-              {/* 下载海报 */}
-              {previewRecord.userPhoto && (
-                <Button
-                  size="sm"
-                  onClick={handleDownloadPoster}
-                  disabled={isGeneratingPoster}
-                  className="text-white font-medium shadow-lg"
+                  onClick={() => downloadImage(
+                    showOriginal && previewRecord.userPhoto ? previewRecord.userPhoto : previewPoster,
+                    `lanna-spirit-${showOriginal ? 'original' : 'poster'}-${previewRecord.spiritId}-${Date.now()}.png`
+                  )}
+                  className="text-white font-medium"
                   style={{
                     backgroundColor: SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37',
                   }}
                 >
-                  {isGeneratingPoster ? (
-                    <>
-                      <svg className="w-4 h-4 mr-1.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      生成中...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      海报
-                    </>
-                  )}
+                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* 关闭按钮 */}
             <button
