@@ -22,11 +22,11 @@ export async function POST(request: Request) {
       element: spirit.element,
       traits: spirit.traits,
       basePrompt: spirit.imagePrompt,
-      userDescription: userPhoto ? 'Incorporate the essence of the visitor into this spirit portrait.' : undefined,
+      hasReferenceImage: !!userPhoto,
     })
 
-    // 调用 ZenMux 生成图像
-    const generatedImage = await generateImage(prompt)
+    // 调用 ZenMux 生成图像（传入用户头像作为参考）
+    const generatedImage = await generateImage(prompt, userPhoto || undefined)
 
     // 保存生成记录到数据库
     await supabaseServer.from('spirit_generations').insert({

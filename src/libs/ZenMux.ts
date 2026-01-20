@@ -23,12 +23,41 @@ function getClient(): GoogleGenAI {
   return genaiClient
 }
 
-export async function generateImage(prompt: string): Promise<string> {
+export async function generateImage(prompt: string, referenceImage?: string): Promise<string> {
   const client = getClient()
+
+  // 构建多模态内容
+  let contents: any
+  if (referenceImage) {
+    // 从 data URL 中提取 base64 和 mime type
+    const match = referenceImage.match(/^data:([^;]+);base64,(.+)$/)
+    if (match) {
+      const [, mimeType, base64Data] = match
+      contents = [
+        {
+          role: 'user',
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType,
+                data: base64Data,
+              },
+            },
+          ],
+        },
+      ]
+    } else {
+      // 无效的 data URL，回退到纯文本
+      contents = prompt
+    }
+  } else {
+    contents = prompt
+  }
 
   const response = await client.models.generateContent({
     model: 'google/gemini-3-pro-image-preview',
-    contents: prompt,
+    contents,
     config: {
       responseModalities: ['TEXT', 'IMAGE'],
     },
@@ -58,13 +87,24 @@ export function buildLannaSpiritPrompt(params: {
   element: string
   traits: string[]
   basePrompt: string
-  userDescription?: string
+  hasReferenceImage?: boolean
 }): string {
-  const { spiritName, spiritNameEn, element, traits, basePrompt, userDescription } = params
+  const { spiritName, spiritNameEn, element, traits, basePrompt, hasReferenceImage } = params
 
-  const prompt = `Create a mystical portrait artwork in traditional Lanna (Northern Thai) art style.
+  // 当有参考图像时，强调保持人物相似性
+  const referenceInstruction = hasReferenceImage
+    ? `CRITICAL: The attached reference image shows the person to be portrayed. You MUST:
+- Preserve the person's facial features (eyes, nose, mouth shape, face contour)
+- Keep their skin tone and general appearance recognizable
+- Transform them into a spirit guardian while maintaining their identity
+- The viewer should immediately recognize this as the same person in spirit form
 
-Subject: A person embodied with the spirit of ${spiritNameEn} (${spiritName}), the ${element} element guardian.
+`
+    : ''
+
+  const prompt = `${referenceInstruction}Create a mystical portrait artwork in traditional Lanna (Northern Thai) art style.
+
+Subject: ${hasReferenceImage ? 'Transform the person in the reference image into' : 'A person embodied with'} the spirit of ${spiritNameEn} (${spiritName}), the ${element} element guardian.
 
 Style Requirements:
 - Traditional Lanna temple mural art style
@@ -80,9 +120,7 @@ ${traits.map(t => `- ${t}`).join('\n')}
 
 ${basePrompt}
 
-${userDescription ? `Additional context: ${userDescription}` : ''}
-
-The artwork should feel sacred, mystical, and deeply connected to Lanna spiritual traditions. The figure should appear as if they are a guardian spirit from an ancient temple painting.`
+The artwork should feel sacred, mystical, and deeply connected to Lanna spiritual traditions. The figure should appear as if they are a guardian spirit from an ancient temple painting${hasReferenceImage ? ', while clearly being the same person from the reference image' : ''}.`
 
   return prompt
 }
