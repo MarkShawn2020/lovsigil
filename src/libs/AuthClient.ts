@@ -90,7 +90,7 @@ export class AuthClientService {
   /**
    * Sign up with email and password
    */
-  static async signUp(email: string, password: string, fullName?: string, options?: { redirectTo?: string }) {
+  static async signUp(email: string, password: string, displayName?: string, options?: { redirectTo?: string }) {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -98,18 +98,13 @@ export class AuthClientService {
         options: {
           emailRedirectTo: options?.redirectTo,
           data: {
-            full_name: fullName,
+            display_name: displayName,
           },
         },
       });
 
       if (error) {
         return { error: error.message };
-      }
-
-      // Call API to create user profile
-      if (data.user) {
-        await this.createUserProfile(data.user.id, email, fullName);
       }
 
       return { user: data.user };
@@ -181,126 +176,6 @@ export class AuthClientService {
       return { user, error: error?.message };
     } catch (error) {
       return { user: null, error: 'An unexpected error occurred' };
-    }
-  }
-
-  // API calls to server-side routes
-
-  /**
-   * Create user profile via API
-   */
-  private static async createUserProfile(userId: string, email: string, fullName?: string) {
-    try {
-      const response = await fetch('/api/auth/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          email,
-          fullName,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create user profile');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating user profile:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Get user profile via API
-   */
-  static async getUserProfile(userId: string) {
-    try {
-      const response = await fetch(`/api/auth/profile?userId=${encodeURIComponent(userId)}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user profile');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Update user profile via API
-   */
-  static async updateUserProfile(userId: string, updates: any) {
-    try {
-      const response = await fetch('/api/auth/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          ...updates,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update user profile');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating user profile:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Get user preferences via API
-   */
-  static async getUserPreferences(userId: string) {
-    try {
-      const response = await fetch(`/api/auth/preferences?userId=${encodeURIComponent(userId)}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user preferences');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching user preferences:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Update user preferences via API
-   */
-  static async updateUserPreferences(userId: string, updates: any) {
-    try {
-      const response = await fetch('/api/auth/preferences', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          ...updates,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update user preferences');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating user preferences:', error);
-      return null;
     }
   }
 }

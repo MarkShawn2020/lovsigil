@@ -35,7 +35,7 @@ export function SignUpForm({ redirectTo, onSuccess, onSignIn }: SignUpFormProps)
     setIsLoading(true);
 
     try {
-      const result = await signUp(data.email, data.password, data.fullName, {
+      const result = await signUp(data.email, data.password, data.displayName, {
         redirectTo: redirectTo || `${window.location.origin}/dashboard`,
       });
 
@@ -100,19 +100,19 @@ export function SignUpForm({ redirectTo, onSuccess, onSignIn }: SignUpFormProps)
           )}
 
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('full_name_label')}
             </label>
             <input
-              {...register('fullName')}
+              {...register('displayName')}
               type="text"
-              id="fullName"
+              id="displayName"
               placeholder={t('full_name_placeholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               disabled={isLoading}
             />
-            {errors.fullName && (
-              <p className="mt-1 text-sm text-red-600">{errors.fullName.message}</p>
+            {errors.displayName && (
+              <p className="mt-1 text-sm text-red-600">{errors.displayName.message}</p>
             )}
           </div>
 

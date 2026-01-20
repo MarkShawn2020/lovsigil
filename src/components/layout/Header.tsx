@@ -198,7 +198,7 @@ const Header = () => {
                                         <>
                                             <div className="flex items-center justify-between px-2 py-1">
                           <span className="text-sm text-gray-600">
-                            {user.profile?.fullName || user.email}
+                            {user.profile?.displayName || user.email}
                           </span>
                                                 <UserDropdown/>
                                             </div>

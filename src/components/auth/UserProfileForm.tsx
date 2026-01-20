@@ -25,10 +25,8 @@ export function UserProfileForm() {
   } = useForm<UpdateProfileFormData>({
     resolver: zodResolver(UpdateProfileSchema),
     defaultValues: {
-      fullName: profile?.fullName || '',
+      displayName: profile?.displayName || '',
       avatarUrl: profile?.avatarUrl || '',
-      locale: (profile?.locale as 'zh' | 'en') || 'zh',
-      timezone: profile?.timezone || 'Asia/Shanghai',
     },
   });
 
@@ -99,19 +97,19 @@ export function UserProfileForm() {
           </div>
 
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('full_name_label')}
             </label>
             <input
-              {...register('fullName')}
+              {...register('displayName')}
               type="text"
-              id="fullName"
+              id="displayName"
               placeholder={t('full_name_placeholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               disabled={isLoading}
             />
-            {errors.fullName && (
-              <p className="mt-1 text-sm text-red-600">{errors.fullName.message}</p>
+            {errors.displayName && (
+              <p className="mt-1 text-sm text-red-600">{errors.displayName.message}</p>
             )}
           </div>
 
@@ -129,45 +127,6 @@ export function UserProfileForm() {
             />
             {errors.avatarUrl && (
               <p className="mt-1 text-sm text-red-600">{errors.avatarUrl.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="locale" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('locale_label')}
-            </label>
-            <select
-              {...register('locale')}
-              id="locale"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              disabled={isLoading}
-            >
-              <option value="zh">{t('locale_zh')}</option>
-              <option value="en">{t('locale_en')}</option>
-            </select>
-            {errors.locale && (
-              <p className="mt-1 text-sm text-red-600">{errors.locale.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('timezone_label')}
-            </label>
-            <select
-              {...register('timezone')}
-              id="timezone"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              disabled={isLoading}
-            >
-              <option value="Asia/Shanghai">{t('timezone_shanghai')}</option>
-              <option value="America/New_York">{t('timezone_new_york')}</option>
-              <option value="Europe/London">{t('timezone_london')}</option>
-              <option value="Asia/Tokyo">{t('timezone_tokyo')}</option>
-              <option value="Australia/Sydney">{t('timezone_sydney')}</option>
-            </select>
-            {errors.timezone && (
-              <p className="mt-1 text-sm text-red-600">{errors.timezone.message}</p>
             )}
           </div>
 

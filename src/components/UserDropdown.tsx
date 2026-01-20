@@ -68,10 +68,6 @@ const UserDropdown = ({}: UserDropdownProps) => {
   const locale = useLocale();
   
   const [theme, setTheme] = useState<'system' | 'light' | 'dark'>(() => {
-    // Get theme from user preferences or localStorage
-    if (user?.preferences?.theme) {
-      return user.preferences.theme as 'system' | 'light' | 'dark';
-    }
     return (typeof window !== 'undefined' ? localStorage?.getItem('theme') : null) as 'system' | 'light' | 'dark' || 'system';
   });
 
@@ -122,7 +118,7 @@ const UserDropdown = ({}: UserDropdownProps) => {
     router.push(pathname, { locale: newLocale });
   };
 
-  const userDisplayName = user.profile?.fullName || user.email || 'User';
+  const userDisplayName = user.profile?.displayName || user.email || 'User';
   const userEmail = user.email || '';
 
   const getInitials = (name: string) => {

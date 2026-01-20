@@ -24,10 +24,10 @@ export const SignUpSchema = z.object({
   confirmPassword: z
     .string()
     .min(1, 'Please confirm your password'),
-  fullName: z
+  displayName: z
     .string()
-    .min(1, 'Full name is required')
-    .min(2, 'Full name must be at least 2 characters'),
+    .min(1, 'Display name is required')
+    .min(2, 'Display name must be at least 2 characters'),
   acceptTerms: z
     .boolean()
     .refine(val => val === true, 'You must accept the terms and conditions'),
@@ -44,7 +44,7 @@ export const ResetPasswordSchema = z.object({
 });
 
 export const UpdateProfileSchema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters').optional(),
+  displayName: z.string().min(2, 'Display name must be at least 2 characters').optional(),
   avatarUrl: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   locale: z.enum(['zh', 'en']).optional(),
   timezone: z.string().optional(),

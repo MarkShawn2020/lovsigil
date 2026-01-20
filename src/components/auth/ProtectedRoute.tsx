@@ -9,16 +9,16 @@ type ProtectedRouteProps = {
   children: React.ReactNode;
   fallback?: React.ReactNode;
   redirectTo?: string;
-  requireOnboarding?: boolean;
+  requireAdmin?: boolean;
 };
 
 export function ProtectedRoute({
   children,
   fallback,
   redirectTo = '/sign-in',
-  requireOnboarding = false,
+  requireAdmin = false,
 }: ProtectedRouteProps) {
-  const { loading, isAuthenticated, profile } = useAuthUser();
+  const { loading, isAuthenticated, isAdmin } = useAuthUser();
   const router = useRouter();
   const t = useTranslations('Auth');
 
@@ -40,9 +40,9 @@ export function ProtectedRoute({
     return null;
   }
 
-  // Check onboarding requirement
-  if (requireOnboarding && profile && !profile.onboardingCompleted) {
-    router.push('/onboarding');
+  // Check admin requirement
+  if (requireAdmin && !isAdmin) {
+    router.push('/dashboard');
     return null;
   }
 

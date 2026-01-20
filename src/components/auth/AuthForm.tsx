@@ -129,7 +129,7 @@ export function AuthForm({
         }
       } else {
         const signUpData = data as SignUpFormData;
-        const result = await signUp(signUpData.email, signUpData.password, signUpData.fullName, {
+        const result = await signUp(signUpData.email, signUpData.password, signUpData.displayName, {
           redirectTo: redirectTo || `${window.location.origin}/dashboard`,
         });
         if (result.error) {
@@ -195,10 +195,10 @@ export function AuthForm({
         {/* 注册：姓名 */}
         {!isSignIn && (
           <ProfessionalInput
-            name="fullName"
+            name="displayName"
             type="text"
             label={t('full_name_label')}
-            error={(errors as any).fullName?.message}
+            error={(errors as any).displayName?.message}
             register={register}
             setValue={setValue}
             leftIcon={Icons.user}

@@ -48,7 +48,7 @@ export function DashboardOverview() {
       {/* Welcome Section */}
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground font-serif">
-          {t('welcome', { name: user?.profile?.fullName || user?.email?.split('@')[0] || 'User' })}
+          {t('welcome', { name: user?.profile?.displayName || user?.email?.split('@')[0] || 'User' })}
         </h1>
         <p className="text-muted-foreground">
           {t('welcome_subtitle')}
