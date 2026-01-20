@@ -19,6 +19,7 @@ if (typeof window !== 'undefined') {
 import { matchSpiritByExpression, SPIRIT_INFO } from './facsAnalyzer'
 import { PersonTracker } from './personTracker'
 import type { TrackedPerson } from './personTracker'
+import { LANNA_SPIRITS } from './spiritData'
 import type { LannaSpirit } from './types'
 
 // 守护灵顺序（用于渲染）
@@ -370,54 +371,6 @@ export function LannaMirror() {
     animationRef.current = requestAnimationFrame(renderLoop)
   }, [])
 
-  // 点击处理 - 根据点击位置选择人并匹配守护灵
-  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
-    if (!canvas || state !== 'attract')
-      return
-
-    const persons = personTrackerRef.current.getPersons()
-    if (persons.length === 0)
-      return
-
-    // 计算点击位置（归一化）
-    const rect = canvas.getBoundingClientRect()
-    const clickX = (e.clientX - rect.left) / rect.width
-    const clickY = (e.clientY - rect.top) / rect.height
-
-    // 找到点击位置最近的人，或使用主要人物
-    let targetPerson: TrackedPerson | null = null
-
-    if (persons.length === 1) {
-      targetPerson = persons[0]!
-    }
-    else {
-      // 多人时，找点击位置最近的
-      targetPerson = personTrackerRef.current.findPersonNearPosition(clickX, clickY)
-      if (!targetPerson) {
-        // 如果点击位置没有人，使用最大的人
-        targetPerson = personTrackerRef.current.getPrimaryPerson()
-      }
-    }
-
-    if (!targetPerson || targetPerson.accumulator.getSampleCount() < 10) {
-      return // 数据不足
-    }
-
-    // 保存当前画面
-    const photo = canvas.toDataURL('image/jpeg', 0.9)
-    setCapturedPhoto(photo)
-    setSelectedPersonId(targetPerson.id)
-
-    // 基于该人的累积表情数据匹配守护灵
-    const spirit = matchSpiritByExpression(targetPerson.accumulator)
-    setMatchedSpirit(spirit)
-
-    // 停止渲染循环
-    cancelAnimationFrame(animationRef.current)
-    setState('result')
-  }, [state])
-
   // 重新开始
   const restart = useCallback(() => {
     setCapturedPhoto(null)
@@ -462,6 +415,35 @@ export function LannaMirror() {
       setGenerateError(err instanceof Error ? err.message : 'Generation failed')
     }
   }, [matchedSpirit, capturedPhoto])
+
+  // 从 attract 状态直接生成某人的守护灵画像
+  const handleGenerateForPerson = useCallback(async (person: TrackedPerson) => {
+    const spirit = LANNA_SPIRITS.find(s => s.id === person.dominantSpirit)
+    if (!spirit) return
+
+    const photo = headThumbnails[person.id] || null
+    setMatchedSpirit(spirit)
+    setCapturedPhoto(photo)
+    setState('generate')
+    setGenerateError(null)
+
+    try {
+      const response = await fetch('/api/generate-spirit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spirit, userPhoto: photo }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Generation failed')
+      }
+      setGeneratedImage(data.image)
+      setState('result')
+    } catch (err) {
+      console.error('Generation error:', err)
+      setGenerateError(err instanceof Error ? err.message : 'Generation failed')
+    }
+  }, [headThumbnails])
 
   // 下载图片
   const downloadImage = useCallback(() => {
@@ -558,11 +540,6 @@ export function LannaMirror() {
                 </div>
               ) : (
                 <>
-                  {/* 提示 */}
-                  <p className="text-[#D4AF37] text-sm mb-4 animate-pulse">
-                    {personCount > 1 ? '点击镜中人物，照见守护灵' : '点击镜子，照见你的守护灵'}
-                  </p>
-
                   {/* 守护灵面板 */}
                   <div className="space-y-3">
                     {trackedPersons.map((person) => {
@@ -603,34 +580,43 @@ export function LannaMirror() {
                             </div>
                           </div>
 
-                        {/* 守护灵亲和度条形图 */}
+                        {/* 守护灵亲和度条形图 - 按分数倒序 */}
                         <div className="space-y-1.5">
-                          {SPIRIT_ORDER.map((spiritId) => {
-                            const info = SPIRIT_INFO[spiritId]
-                            const score = person.spiritScores[spiritId]
-                            const isDominant = spiritId === person.dominantSpirit
+                          {Object.entries(person.spiritScores)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([spiritId, score]) => {
+                              const info = SPIRIT_INFO[spiritId as keyof typeof SPIRIT_INFO]
+                              const isDominant = spiritId === person.dominantSpirit
 
-                            return (
-                              <div key={spiritId} className="flex items-center gap-2">
-                                <span className="w-5 text-center text-sm">{info.emoji}</span>
-                                <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full transition-all duration-300"
-                                    style={{
-                                      width: `${score * 100}%`,
-                                      backgroundColor: isDominant ? info.color : `${info.color}66`,
-                                    }}
-                                  />
+                              return (
+                                <div key={spiritId} className="flex items-center gap-2">
+                                  <span className="w-5 text-center text-sm">{info.emoji}</span>
+                                  <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full"
+                                      style={{
+                                        width: `${score * 100}%`,
+                                        backgroundColor: isDominant ? info.color : `${info.color}66`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={`w-9 text-right text-xs ${isDominant ? 'text-white font-bold' : 'text-white/40'}`}
+                                  >
+                                    {Math.round(score * 100)}%
+                                  </span>
                                 </div>
-                                <span
-                                  className={`w-9 text-right text-xs ${isDominant ? 'text-white font-bold' : 'text-white/40'}`}
-                                >
-                                  {Math.round(score * 100)}%
-                                </span>
-                              </div>
-                            )
-                          })}
+                              )
+                            })}
                         </div>
+
+                        {/* 生成守护灵画像按钮 */}
+                        <Button
+                          onClick={() => handleGenerateForPerson(person)}
+                          className="w-full mt-3"
+                        >
+                          ✨ 生成守护灵画像
+                        </Button>
                       </div>
                       )
                     })}
@@ -759,8 +745,7 @@ export function LannaMirror() {
         {/* 主画布 */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 h-full w-full object-cover cursor-pointer"
-          onClick={handleCanvasClick}
+          className="absolute inset-0 h-full w-full object-cover"
         />
 
         {/* 覆盖层画布 - 显示每人的编号 */}

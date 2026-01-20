@@ -174,8 +174,8 @@ export class PersonTracker {
       this.persons.delete(id)
     }
 
-    // 5. 返回当前追踪的所有人
-    return Array.from(this.persons.values())
+    // 5. 返回当前追踪的所有人（浅拷贝以触发 React 更新）
+    return Array.from(this.persons.values()).map(p => ({ ...p }))
   }
 
   // 获取所有当前追踪的人
