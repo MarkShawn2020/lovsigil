@@ -1,5 +1,5 @@
 import { LannaMirror } from '@/components/mirror/LannaMirror'
 
-export default function MirrorPage() {
+export default function HomePage() {
   return <LannaMirror />
 }
