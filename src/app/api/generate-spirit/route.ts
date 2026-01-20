@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 
+import { supabaseServer } from '@/libs/SupabaseServer'
 import { buildLannaSpiritPrompt, generateImage } from '@/libs/ZenMux'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { spirit, userPhoto } = body
+    const { spirit, userPhoto, spiritScores } = body
 
     if (!spirit) {
       return NextResponse.json(
@@ -26,6 +27,16 @@ export async function POST(request: Request) {
 
     // 调用 ZenMux 生成图像
     const generatedImage = await generateImage(prompt)
+
+    // 保存生成记录到数据库
+    await supabaseServer.from('spirit_generations').insert({
+      spirit_id: spirit.id,
+      spirit_name: spirit.name,
+      user_photo: userPhoto || null,
+      generated_image: generatedImage,
+      prompt,
+      spirit_scores: spiritScores || null,
+    })
 
     return NextResponse.json({
       success: true,

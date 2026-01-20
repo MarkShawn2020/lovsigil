@@ -66,6 +66,16 @@ export function LannaMirror() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [generateError, setGenerateError] = useState<string | null>(null)
 
+  // 历史记录状态
+  const [historyRecords, setHistoryRecords] = useState<Array<{
+    id: number
+    spiritId: string
+    spiritName: string | null
+    generatedImage: string
+    createdAt: string
+  }>>([])
+  const [showHistory, setShowHistory] = useState(false)
+
   // 初始化摄像头
   const initCamera = useCallback(async () => {
     try {
@@ -416,6 +426,19 @@ export function LannaMirror() {
     }
   }, [matchedSpirit, capturedPhoto])
 
+  // 获取历史记录
+  const fetchHistory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/spirit-history?limit=20')
+      const data = await res.json()
+      if (data.records) {
+        setHistoryRecords(data.records)
+      }
+    } catch (err) {
+      console.error('Failed to fetch history:', err)
+    }
+  }, [])
+
   // 从 attract 状态直接生成某人的守护灵画像
   const handleGenerateForPerson = useCallback(async (person: TrackedPerson) => {
     const spirit = LANNA_SPIRITS.find(s => s.id === person.dominantSpirit)
@@ -431,7 +454,11 @@ export function LannaMirror() {
       const response = await fetch('/api/generate-spirit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spirit, userPhoto: photo }),
+        body: JSON.stringify({
+          spirit,
+          userPhoto: photo,
+          spiritScores: person.spiritScores,
+        }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -439,11 +466,12 @@ export function LannaMirror() {
       }
       setGeneratedImage(data.image)
       setState('result')
+      fetchHistory() // 刷新历史记录
     } catch (err) {
       console.error('Generation error:', err)
       setGenerateError(err instanceof Error ? err.message : 'Generation failed')
     }
-  }, [headThumbnails])
+  }, [headThumbnails, fetchHistory])
 
   // 下载图片
   const downloadImage = useCallback(() => {
@@ -462,6 +490,7 @@ export function LannaMirror() {
   useEffect(() => {
     initCamera()
     initMediaPipe()
+    fetchHistory()
 
     return () => {
       cancelAnimationFrame(animationRef.current)
@@ -470,7 +499,7 @@ export function LannaMirror() {
         tracks.forEach(track => track.stop())
       }
     }
-  }, [initCamera, initMediaPipe])
+  }, [initCamera, initMediaPipe, fetchHistory])
 
   // 开始渲染循环
   useEffect(() => {
@@ -782,6 +811,46 @@ export function LannaMirror() {
                 </>
               )}
             </div>
+          )}
+        </div>
+
+        {/* 历史记录面板 */}
+        <div className="border-t border-[#D4AF37]/20">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full p-3 flex items-center justify-between text-white/60 hover:text-white/80 transition-colors"
+          >
+            <span className="text-sm">ประวัติ / History ({historyRecords.length})</span>
+            <span className="text-xs">{showHistory ? '▼' : '▶'}</span>
+          </button>
+          {showHistory && historyRecords.length > 0 && (
+            <div className="px-3 pb-3 grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+              {historyRecords.map((record) => {
+                const info = SPIRIT_INFO[record.spiritId as keyof typeof SPIRIT_INFO]
+                return (
+                  <div
+                    key={record.id}
+                    className="relative group cursor-pointer"
+                    onClick={() => window.open(record.generatedImage, '_blank')}
+                  >
+                    <img
+                      src={record.generatedImage}
+                      alt={record.spiritName || record.spiritId}
+                      className="w-full aspect-square object-cover rounded border border-white/10 group-hover:border-[#D4AF37]/50 transition-colors"
+                    />
+                    <div
+                      className="absolute bottom-0 left-0 right-0 text-center text-xs py-0.5 bg-black/60"
+                      style={{ color: info?.color || '#D4AF37' }}
+                    >
+                      {info?.emoji}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {showHistory && historyRecords.length === 0 && (
+            <p className="px-3 pb-3 text-white/30 text-xs text-center">ยังไม่มีประวัติ / No history yet</p>
           )}
         </div>
 

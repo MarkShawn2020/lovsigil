@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, serial, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, pgTable, serial, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 // This file defines the structure of your database tables using the Drizzle ORM.
 
@@ -69,5 +69,18 @@ export const userSubscriptions = pgTable('user_subscriptions', {
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+});
+
+// Spirit generation records - stores each mirror generation
+export const spiritGenerations = pgTable('spirit_generations', {
+  id: serial('id').primaryKey(),
+  spiritId: varchar('spirit_id', { length: 20 }).notNull(), // naga, singha, hong, chang, garuda
+  spiritName: varchar('spirit_name', { length: 100 }),
+  userPhoto: text('user_photo'), // base64 thumbnail
+  generatedImage: text('generated_image').notNull(), // base64 result
+  prompt: text('prompt'),
+  spiritScores: jsonb('spirit_scores'), // { naga: 0.8, singha: 0.6, ... }
+  metadata: jsonb('metadata'), // additional data
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 });
