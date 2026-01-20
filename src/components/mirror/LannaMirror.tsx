@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { getEnergyColor, labelConnectedComponents, matchSpirit, QUESTIONS } from './spiritData'
+import type { LannaSpirit } from './types'
 
 // 兰纳主色调
 const LANNA_PRIMARY = [204, 120, 92] // 陶土色 #CC785C
-const LANNA_GOLD = [212, 175, 55] // 金色
 
 type MirrorState = 'attract' | 'interact' | 'generate' | 'result'
 
@@ -18,6 +19,16 @@ export function LannaMirror() {
   const [error, setError] = useState<string | null>(null)
   const animationRef = useRef<number>(0)
   const segmenterRef = useRef<any>(null)
+
+  // 问答相关状态
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [matchedSpirit, setMatchedSpirit] = useState<LannaSpirit | null>(null)
+
+  // 生成相关状态
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null)
+  const [generateError, setGenerateError] = useState<string | null>(null)
 
   // 初始化摄像头
   const initCamera = useCallback(async () => {
@@ -99,6 +110,20 @@ export function LannaMirror() {
       const imageData = ctx.getImageData(0, 0, width, height)
       const data = imageData.data
 
+      // 连通组件分析 - 识别不同的人
+      const { labels, components } = labelConnectedComponents(mask, width, height)
+
+      // 为每个组件计算能量颜色（加入时间脉动）
+      const timestamp = performance.now()
+      const componentColors = new Map<number, [number, number, number]>()
+      for (const comp of components) {
+        // 基于位置的基础能量 + 时间脉动
+        const pulsePhase = (timestamp / 4000) * Math.PI * 2 // 4秒周期
+        const pulse = Math.sin(pulsePhase + comp.id * 1.5) * 50 // 每个组件相位不同
+        const energyLevel = Math.max(150, Math.min(650, comp.energyLevel + pulse))
+        componentColors.set(comp.id, getEnergyColor(energyLevel))
+      }
+
       // 创建输出 imageData（镜像后的）
       const outputData = ctx.createImageData(width, height)
       const output = outputData.data
@@ -113,11 +138,11 @@ export function LannaMirror() {
           const srcPixel = srcIndex * 4
           const dstPixel = dstIndex * 4
 
-          const r = data[srcPixel]
-          const g = data[srcPixel + 1]
-          const b = data[srcPixel + 2]
+          const r = data[srcPixel] ?? 0
+          const g = data[srcPixel + 1] ?? 0
+          const b = data[srcPixel + 2] ?? 0
 
-          if (mask[srcIndex] > 0) {
+          if (labels[srcIndex] !== undefined && labels[srcIndex] >= 0) {
             // 人像区域 - 保留原色，轻微暖色调提亮
             output[dstPixel] = Math.min(255, Math.round(r * 1.1 + 15))
             output[dstPixel + 1] = Math.min(255, Math.round(g * 1.05 + 10))
@@ -134,30 +159,34 @@ export function LannaMirror() {
         }
       }
 
-      // 第二遍：检测边缘并添加金色发光
-      const edgeGlow = 3 // 发光半径
+      // 第二遍：检测边缘并添加基于组件的能量发光
+      const edgeGlow = 3
       for (let y = edgeGlow; y < height - edgeGlow; y++) {
         for (let x = edgeGlow; x < width - edgeGlow; x++) {
           const srcIndex = y * width + x
-          if (mask[srcIndex] === 0)
+          const componentId = labels[srcIndex]
+          if (componentId === undefined || componentId < 0)
             continue
 
-          // 检查是否是边缘（相邻有背景像素）
           let isEdge = false
           for (let dy = -1; dy <= 1 && !isEdge; dy++) {
             for (let dx = -1; dx <= 1 && !isEdge; dx++) {
               if (dx === 0 && dy === 0)
                 continue
               const neighborIndex = (y + dy) * width + (x + dx)
-              if (mask[neighborIndex] === 0) {
+              const neighborLabel = labels[neighborIndex]
+              // 边缘：邻居是背景或不同组件
+              if (neighborLabel === undefined || neighborLabel < 0 || neighborLabel !== componentId) {
                 isEdge = true
               }
             }
           }
 
           if (isEdge) {
-            // 在镜像后的位置添加金色发光
             const mirrorX = width - 1 - x
+            // 获取该组件的能量颜色
+            const glowColor = componentColors.get(componentId) ?? [212, 175, 55]
+
             for (let gy = -edgeGlow; gy <= edgeGlow; gy++) {
               for (let gx = -edgeGlow; gx <= edgeGlow; gx++) {
                 const dist = Math.sqrt(gx * gx + gy * gy)
@@ -170,11 +199,11 @@ export function LannaMirror() {
                   continue
 
                 const glowIndex = (glowY * width + glowX) * 4
-                const intensity = (1 - dist / edgeGlow) * 0.6
+                const intensity = (1 - dist / edgeGlow) * 0.7
 
-                output[glowIndex] = Math.min(255, output[glowIndex] + LANNA_GOLD[0] * intensity)
-                output[glowIndex + 1] = Math.min(255, output[glowIndex + 1] + LANNA_GOLD[1] * intensity)
-                output[glowIndex + 2] = Math.min(255, output[glowIndex + 2] + LANNA_GOLD[2] * intensity * 0.3)
+                output[glowIndex] = Math.min(255, (output[glowIndex] ?? 0) + glowColor[0] * intensity)
+                output[glowIndex + 1] = Math.min(255, (output[glowIndex + 1] ?? 0) + glowColor[1] * intensity)
+                output[glowIndex + 2] = Math.min(255, (output[glowIndex + 2] ?? 0) + glowColor[2] * intensity)
               }
             }
           }
@@ -195,11 +224,98 @@ export function LannaMirror() {
     animationRef.current = requestAnimationFrame(renderLoop)
   }, [])
 
-  // 拍照进入交互模式
+  // 拍照并进入问答
   const captureAndInteract = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas)
+      return
+
+    // 保存当前画面
+    const photo = canvas.toDataURL('image/jpeg', 0.9)
+    setCapturedPhoto(photo)
+
+    // 重置问答状态
+    setCurrentQuestionIndex(0)
+    setAnswers({})
+    setMatchedSpirit(null)
+
     setState('interact')
     cancelAnimationFrame(animationRef.current)
   }, [])
+
+  // 回答问题
+  const handleAnswer = useCallback((questionId: string, optionId: string) => {
+    const newAnswers = { ...answers, [questionId]: optionId }
+    setAnswers(newAnswers)
+
+    if (currentQuestionIndex < QUESTIONS.length - 1) {
+      // 下一题
+      setCurrentQuestionIndex(prev => prev + 1)
+    }
+    else {
+      // 问答完成，计算匹配结果
+      const spirit = matchSpirit(newAnswers)
+      setMatchedSpirit(spirit)
+      setState('result')
+    }
+  }, [answers, currentQuestionIndex])
+
+  // 重新开始
+  const restart = useCallback(() => {
+    setCapturedPhoto(null)
+    setCurrentQuestionIndex(0)
+    setAnswers({})
+    setMatchedSpirit(null)
+    setGeneratedImage(null)
+    setGenerateError(null)
+    setState('attract')
+  }, [])
+
+  // 生成灵魂画像
+  const generateSpiritImage = useCallback(async () => {
+    if (!matchedSpirit)
+      return
+
+    setState('generate')
+    setGenerateError(null)
+
+    try {
+      const response = await fetch('/api/generate-spirit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          spirit: matchedSpirit,
+          userPhoto: capturedPhoto,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Generation failed')
+      }
+
+      setGeneratedImage(data.image)
+      setState('result')
+    }
+    catch (err) {
+      console.error('Generation error:', err)
+      setGenerateError(err instanceof Error ? err.message : 'Generation failed')
+    }
+  }, [matchedSpirit, capturedPhoto])
+
+  // 下载图片
+  const downloadImage = useCallback(() => {
+    if (!generatedImage || !matchedSpirit)
+      return
+
+    const link = document.createElement('a')
+    link.href = generatedImage
+    link.download = `lanna-spirit-${matchedSpirit.id}-${Date.now()}.png`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }, [generatedImage, matchedSpirit])
 
   // 初始化
   useEffect(() => {
@@ -236,6 +352,8 @@ export function LannaMirror() {
     )
   }
 
+  const currentQuestion = QUESTIONS[currentQuestionIndex]
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
       {/* 隐藏的视频元素 */}
@@ -250,7 +368,7 @@ export function LannaMirror() {
       <canvas
         ref={canvasRef}
         className="h-full w-full object-contain"
-        onClick={captureAndInteract}
+        onClick={state === 'attract' ? captureAndInteract : undefined}
       />
 
       {/* 加载状态 */}
@@ -272,20 +390,52 @@ export function LannaMirror() {
         </div>
       )}
 
-      {/* 交互模式 - 问答 */}
-      {state === 'interact' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-          <div className="bg-card p-8 rounded-lg max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-center mb-6" style={{ color: '#CC785C' }}>
-              回答几个问题，找到你的守护灵
+      {/* 问答模式 */}
+      {state === 'interact' && currentQuestion && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+          <div className="bg-card/95 backdrop-blur p-8 rounded-2xl max-w-lg w-full mx-4 shadow-2xl">
+            {/* 进度指示 */}
+            <div className="flex justify-center gap-2 mb-6">
+              {QUESTIONS.map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    i < currentQuestionIndex
+                      ? 'bg-[#CC785C]'
+                      : i === currentQuestionIndex
+                        ? 'bg-[#D4AF37]'
+                        : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* 问题 */}
+            <h2
+              className="text-2xl font-bold text-center mb-8"
+              style={{ color: '#CC785C' }}
+            >
+              {currentQuestion.text}
             </h2>
-            <p className="text-muted-foreground text-center mb-8">
-              （问答功能开发中...）
-            </p>
+
+            {/* 选项 */}
+            <div className="space-y-3">
+              {currentQuestion.options.map(option => (
+                <button
+                  key={option.id}
+                  onClick={() => handleAnswer(currentQuestion.id, option.id)}
+                  className="w-full p-4 text-left rounded-xl border-2 border-[#CC785C]/30 hover:border-[#CC785C] hover:bg-[#CC785C]/10 transition-all duration-200 text-lg"
+                >
+                  {option.text}
+                </button>
+              ))}
+            </div>
+
+            {/* 返回按钮 */}
             <Button
-              onClick={() => setState('attract')}
-              variant="outline"
-              className="w-full"
+              onClick={restart}
+              variant="ghost"
+              className="w-full mt-6 text-muted-foreground"
             >
               返回镜子
             </Button>
@@ -293,8 +443,132 @@ export function LannaMirror() {
         </div>
       )}
 
+      {/* 结果展示 */}
+      {state === 'result' && matchedSpirit && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+          <div className="bg-card/95 backdrop-blur p-8 rounded-2xl max-w-lg w-full mx-4 shadow-2xl text-center">
+            {/* 守护灵名称 */}
+            <div
+              className="text-5xl font-bold mb-2"
+              style={{ color: matchedSpirit.color }}
+            >
+              {matchedSpirit.nameCn}
+            </div>
+            <div className="text-2xl text-muted-foreground mb-1">
+              {matchedSpirit.name}
+            </div>
+            <div className="text-lg text-muted-foreground/70 mb-6">
+              {matchedSpirit.nameEn}
+            </div>
+
+            {/* 描述 */}
+            <p className="text-lg leading-relaxed mb-6">
+              {matchedSpirit.description}
+            </p>
+
+            {/* 特质标签 */}
+            <div className="flex flex-wrap justify-center gap-2 mb-8">
+              {matchedSpirit.traits.map(trait => (
+                <span
+                  key={trait}
+                  className="px-4 py-1 rounded-full text-sm font-medium"
+                  style={{
+                    backgroundColor: `${matchedSpirit.color}20`,
+                    color: matchedSpirit.color,
+                  }}
+                >
+                  {trait}
+                </span>
+              ))}
+            </div>
+
+            {/* 生成的画像或拍摄的照片 */}
+            <div className="mb-6">
+              {generatedImage
+                ? (
+                    <img
+                      src={generatedImage}
+                      alt="Your Lanna Spirit"
+                      className="w-64 h-auto mx-auto rounded-lg border-4 shadow-lg"
+                      style={{ borderColor: matchedSpirit.color }}
+                    />
+                  )
+                : capturedPhoto && (
+                    <img
+                      src={capturedPhoto}
+                      alt="Your photo"
+                      className="w-48 h-auto mx-auto rounded-lg border-4 opacity-80"
+                      style={{ borderColor: matchedSpirit.color }}
+                    />
+                  )}
+            </div>
+
+            {/* 操作按钮 */}
+            <div className="flex gap-4">
+              <Button
+                onClick={restart}
+                variant="outline"
+                className="flex-1"
+              >
+                重新测试
+              </Button>
+              {generatedImage
+                ? (
+                    <Button
+                      onClick={downloadImage}
+                      className="flex-1"
+                      style={{ backgroundColor: matchedSpirit.color }}
+                    >
+                      下载画像
+                    </Button>
+                  )
+                : (
+                    <Button
+                      onClick={generateSpiritImage}
+                      className="flex-1"
+                      style={{ backgroundColor: matchedSpirit.color }}
+                    >
+                      生成灵魂画像
+                    </Button>
+                  )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 生成中状态 */}
+      {state === 'generate' && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+          <div className="text-center text-white max-w-md mx-4">
+            {generateError
+              ? (
+                  <>
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <p className="text-xl text-red-400 mb-2">生成失败</p>
+                    <p className="text-sm text-white/60 mb-6">{generateError}</p>
+                    <div className="flex gap-4 justify-center">
+                      <Button onClick={restart} variant="outline">
+                        重新开始
+                      </Button>
+                      <Button onClick={generateSpiritImage} style={{ backgroundColor: '#CC785C' }}>
+                        重试
+                      </Button>
+                    </div>
+                  </>
+                )
+              : (
+                  <>
+                    <div className="mb-4 h-16 w-16 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent mx-auto" />
+                    <p className="text-xl">正在生成你的兰纳灵魂画像...</p>
+                    <p className="text-sm text-white/60 mt-2">这可能需要 10-30 秒</p>
+                  </>
+                )}
+          </div>
+        </div>
+      )}
+
       {/* 标题 */}
-      <div className="absolute top-8 left-0 right-0 text-center">
+      <div className="absolute top-8 left-0 right-0 text-center pointer-events-none">
         <h1
           className="text-4xl font-bold tracking-widest"
           style={{ color: '#CC785C', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
