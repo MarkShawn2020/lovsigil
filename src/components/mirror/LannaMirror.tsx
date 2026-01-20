@@ -470,240 +470,246 @@ export function LannaMirror() {
   const hasPersons = personCount > 0
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-black">
-      {/* 镜子区域 */}
-      <div className="relative flex-1 min-h-0 overflow-hidden">
-        {/* 隐藏的视频元素 */}
-        <video
-          ref={videoRef}
-          className="hidden"
-          playsInline
-          muted
-        />
+    <div className="flex h-screen w-screen overflow-hidden bg-black">
+      {/* 隐藏的视频元素 */}
+      <video
+        ref={videoRef}
+        className="hidden"
+        playsInline
+        muted
+      />
 
+      {/* 左侧面板 */}
+      <div className="w-80 shrink-0 flex flex-col bg-black/95 border-r border-[#D4AF37]/30 overflow-y-auto">
+        {/* 标题区域 */}
+        <div className="p-6 border-b border-[#D4AF37]/20">
+          <h1
+            className="text-2xl font-bold tracking-widest"
+            style={{ color: '#CC785C' }}
+          >
+            兰纳照妖镜
+          </h1>
+          <p className="text-white/50 mt-1 text-sm">Lanna Spirit Mirror</p>
+        </div>
+
+        {/* 主内容区 */}
+        <div className="flex-1 p-4">
+          {/* 加载状态 */}
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-12 text-white">
+              <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-sm text-white/60">正在加载 AI 模型...</p>
+            </div>
+          )}
+
+          {/* 吸引模式 - 等待或显示守护灵面板 */}
+          {state === 'attract' && !isLoading && (
+            <>
+              {!hasPersons ? (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">🪞</div>
+                  <p className="text-white/40 text-sm">请走近镜子...</p>
+                  <p className="text-white/30 text-xs mt-2">系统将自动识别你的面部表情</p>
+                </div>
+              ) : (
+                <>
+                  {/* 提示 */}
+                  <p className="text-[#D4AF37] text-sm mb-4 animate-pulse">
+                    {personCount > 1 ? '点击镜中人物，照见守护灵' : '点击镜子，照见你的守护灵'}
+                  </p>
+
+                  {/* 守护灵面板 */}
+                  <div className="space-y-3">
+                    {trackedPersons.map((person, index) => (
+                      <div
+                        key={person.id}
+                        className="bg-black/50 rounded-lg p-3 border border-[#D4AF37]/20"
+                      >
+                        {/* 头部：编号 + 主导守护灵 */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="w-6 h-6 rounded-full bg-[#CC785C] flex items-center justify-center text-white text-xs font-bold">
+                            {index + 1}
+                          </span>
+                          <span className="text-lg">
+                            {SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]?.emoji}
+                          </span>
+                          <span className="text-white/70 text-sm">
+                            {SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]?.name}
+                          </span>
+                        </div>
+
+                        {/* 守护灵亲和度条形图 */}
+                        <div className="space-y-1.5">
+                          {SPIRIT_ORDER.map((spiritId) => {
+                            const info = SPIRIT_INFO[spiritId]
+                            const score = person.spiritScores[spiritId]
+                            const isDominant = spiritId === person.dominantSpirit
+
+                            return (
+                              <div key={spiritId} className="flex items-center gap-2">
+                                <span className="w-5 text-center text-sm">{info.emoji}</span>
+                                <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-300"
+                                    style={{
+                                      width: `${score * 100}%`,
+                                      backgroundColor: isDominant ? info.color : `${info.color}66`,
+                                    }}
+                                  />
+                                </div>
+                                <span
+                                  className={`w-9 text-right text-xs ${isDominant ? 'text-white font-bold' : 'text-white/40'}`}
+                                >
+                                  {Math.round(score * 100)}%
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {/* 结果展示 */}
+          {state === 'result' && matchedSpirit && (
+            <div className="space-y-4">
+              {/* 守护灵名称 */}
+              <div className="text-center">
+                <div
+                  className="text-3xl font-bold mb-1"
+                  style={{ color: matchedSpirit.color }}
+                >
+                  {matchedSpirit.nameCn}
+                </div>
+                <div className="text-lg text-white/60">
+                  {matchedSpirit.name}
+                </div>
+                <div className="text-sm text-white/40">
+                  {matchedSpirit.nameEn}
+                </div>
+              </div>
+
+              {/* 描述 */}
+              <p className="text-sm text-white/70 leading-relaxed">
+                {matchedSpirit.description}
+              </p>
+
+              {/* 特质标签 */}
+              <div className="flex flex-wrap gap-2">
+                {matchedSpirit.traits.map(trait => (
+                  <span
+                    key={trait}
+                    className="px-3 py-1 rounded-full text-xs font-medium"
+                    style={{
+                      backgroundColor: `${matchedSpirit.color}20`,
+                      color: matchedSpirit.color,
+                    }}
+                  >
+                    {trait}
+                  </span>
+                ))}
+              </div>
+
+              {/* 生成的画像缩略图 */}
+              {generatedImage && (
+                <img
+                  src={generatedImage}
+                  alt="Your Lanna Spirit"
+                  className="w-full rounded-lg border-2 shadow-lg"
+                  style={{ borderColor: matchedSpirit.color }}
+                />
+              )}
+
+              {/* 操作按钮 */}
+              <div className="space-y-2 pt-2">
+                {generatedImage ? (
+                  <Button
+                    onClick={downloadImage}
+                    className="w-full"
+                    style={{ backgroundColor: matchedSpirit.color }}
+                  >
+                    下载画像
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={generateSpiritImage}
+                    className="w-full"
+                    style={{ backgroundColor: matchedSpirit.color }}
+                  >
+                    生成灵魂画像
+                  </Button>
+                )}
+                <Button
+                  onClick={restart}
+                  variant="outline"
+                  className="w-full"
+                >
+                  重新测试
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* 生成中状态 */}
+          {state === 'generate' && (
+            <div className="text-center py-8">
+              {generateError ? (
+                <>
+                  <div className="text-4xl mb-4">⚠️</div>
+                  <p className="text-red-400 mb-2">生成失败</p>
+                  <p className="text-xs text-white/50 mb-4">{generateError}</p>
+                  <div className="space-y-2">
+                    <Button onClick={generateSpiritImage} size="sm" style={{ backgroundColor: '#CC785C' }}>
+                      重试
+                    </Button>
+                    <Button onClick={restart} variant="outline" size="sm" className="ml-2">
+                      重新开始
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent mx-auto" />
+                  <p className="text-white/80 text-sm">正在生成灵魂画像...</p>
+                  <p className="text-xs text-white/40 mt-1">约 10-30 秒</p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 底部信息 */}
+        <div className="p-4 border-t border-[#D4AF37]/20 text-center">
+          <p className="text-white/30 text-xs">基于 AI 面部表情分析</p>
+        </div>
+      </div>
+
+      {/* 右侧镜子区域 */}
+      <div className="flex-1 relative min-w-0 overflow-hidden">
         {/* 主画布 */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 h-full w-full object-contain"
+          className="absolute inset-0 h-full w-full object-cover cursor-pointer"
           onClick={handleCanvasClick}
         />
 
         {/* 覆盖层画布 - 显示每人的编号 */}
         <canvas
           ref={overlayCanvasRef}
-          className="absolute inset-0 h-full w-full object-contain pointer-events-none"
+          className="absolute inset-0 h-full w-full object-cover pointer-events-none"
         />
 
-        {/* 加载状态 */}
+        {/* 镜子加载占位 */}
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-            <div className="text-center text-white">
-              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-              <p>正在加载兰纳照妖镜...</p>
-            </div>
-          </div>
-        )}
-
-        {/* 标题 */}
-        <div className="absolute top-6 left-0 right-0 text-center pointer-events-none">
-          <h1
-            className="text-3xl font-bold tracking-widest"
-            style={{ color: '#CC785C', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
-          >
-            兰纳照妖镜
-          </h1>
-          <p className="text-white/60 mt-1 text-sm">Lanna Spirit Mirror</p>
-        </div>
-
-        {/* 吸引模式提示 */}
-        {state === 'attract' && !isLoading && (
-          <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
-            <p className={`text-xl font-light tracking-wider ${hasPersons ? 'text-[#D4AF37] animate-pulse' : 'text-white/40'}`}>
-              {hasPersons
-                ? personCount > 1
-                  ? '点击你想测试的人，照见守护灵'
-                  : '点击屏幕，照见你的兰纳守护灵'
-                : '请走近镜子...'}
-            </p>
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <div className="text-6xl animate-pulse">🪞</div>
           </div>
         )}
       </div>
-
-      {/* 底部 HUD 区域 - 镜子外面 */}
-      {state === 'attract' && !isLoading && hasPersons && (
-        <div className="shrink-0 h-28 bg-black/90 border-t border-[#D4AF37]/30 flex justify-center items-center gap-3 px-4 py-2">
-          {trackedPersons.map((person, index) => (
-            <div
-              key={person.id}
-              className="flex items-center gap-3 bg-black/50 rounded-lg px-3 py-2 border border-[#D4AF37]/20"
-            >
-              {/* 编号 + 主导守护灵 */}
-              <div className="flex flex-col items-center">
-                <span className="w-6 h-6 rounded-full bg-[#CC785C] flex items-center justify-center text-white text-xs font-bold">
-                  {index + 1}
-                </span>
-                <span className="text-lg mt-1">
-                  {SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]?.emoji}
-                </span>
-              </div>
-
-              {/* 守护灵亲和度条形图 - 水平紧凑布局 */}
-              <div className="flex flex-col gap-0.5">
-                {SPIRIT_ORDER.map((spiritId) => {
-                  const info = SPIRIT_INFO[spiritId]
-                  const score = person.spiritScores[spiritId]
-                  const isDominant = spiritId === person.dominantSpirit
-
-                  return (
-                    <div key={spiritId} className="flex items-center gap-1">
-                      <span className="w-4 text-center text-xs">{info.emoji}</span>
-                      <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${score * 100}%`,
-                            backgroundColor: isDominant ? info.color : `${info.color}66`,
-                          }}
-                        />
-                      </div>
-                      <span
-                        className={`w-7 text-right text-[10px] ${isDominant ? 'text-white font-bold' : 'text-white/40'}`}
-                      >
-                        {Math.round(score * 100)}%
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 结果展示 */}
-      {state === 'result' && matchedSpirit && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-          <div className="bg-card/95 backdrop-blur p-8 rounded-2xl max-w-lg w-full mx-4 shadow-2xl text-center">
-            {/* 守护灵名称 */}
-            <div
-              className="text-5xl font-bold mb-2"
-              style={{ color: matchedSpirit.color }}
-            >
-              {matchedSpirit.nameCn}
-            </div>
-            <div className="text-2xl text-muted-foreground mb-1">
-              {matchedSpirit.name}
-            </div>
-            <div className="text-lg text-muted-foreground/70 mb-6">
-              {matchedSpirit.nameEn}
-            </div>
-
-            {/* 描述 */}
-            <p className="text-lg leading-relaxed mb-6">
-              {matchedSpirit.description}
-            </p>
-
-            {/* 特质标签 */}
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
-              {matchedSpirit.traits.map(trait => (
-                <span
-                  key={trait}
-                  className="px-4 py-1 rounded-full text-sm font-medium"
-                  style={{
-                    backgroundColor: `${matchedSpirit.color}20`,
-                    color: matchedSpirit.color,
-                  }}
-                >
-                  {trait}
-                </span>
-              ))}
-            </div>
-
-            {/* 生成的画像或拍摄的照片 */}
-            <div className="mb-6">
-              {generatedImage
-                ? (
-                    <img
-                      src={generatedImage}
-                      alt="Your Lanna Spirit"
-                      className="w-64 h-auto mx-auto rounded-lg border-4 shadow-lg"
-                      style={{ borderColor: matchedSpirit.color }}
-                    />
-                  )
-                : capturedPhoto && (
-                    <img
-                      src={capturedPhoto}
-                      alt="Your photo"
-                      className="w-48 h-auto mx-auto rounded-lg border-4 opacity-80"
-                      style={{ borderColor: matchedSpirit.color }}
-                    />
-                  )}
-            </div>
-
-            {/* 操作按钮 */}
-            <div className="flex gap-4">
-              <Button
-                onClick={restart}
-                variant="outline"
-                className="flex-1"
-              >
-                重新测试
-              </Button>
-              {generatedImage
-                ? (
-                    <Button
-                      onClick={downloadImage}
-                      className="flex-1"
-                      style={{ backgroundColor: matchedSpirit.color }}
-                    >
-                      下载画像
-                    </Button>
-                  )
-                : (
-                    <Button
-                      onClick={generateSpiritImage}
-                      className="flex-1"
-                      style={{ backgroundColor: matchedSpirit.color }}
-                    >
-                      生成灵魂画像
-                    </Button>
-                  )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 生成中状态 */}
-      {state === 'generate' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-          <div className="text-center text-white max-w-md mx-4">
-            {generateError
-              ? (
-                  <>
-                    <div className="text-6xl mb-4">⚠️</div>
-                    <p className="text-xl text-red-400 mb-2">生成失败</p>
-                    <p className="text-sm text-white/60 mb-6">{generateError}</p>
-                    <div className="flex gap-4 justify-center">
-                      <Button onClick={restart} variant="outline">
-                        重新开始
-                      </Button>
-                      <Button onClick={generateSpiritImage} style={{ backgroundColor: '#CC785C' }}>
-                        重试
-                      </Button>
-                    </div>
-                  </>
-                )
-              : (
-                  <>
-                    <div className="mb-4 h-16 w-16 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent mx-auto" />
-                    <p className="text-xl">正在生成你的兰纳灵魂画像...</p>
-                    <p className="text-sm text-white/60 mt-2">这可能需要 10-30 秒</p>
-                  </>
-                )}
-          </div>
-        </div>
-      )}
-
     </div>
   )
 }
