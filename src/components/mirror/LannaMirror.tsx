@@ -669,14 +669,46 @@ export function LannaMirror() {
                 ))}
               </div>
 
-              {/* 生成的画像缩略图 */}
+              {/* 原始头像 vs 生成画像对比 */}
               {generatedImage && (
-                <img
-                  src={generatedImage}
-                  alt="Your Lanna Spirit"
-                  className="w-full rounded-lg border-2 shadow-lg"
-                  style={{ borderColor: matchedSpirit.color }}
-                />
+                <div className="space-y-2">
+                  <div className="flex gap-3 items-center justify-center">
+                    {/* 原始头像 */}
+                    {capturedPhoto && (
+                      <div className="text-center">
+                        <p className="text-white/40 text-xs mb-1">ต้นฉบับ</p>
+                        <div
+                          className="w-20 h-20 rounded-full overflow-hidden border-2"
+                          style={{
+                            borderColor: matchedSpirit.color,
+                            background: `radial-gradient(circle, ${matchedSpirit.color}40 0%, ${matchedSpirit.color}20 100%)`,
+                          }}
+                        >
+                          <img src={capturedPhoto} alt="Original" className="w-full h-full object-contain" />
+                        </div>
+                      </div>
+                    )}
+                    {/* 箭头 */}
+                    <div className="text-white/30 text-xl">→</div>
+                    {/* 生成结果缩略图 */}
+                    <div className="text-center">
+                      <p className="text-white/40 text-xs mb-1">วิญญาณ</p>
+                      <div
+                        className="w-20 h-20 rounded-full overflow-hidden border-2"
+                        style={{ borderColor: matchedSpirit.color }}
+                      >
+                        <img src={generatedImage} alt="Spirit" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* 完整生成画像 */}
+                  <img
+                    src={generatedImage}
+                    alt="Your Lanna Spirit"
+                    className="w-full rounded-lg border-2 shadow-lg"
+                    style={{ borderColor: matchedSpirit.color }}
+                  />
+                </div>
               )}
 
               {/* 操作按钮 */}
@@ -712,6 +744,21 @@ export function LannaMirror() {
           {/* 生成中状态 */}
           {state === 'generate' && (
             <div className="text-center py-8">
+              {/* 原始采集头像 */}
+              {capturedPhoto && matchedSpirit && (
+                <div className="mb-4">
+                  <p className="text-white/40 text-xs mb-2">ภาพต้นฉบับ / Original</p>
+                  <div
+                    className="w-24 h-24 mx-auto rounded-full overflow-hidden border-2"
+                    style={{
+                      borderColor: matchedSpirit.color,
+                      background: `radial-gradient(circle, ${matchedSpirit.color}40 0%, ${matchedSpirit.color}20 100%)`,
+                    }}
+                  >
+                    <img src={capturedPhoto} alt="Original" className="w-full h-full object-contain" />
+                  </div>
+                </div>
+              )}
               {generateError ? (
                 <>
                   <div className="text-4xl mb-4">⚠️</div>
