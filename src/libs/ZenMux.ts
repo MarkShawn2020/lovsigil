@@ -91,20 +91,28 @@ export function buildLannaSpiritPrompt(params: {
 }): string {
   const { spiritName, spiritNameEn, element, traits, basePrompt, hasReferenceImage } = params
 
-  // 当有参考图像时，强调保持人物相似性
+  // 当有参考图像时，强调保持人物相似性和年轻化
   const referenceInstruction = hasReferenceImage
-    ? `CRITICAL: The attached reference image shows the person to be portrayed. You MUST:
-- Preserve the person's facial features (eyes, nose, mouth shape, face contour)
-- Keep their skin tone and general appearance recognizable
-- Transform them into a spirit guardian while maintaining their identity
-- The viewer should immediately recognize this as the same person in spirit form
+    ? `CRITICAL REQUIREMENTS for the person in reference image:
+- Preserve EXACT facial features (eyes, nose, mouth shape, face contour)
+- Keep their YOUTHFUL appearance - do NOT age them, make them look the same age or slightly younger
+- Maintain smooth, healthy skin - avoid wrinkles or aged appearance
+- The person should look vibrant and full of life
 
 `
     : ''
 
   const prompt = `${referenceInstruction}Create a mystical portrait artwork in traditional Lanna (Northern Thai) art style.
 
-Subject: ${hasReferenceImage ? 'Transform the person in the reference image into' : 'A person embodied with'} the spirit of ${spiritNameEn} (${spiritName}), the ${element} element guardian.
+COMPOSITION (TWO SEPARATE ENTITIES):
+- The HUMAN: ${hasReferenceImage ? 'The person from the reference image' : 'A young person'}, depicted realistically with youthful features
+- The SPIRIT: ${spiritNameEn} (${spiritName}), a mystical ${element} element guardian spirit
+
+IMPORTANT: The human and the spirit guardian must be SEPARATE entities in the image:
+- The spirit appears BEHIND or BESIDE the person as a protective guardian
+- The spirit can be semi-transparent, ethereal, or glowing
+- They are NOT merged or fused together - the person remains fully human
+- The spirit watches over and protects the person
 
 Style Requirements:
 - Traditional Lanna temple mural art style
@@ -112,15 +120,14 @@ Style Requirements:
 - Thai Buddhist artistic elements
 - Warm earth tones (terracotta #CC785C, gold #D4AF37, deep brown)
 - Intricate patterns inspired by Lanna textiles
-- Sacred geometric motifs
-- Mystical aura surrounding the figure
+- Mystical aura emanating from the spirit
 
-Spirit Characteristics:
+Spirit Guardian (${spiritNameEn}) Characteristics:
 ${traits.map(t => `- ${t}`).join('\n')}
 
 ${basePrompt}
 
-The artwork should feel sacred, mystical, and deeply connected to Lanna spiritual traditions. The figure should appear as if they are a guardian spirit from an ancient temple painting${hasReferenceImage ? ', while clearly being the same person from the reference image' : ''}.`
+The artwork should feel sacred and mystical. The person appears blessed and protected by their guardian spirit from Lanna traditions.`
 
   return prompt
 }
