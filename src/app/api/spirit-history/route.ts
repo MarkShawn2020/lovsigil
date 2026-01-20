@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
     const { data: records, error } = await supabaseServer
       .from('spirit_generations')
-      .select('id, spirit_id, spirit_name, generated_image, spirit_scores, created_at')
+      .select('id, spirit_id, spirit_name, user_photo, generated_image, spirit_scores, created_at')
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -20,6 +20,7 @@ export async function GET(request: Request) {
       id: r.id,
       spiritId: r.spirit_id,
       spiritName: r.spirit_name,
+      userPhoto: r.user_photo,
       generatedImage: r.generated_image,
       spiritScores: r.spirit_scores,
       createdAt: r.created_at,

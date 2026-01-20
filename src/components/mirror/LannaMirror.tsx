@@ -71,10 +71,16 @@ export function LannaMirror() {
     id: number
     spiritId: string
     spiritName: string | null
+    userPhoto: string | null
     generatedImage: string
     createdAt: string
   }>>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [previewRecord, setPreviewRecord] = useState<{
+    generatedImage: string
+    userPhoto: string | null
+    spiritId: string
+  } | null>(null)
 
   // 初始化摄像头
   const initCamera = useCallback(async () => {
@@ -831,7 +837,11 @@ export function LannaMirror() {
                   <div
                     key={record.id}
                     className="relative group cursor-pointer"
-                    onClick={() => window.open(record.generatedImage, '_blank')}
+                    onClick={() => setPreviewRecord({
+                      generatedImage: record.generatedImage,
+                      userPhoto: record.userPhoto,
+                      spiritId: record.spiritId,
+                    })}
                   >
                     <img
                       src={record.generatedImage}
@@ -882,6 +892,53 @@ export function LannaMirror() {
           </div>
         )}
       </div>
+
+      {/* 大图预览浮层 */}
+      {previewRecord && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setPreviewRecord(null)}
+        >
+          <div className="relative flex items-center gap-6" onClick={e => e.stopPropagation()}>
+            {/* 原始头像 */}
+            {previewRecord.userPhoto && (
+              <div className="text-center">
+                <p className="text-white/50 text-sm mb-2">ต้นฉบับ / Original</p>
+                <div
+                  className="w-32 h-32 rounded-full overflow-hidden border-2"
+                  style={{
+                    borderColor: SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37',
+                    background: `radial-gradient(circle, ${SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color}40 0%, ${SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color}20 100%)`,
+                  }}
+                >
+                  <img src={previewRecord.userPhoto} alt="Original" className="w-full h-full object-contain" />
+                </div>
+              </div>
+            )}
+            {/* 箭头 */}
+            {previewRecord.userPhoto && (
+              <div className="text-white/40 text-3xl">→</div>
+            )}
+            {/* 生成结果 */}
+            <div className="text-center">
+              <p className="text-white/50 text-sm mb-2">วิญญาณ / Spirit</p>
+              <img
+                src={previewRecord.generatedImage}
+                alt="Generated"
+                className="max-w-md max-h-[70vh] object-contain rounded-lg border-2"
+                style={{ borderColor: SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37' }}
+              />
+            </div>
+            {/* 关闭按钮 */}
+            <button
+              className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
+              onClick={() => setPreviewRecord(null)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
