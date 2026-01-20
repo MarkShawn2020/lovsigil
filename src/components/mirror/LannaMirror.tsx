@@ -27,6 +27,14 @@ const SPIRIT_ORDER = ['naga', 'singha', 'hong', 'chang', 'garuda'] as const
 // 兰纳主色调
 const LANNA_GOLD = [212, 175, 55] // 金色
 
+// hex 转 rgb
+function hexToRgb(hex: string): [number, number, number] {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  return result
+    ? [parseInt(result[1]!, 16), parseInt(result[2]!, 16), parseInt(result[3]!, 16)]
+    : LANNA_GOLD as [number, number, number]
+}
+
 type MirrorState = 'attract' | 'generate' | 'result'
 
 export function LannaMirror() {
@@ -235,8 +243,10 @@ export function LannaMirror() {
         }
       }
 
-      // 第二遍：检测边缘并添加金色发光
+      // 第二遍：检测边缘并添加守护灵颜色发光
       const edgeGlow = 3
+      const persons = personTrackerRef.current.getPersons()
+
       for (let y = edgeGlow; y < height - edgeGlow; y++) {
         for (let x = edgeGlow; x < width - edgeGlow; x++) {
           const srcIndex = y * width + x
@@ -257,6 +267,27 @@ export function LannaMirror() {
 
           if (isEdge) {
             const mirrorX = width - 1 - x
+            // 归一化坐标（镜像后）
+            const normX = mirrorX / width
+            const normY = y / height
+
+            // 找最近的人，使用其守护灵颜色
+            let glowColor = LANNA_GOLD
+            let minDist = Infinity
+
+            for (const person of persons) {
+              const dx = normX - person.center.x
+              const dy = normY - person.center.y
+              const dist = dx * dx + dy * dy
+              if (dist < minDist) {
+                minDist = dist
+                const spiritInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
+                if (spiritInfo) {
+                  glowColor = hexToRgb(spiritInfo.color)
+                }
+              }
+            }
+
             for (let gy = -edgeGlow; gy <= edgeGlow; gy++) {
               for (let gx = -edgeGlow; gx <= edgeGlow; gx++) {
                 const dist = Math.sqrt(gx * gx + gy * gy)
@@ -269,11 +300,11 @@ export function LannaMirror() {
                   continue
 
                 const glowIndex = (glowY * width + glowX) * 4
-                const intensity = (1 - dist / edgeGlow) * 0.6
+                const intensity = (1 - dist / edgeGlow) * 0.7
 
-                output[glowIndex] = Math.min(255, output[glowIndex]! + LANNA_GOLD[0]! * intensity)
-                output[glowIndex + 1] = Math.min(255, output[glowIndex + 1]! + LANNA_GOLD[1]! * intensity)
-                output[glowIndex + 2] = Math.min(255, output[glowIndex + 2]! + LANNA_GOLD[2]! * intensity * 0.3)
+                output[glowIndex] = Math.min(255, output[glowIndex]! + glowColor[0]! * intensity)
+                output[glowIndex + 1] = Math.min(255, output[glowIndex + 1]! + glowColor[1]! * intensity)
+                output[glowIndex + 2] = Math.min(255, output[glowIndex + 2]! + glowColor[2]! * intensity)
               }
             }
           }
