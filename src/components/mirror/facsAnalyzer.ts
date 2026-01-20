@@ -252,23 +252,23 @@ export function getExpressionDescription(scores: ExpressionScores): string {
   })
 
   const names: Record<string, string> = {
-    naga: '那伽',
-    singha: '狮神',
-    hong: '天鹅',
-    chang: '圣象',
-    garuda: '金翅',
+    naga: 'พญานาค',
+    singha: 'สิงห์',
+    hong: 'หงส์',
+    chang: 'ช้าง',
+    garuda: 'ครุฑ',
   }
 
-  return names[dominant] || '圣象'
+  return names[dominant] || 'ช้าง'
 }
 
-// 守护灵信息（用于显示）
+// Spirit info for display (Thai / English)
 export const SPIRIT_INFO = {
-  naga: { name: '那伽', emoji: '🐉', color: '#1E90FF' },
-  singha: { name: '狮神', emoji: '🦁', color: '#FF6B35' },
-  hong: { name: '天鹅', emoji: '🦢', color: '#FFD700' },
-  chang: { name: '圣象', emoji: '🐘', color: '#8B4513' },
-  garuda: { name: '金翅', emoji: '🦅', color: '#9932CC' },
+  naga: { name: 'พญานาค / Naga', emoji: '🐉', color: '#1E90FF' },
+  singha: { name: 'สิงห์ / Singha', emoji: '🦁', color: '#FF6B35' },
+  hong: { name: 'หงส์ / Hongsa', emoji: '🦢', color: '#FFD700' },
+  chang: { name: 'ช้าง / Chang', emoji: '🐘', color: '#8B4513' },
+  garuda: { name: 'ครุฑ / Garuda', emoji: '🦅', color: '#9932CC' },
 } as const
 
 // 归一化守护灵分数（总和为 1）

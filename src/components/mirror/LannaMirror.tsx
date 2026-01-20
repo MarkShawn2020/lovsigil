@@ -79,7 +79,7 @@ export function LannaMirror() {
       }
     }
     catch (err) {
-      setError('无法访问摄像头，请检查权限设置')
+      setError('ไม่สามารถเข้าถึงกล้อง / Cannot access camera')
       console.error('Camera error:', err)
     }
   }, [])
@@ -119,7 +119,7 @@ export function LannaMirror() {
       setIsLoading(false)
     }
     catch (err) {
-      setError('加载 AI 模型失败')
+      setError('โหลด AI ล้มเหลว / Failed to load AI')
       console.error('MediaPipe error:', err)
     }
   }, [])
@@ -486,7 +486,7 @@ export function LannaMirror() {
         <div className="text-center">
           <p className="text-destructive text-lg">{error}</p>
           <Button onClick={() => window.location.reload()} className="mt-4">
-            重试
+            ลองอีกครั้ง / Retry
           </Button>
         </div>
       </div>
@@ -514,7 +514,7 @@ export function LannaMirror() {
             className="text-2xl font-bold tracking-widest"
             style={{ color: '#CC785C' }}
           >
-            兰纳照妖镜
+            กระจกวิญญาณล้านนา
           </h1>
           <p className="text-white/50 mt-1 text-sm">Lanna Spirit Mirror</p>
         </div>
@@ -525,7 +525,8 @@ export function LannaMirror() {
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-12 text-white">
               <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-sm text-white/60">正在加载 AI 模型...</p>
+              <p className="text-sm text-white/60">กำลังโหลด AI...</p>
+              <p className="text-xs text-white/40 mt-1">Loading AI...</p>
             </div>
           )}
 
@@ -535,8 +536,10 @@ export function LannaMirror() {
               {!hasPersons ? (
                 <div className="text-center py-12">
                   <div className="text-4xl mb-4">🪞</div>
-                  <p className="text-white/40 text-sm">请走近镜子...</p>
-                  <p className="text-white/30 text-xs mt-2">系统将自动识别你的面部表情</p>
+                  <p className="text-white/40 text-sm">เข้ามาใกล้กระจก...</p>
+                  <p className="text-white/30 text-xs mt-1">Step closer to the mirror...</p>
+                  <p className="text-white/30 text-xs mt-3">ระบบจะวิเคราะห์การแสดงออกของคุณ</p>
+                  <p className="text-white/20 text-xs mt-1">System will analyze your expressions</p>
                 </div>
               ) : (
                 <>
@@ -615,7 +618,7 @@ export function LannaMirror() {
                           onClick={() => handleGenerateForPerson(person)}
                           className="w-full mt-3"
                         >
-                          ✨ 生成守护灵画像
+                          ✨ สร้างภาพวิญญาณ / Generate Portrait
                         </Button>
                       </div>
                       )
@@ -684,7 +687,7 @@ export function LannaMirror() {
                     className="w-full"
                     style={{ backgroundColor: matchedSpirit.color }}
                   >
-                    下载画像
+                    ดาวน์โหลด / Download
                   </Button>
                 ) : (
                   <Button
@@ -692,7 +695,7 @@ export function LannaMirror() {
                     className="w-full"
                     style={{ backgroundColor: matchedSpirit.color }}
                   >
-                    生成灵魂画像
+                    สร้างภาพวิญญาณ / Generate Portrait
                   </Button>
                 )}
                 <Button
@@ -700,7 +703,7 @@ export function LannaMirror() {
                   variant="outline"
                   className="w-full"
                 >
-                  重新测试
+                  ทดสอบอีกครั้ง / Try Again
                 </Button>
               </div>
             </div>
@@ -712,22 +715,23 @@ export function LannaMirror() {
               {generateError ? (
                 <>
                   <div className="text-4xl mb-4">⚠️</div>
-                  <p className="text-red-400 mb-2">生成失败</p>
+                  <p className="text-red-400 mb-2">การสร้างล้มเหลว / Generation Failed</p>
                   <p className="text-xs text-white/50 mb-4">{generateError}</p>
                   <div className="space-y-2">
                     <Button onClick={generateSpiritImage} size="sm" style={{ backgroundColor: '#CC785C' }}>
-                      重试
+                      ลองอีกครั้ง / Retry
                     </Button>
                     <Button onClick={restart} variant="outline" size="sm" className="ml-2">
-                      重新开始
+                      เริ่มใหม่ / Start Over
                     </Button>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent mx-auto" />
-                  <p className="text-white/80 text-sm">正在生成灵魂画像...</p>
-                  <p className="text-xs text-white/40 mt-1">约 10-30 秒</p>
+                  <p className="text-white/80 text-sm">กำลังสร้างภาพ...</p>
+                  <p className="text-xs text-white/40 mt-1">Generating portrait...</p>
+                  <p className="text-xs text-white/30 mt-2">ประมาณ 10-30 วินาที / About 10-30 seconds</p>
                 </>
               )}
             </div>
@@ -736,7 +740,8 @@ export function LannaMirror() {
 
         {/* 底部信息 */}
         <div className="p-4 border-t border-[#D4AF37]/20 text-center">
-          <p className="text-white/30 text-xs">基于 AI 面部表情分析</p>
+          <p className="text-white/30 text-xs">วิเคราะห์ใบหน้าด้วย AI</p>
+          <p className="text-white/20 text-xs mt-0.5">AI Facial Analysis</p>
         </div>
       </div>
 
