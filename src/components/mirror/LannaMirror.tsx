@@ -52,6 +52,10 @@ export function LannaMirror() {
   // 多人追踪状态
   const [trackedPersons, setTrackedPersons] = useState<TrackedPerson[]>([])
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
+  // 头部抠像缩略图 (personId -> dataURL)
+  const [headThumbnails, setHeadThumbnails] = useState<Record<string, string>>({})
+  const lastThumbnailUpdateRef = useRef<number>(0)
+  const thumbnailCanvasRef = useRef<HTMLCanvasElement | null>(null)
 
   // 匹配相关状态
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
@@ -169,33 +173,7 @@ export function LannaMirror() {
           }
           overlayCtx.clearRect(0, 0, width, height)
 
-          // 为每个追踪的人绘制编号标记（面板移到底部用 React 渲染）
-          for (const person of persons) {
-            const mirrorX = 1 - person.center.x
-            const screenX = mirrorX * width
-            const screenY = person.center.y * height
-            const personIndex = persons.indexOf(person) + 1
-
-            // 人员编号圆圈
-            overlayCtx.fillStyle = 'rgba(204, 120, 92, 0.9)'
-            overlayCtx.beginPath()
-            overlayCtx.arc(screenX, screenY - person.size * height * 0.8, 20, 0, Math.PI * 2)
-            overlayCtx.fill()
-
-            // 编号
-            overlayCtx.fillStyle = '#fff'
-            overlayCtx.font = 'bold 16px system-ui'
-            overlayCtx.textAlign = 'center'
-            overlayCtx.textBaseline = 'middle'
-            overlayCtx.fillText(`${personIndex}`, screenX, screenY - person.size * height * 0.8)
-
-            // 主导守护灵 emoji 显示在编号下方
-            const dominantInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
-            if (dominantInfo) {
-              overlayCtx.font = '24px system-ui'
-              overlayCtx.fillText(dominantInfo.emoji, screenX, screenY - person.size * height * 0.8 + 30)
-            }
-          }
+          // 不在镜子上绘制任何标注，保持镜子干净
         }
       }
     }
@@ -226,15 +204,15 @@ export function LannaMirror() {
           const g = data[srcPixel + 1]!
           const b = data[srcPixel + 2]!
 
-          if (mask[srcIndex]! > 0) {
-            // 人像区域 - 保留原色，轻微暖色调提亮
+          if (mask[srcIndex]! === 0) {
+            // 人像区域 (mask=0) - 保留原色，轻微暖色调提亮
             output[dstPixel] = Math.min(255, Math.round(r * 1.1 + 15))
             output[dstPixel + 1] = Math.min(255, Math.round(g * 1.05 + 10))
             output[dstPixel + 2] = Math.min(255, Math.round(b * 0.95 + 5))
             output[dstPixel + 3] = 255
           }
           else {
-            // 背景 - 暗化但保留可见度
+            // 背景 (mask>0) - 暗化但保留可见度
             output[dstPixel] = Math.round(r * 0.25)
             output[dstPixel + 1] = Math.round(g * 0.25)
             output[dstPixel + 2] = Math.round(b * 0.3)
@@ -250,8 +228,8 @@ export function LannaMirror() {
       for (let y = edgeGlow; y < height - edgeGlow; y++) {
         for (let x = edgeGlow; x < width - edgeGlow; x++) {
           const srcIndex = y * width + x
-          if (mask[srcIndex]! === 0)
-            continue
+          if (mask[srcIndex]! !== 0)
+            continue // 跳过背景
 
           let isEdge = false
           for (let dy = -1; dy <= 1 && !isEdge; dy++) {
@@ -259,8 +237,8 @@ export function LannaMirror() {
               if (dx === 0 && dy === 0)
                 continue
               const neighborIndex = (y + dy) * width + (x + dx)
-              if (mask[neighborIndex]! === 0) {
-                isEdge = true
+              if (mask[neighborIndex]! !== 0) {
+                isEdge = true // 邻居是背景，说明当前是边缘
               }
             }
           }
@@ -317,6 +295,73 @@ export function LannaMirror() {
       ctx.strokeStyle = '#CC785C'
       ctx.lineWidth = 4
       ctx.strokeRect(2, 2, width - 4, height - 4)
+
+      // 提取头部真实抠像缩略图（节流：每 300ms 更新一次）
+      if (persons.length > 0 && now - lastThumbnailUpdateRef.current > 300) {
+        lastThumbnailUpdateRef.current = now
+
+        if (!thumbnailCanvasRef.current) {
+          thumbnailCanvasRef.current = document.createElement('canvas')
+        }
+        const thumbCanvas = thumbnailCanvasRef.current
+        const thumbSize = 80
+        const newThumbnails: Record<string, string> = {}
+
+        for (const person of persons) {
+          // 头部区域（原始坐标，未镜像）
+          const headRadius = person.size * 1.5
+          const srcCenterX = person.center.x * width
+          const srcCenterY = person.center.y * height
+
+          const srcX = Math.max(0, Math.round(srcCenterX - headRadius * width))
+          const srcY = Math.max(0, Math.round(srcCenterY - headRadius * height * 1.2))
+          const srcW = Math.min(width - srcX, Math.round(headRadius * width * 2))
+          const srcH = Math.min(height - srcY, Math.round(headRadius * height * 2.4))
+
+          if (srcW > 20 && srcH > 20) {
+            thumbCanvas.width = thumbSize
+            thumbCanvas.height = thumbSize
+            const thumbCtx = thumbCanvas.getContext('2d')
+            if (!thumbCtx) continue
+
+            // 创建带透明通道的 imageData
+            const thumbData = thumbCtx.createImageData(thumbSize, thumbSize)
+            const thumbPixels = thumbData.data
+
+            for (let ty = 0; ty < thumbSize; ty++) {
+              for (let tx = 0; tx < thumbSize; tx++) {
+                // 源图坐标
+                const sx = Math.floor(srcX + (tx / thumbSize) * srcW)
+                const sy = Math.floor(srcY + (ty / thumbSize) * srcH)
+
+                if (sx >= 0 && sx < width && sy >= 0 && sy < height) {
+                  const srcIdx = sy * width + sx
+                  const srcPixel = srcIdx * 4
+                  // 镜像 x
+                  const mirrorTx = thumbSize - 1 - tx
+                  const thumbIdx = (ty * thumbSize + mirrorTx) * 4
+
+                  // 用 mask 判断是否为人像（mask=0 是人像，mask>0 是背景）
+                  if (mask[srcIdx]! === 0) {
+                    thumbPixels[thumbIdx] = data[srcPixel]!
+                    thumbPixels[thumbIdx + 1] = data[srcPixel + 1]!
+                    thumbPixels[thumbIdx + 2] = data[srcPixel + 2]!
+                    thumbPixels[thumbIdx + 3] = 255
+                  }
+                  // else: 背景保持透明
+                }
+              }
+            }
+
+            thumbCtx.putImageData(thumbData, 0, 0)
+            newThumbnails[person.id] = thumbCanvas.toDataURL('image/png')
+          }
+        }
+
+        if (Object.keys(newThumbnails).length > 0) {
+          setHeadThumbnails(newThumbnails)
+        }
+      }
 
       result.categoryMask.close()
     }
@@ -520,23 +565,43 @@ export function LannaMirror() {
 
                   {/* 守护灵面板 */}
                   <div className="space-y-3">
-                    {trackedPersons.map((person, index) => (
-                      <div
-                        key={person.id}
-                        className="bg-black/50 rounded-lg p-3 border border-[#D4AF37]/20"
-                      >
-                        {/* 头部：编号 + 主导守护灵 */}
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="w-6 h-6 rounded-full bg-[#CC785C] flex items-center justify-center text-white text-xs font-bold">
-                            {index + 1}
-                          </span>
-                          <span className="text-lg">
-                            {SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]?.emoji}
-                          </span>
-                          <span className="text-white/70 text-sm">
-                            {SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]?.name}
-                          </span>
-                        </div>
+                    {trackedPersons.map((person) => {
+                      const thumbnail = headThumbnails[person.id]
+                      const spiritInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
+
+                      return (
+                        <div
+                          key={person.id}
+                          className="bg-black/50 rounded-lg p-3 border border-[#D4AF37]/20"
+                        >
+                          {/* 头部：抠像头像 + 主导守护灵 */}
+                          <div className="flex items-center gap-3 mb-3">
+                            {/* 头部抠像缩略图 - 透明背景用守护灵颜色填充 */}
+                            <div
+                              className="w-14 h-14 rounded-full overflow-hidden border-2 shrink-0"
+                              style={{
+                                borderColor: spiritInfo?.color || '#D4AF37',
+                                background: `radial-gradient(circle, ${spiritInfo?.color}40 0%, ${spiritInfo?.color}20 100%)`,
+                              }}
+                            >
+                              {thumbnail ? (
+                                <img
+                                  src={thumbnail}
+                                  alt=""
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <span className="text-white/30 text-xs">...</span>
+                                </div>
+                              )}
+                            </div>
+                            {/* 守护灵信息 */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xl">{spiritInfo?.emoji}</span>
+                              <span className="text-white/70 text-sm">{spiritInfo?.name}</span>
+                            </div>
+                          </div>
 
                         {/* 守护灵亲和度条形图 */}
                         <div className="space-y-1.5">
@@ -567,7 +632,8 @@ export function LannaMirror() {
                           })}
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </>
               )}
