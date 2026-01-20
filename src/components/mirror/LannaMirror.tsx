@@ -1,29 +1,52 @@
 'use client'
 
+import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { getEnergyColor, labelConnectedComponents, matchSpirit, QUESTIONS } from './spiritData'
+
+// 过滤 MediaPipe 的 INFO 日志（它们被错误地输出到 stderr）
+if (typeof window !== 'undefined') {
+  const originalError = console.error
+  console.error = (...args: unknown[]) => {
+    const msg = args[0]
+    if (typeof msg === 'string' && msg.includes('Created TensorFlow Lite XNNPACK delegate')) {
+      return // 静默忽略这个 INFO 消息
+    }
+    originalError.apply(console, args)
+  }
+}
+import { matchSpiritByExpression, SPIRIT_INFO } from './facsAnalyzer'
+import { PersonTracker } from './personTracker'
+import type { TrackedPerson } from './personTracker'
 import type { LannaSpirit } from './types'
 
-// 兰纳主色调
-const LANNA_PRIMARY = [204, 120, 92] // 陶土色 #CC785C
+// 守护灵顺序（用于渲染）
+const SPIRIT_ORDER = ['naga', 'singha', 'hong', 'chang', 'garuda'] as const
 
-type MirrorState = 'attract' | 'interact' | 'generate' | 'result'
+// 兰纳主色调
+const LANNA_GOLD = [212, 175, 55] // 金色
+
+type MirrorState = 'attract' | 'generate' | 'result'
 
 export function LannaMirror() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const [state, setState] = useState<MirrorState>('attract')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const animationRef = useRef<number>(0)
   const segmenterRef = useRef<any>(null)
+  const faceLandmarkerRef = useRef<any>(null)
+  const personTrackerRef = useRef<PersonTracker>(new PersonTracker())
 
-  // 问答相关状态
+  // 多人追踪状态
+  const [trackedPersons, setTrackedPersons] = useState<TrackedPerson[]>([])
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
+
+  // 匹配相关状态
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
   const [matchedSpirit, setMatchedSpirit] = useState<LannaSpirit | null>(null)
 
   // 生成相关状态
@@ -48,15 +71,16 @@ export function LannaMirror() {
     }
   }, [])
 
-  // 初始化 MediaPipe Image Segmenter
-  const initSegmenter = useCallback(async () => {
+  // 初始化 MediaPipe (Segmenter + Face Landmarker)
+  const initMediaPipe = useCallback(async () => {
     try {
-      const { ImageSegmenter, FilesetResolver } = await import('@mediapipe/tasks-vision')
+      const { ImageSegmenter, FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision')
 
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
       )
 
+      // 初始化 Segmenter
       const segmenter = await ImageSegmenter.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
@@ -65,21 +89,34 @@ export function LannaMirror() {
         runningMode: 'VIDEO',
         outputCategoryMask: true,
       })
-
       segmenterRef.current = segmenter
+
+      // 初始化 Face Landmarker (FACS 基础) - 支持多人
+      const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task',
+          delegate: 'GPU',
+        },
+        runningMode: 'VIDEO',
+        numFaces: 4, // 支持最多 4 人同时检测
+        outputFaceBlendshapes: true,
+      })
+      faceLandmarkerRef.current = faceLandmarker
+
       setIsLoading(false)
     }
     catch (err) {
       setError('加载 AI 模型失败')
-      console.error('Segmenter error:', err)
+      console.error('MediaPipe error:', err)
     }
   }, [])
 
-  // 渲染循环 - 实时分割并染色
+  // 渲染循环 - 实时分割并染色 + FACS 表情分析
   const renderLoop = useCallback(() => {
     const video = videoRef.current
     const canvas = canvasRef.current
     const segmenter = segmenterRef.current
+    const faceLandmarker = faceLandmarkerRef.current
 
     if (!video || !canvas || !segmenter || video.readyState < 2) {
       animationRef.current = requestAnimationFrame(renderLoop)
@@ -92,6 +129,7 @@ export function LannaMirror() {
 
     const width = video.videoWidth
     const height = video.videoHeight
+    const now = performance.now()
 
     // 设置 canvas 尺寸（只设置一次）
     if (canvas.width !== width || canvas.height !== height) {
@@ -102,27 +140,65 @@ export function LannaMirror() {
     // 先绘制原始视频（不镜像），用于分割
     ctx.drawImage(video, 0, 0, width, height)
 
+    // FACS 表情分析 - 多人追踪
+    if (faceLandmarker) {
+      const faceResult = faceLandmarker.detectForVideo(video, now)
+      const faceLandmarksList: NormalizedLandmark[][] = faceResult.faceLandmarks || []
+
+      // 更新人员追踪器
+      const persons = personTrackerRef.current.update(faceLandmarksList)
+      setTrackedPersons(persons)
+
+      // 绘制每人的表情状态覆盖层
+      const overlayCanvas = overlayCanvasRef.current
+      if (overlayCanvas) {
+        const overlayCtx = overlayCanvas.getContext('2d')
+        if (overlayCtx) {
+          // 同步尺寸
+          if (overlayCanvas.width !== width || overlayCanvas.height !== height) {
+            overlayCanvas.width = width
+            overlayCanvas.height = height
+          }
+          overlayCtx.clearRect(0, 0, width, height)
+
+          // 为每个追踪的人绘制编号标记（面板移到底部用 React 渲染）
+          for (const person of persons) {
+            const mirrorX = 1 - person.center.x
+            const screenX = mirrorX * width
+            const screenY = person.center.y * height
+            const personIndex = persons.indexOf(person) + 1
+
+            // 人员编号圆圈
+            overlayCtx.fillStyle = 'rgba(204, 120, 92, 0.9)'
+            overlayCtx.beginPath()
+            overlayCtx.arc(screenX, screenY - person.size * height * 0.8, 20, 0, Math.PI * 2)
+            overlayCtx.fill()
+
+            // 编号
+            overlayCtx.fillStyle = '#fff'
+            overlayCtx.font = 'bold 16px system-ui'
+            overlayCtx.textAlign = 'center'
+            overlayCtx.textBaseline = 'middle'
+            overlayCtx.fillText(`${personIndex}`, screenX, screenY - person.size * height * 0.8)
+
+            // 主导守护灵 emoji 显示在编号下方
+            const dominantInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
+            if (dominantInfo) {
+              overlayCtx.font = '24px system-ui'
+              overlayCtx.fillText(dominantInfo.emoji, screenX, screenY - person.size * height * 0.8 + 30)
+            }
+          }
+        }
+      }
+    }
+
     // 执行分割
-    const result = segmenter.segmentForVideo(video, performance.now())
+    const result = segmenter.segmentForVideo(video, now)
 
     if (result.categoryMask) {
       const mask = result.categoryMask.getAsUint8Array()
       const imageData = ctx.getImageData(0, 0, width, height)
       const data = imageData.data
-
-      // 连通组件分析 - 识别不同的人
-      const { labels, components } = labelConnectedComponents(mask, width, height)
-
-      // 为每个组件计算能量颜色（加入时间脉动）
-      const timestamp = performance.now()
-      const componentColors = new Map<number, [number, number, number]>()
-      for (const comp of components) {
-        // 基于位置的基础能量 + 时间脉动
-        const pulsePhase = (timestamp / 4000) * Math.PI * 2 // 4秒周期
-        const pulse = Math.sin(pulsePhase + comp.id * 1.5) * 50 // 每个组件相位不同
-        const energyLevel = Math.max(150, Math.min(650, comp.energyLevel + pulse))
-        componentColors.set(comp.id, getEnergyColor(energyLevel))
-      }
 
       // 创建输出 imageData（镜像后的）
       const outputData = ctx.createImageData(width, height)
@@ -138,11 +214,11 @@ export function LannaMirror() {
           const srcPixel = srcIndex * 4
           const dstPixel = dstIndex * 4
 
-          const r = data[srcPixel] ?? 0
-          const g = data[srcPixel + 1] ?? 0
-          const b = data[srcPixel + 2] ?? 0
+          const r = data[srcPixel]!
+          const g = data[srcPixel + 1]!
+          const b = data[srcPixel + 2]!
 
-          if (labels[srcIndex] !== undefined && labels[srcIndex] >= 0) {
+          if (mask[srcIndex]! > 0) {
             // 人像区域 - 保留原色，轻微暖色调提亮
             output[dstPixel] = Math.min(255, Math.round(r * 1.1 + 15))
             output[dstPixel + 1] = Math.min(255, Math.round(g * 1.05 + 10))
@@ -159,13 +235,12 @@ export function LannaMirror() {
         }
       }
 
-      // 第二遍：检测边缘并添加基于组件的能量发光
+      // 第二遍：检测边缘并添加金色发光
       const edgeGlow = 3
       for (let y = edgeGlow; y < height - edgeGlow; y++) {
         for (let x = edgeGlow; x < width - edgeGlow; x++) {
           const srcIndex = y * width + x
-          const componentId = labels[srcIndex]
-          if (componentId === undefined || componentId < 0)
+          if (mask[srcIndex]! === 0)
             continue
 
           let isEdge = false
@@ -174,9 +249,7 @@ export function LannaMirror() {
               if (dx === 0 && dy === 0)
                 continue
               const neighborIndex = (y + dy) * width + (x + dx)
-              const neighborLabel = labels[neighborIndex]
-              // 边缘：邻居是背景或不同组件
-              if (neighborLabel === undefined || neighborLabel < 0 || neighborLabel !== componentId) {
+              if (mask[neighborIndex]! === 0) {
                 isEdge = true
               }
             }
@@ -184,9 +257,6 @@ export function LannaMirror() {
 
           if (isEdge) {
             const mirrorX = width - 1 - x
-            // 获取该组件的能量颜色
-            const glowColor = componentColors.get(componentId) ?? [212, 175, 55]
-
             for (let gy = -edgeGlow; gy <= edgeGlow; gy++) {
               for (let gx = -edgeGlow; gx <= edgeGlow; gx++) {
                 const dist = Math.sqrt(gx * gx + gy * gy)
@@ -199,11 +269,11 @@ export function LannaMirror() {
                   continue
 
                 const glowIndex = (glowY * width + glowX) * 4
-                const intensity = (1 - dist / edgeGlow) * 0.7
+                const intensity = (1 - dist / edgeGlow) * 0.6
 
-                output[glowIndex] = Math.min(255, (output[glowIndex] ?? 0) + glowColor[0] * intensity)
-                output[glowIndex + 1] = Math.min(255, (output[glowIndex + 1] ?? 0) + glowColor[1] * intensity)
-                output[glowIndex + 2] = Math.min(255, (output[glowIndex + 2] ?? 0) + glowColor[2] * intensity)
+                output[glowIndex] = Math.min(255, output[glowIndex]! + LANNA_GOLD[0]! * intensity)
+                output[glowIndex + 1] = Math.min(255, output[glowIndex + 1]! + LANNA_GOLD[1]! * intensity)
+                output[glowIndex + 2] = Math.min(255, output[glowIndex + 2]! + LANNA_GOLD[2]! * intensity * 0.3)
               }
             }
           }
@@ -224,50 +294,63 @@ export function LannaMirror() {
     animationRef.current = requestAnimationFrame(renderLoop)
   }, [])
 
-  // 拍照并进入问答
-  const captureAndInteract = useCallback(() => {
+  // 点击处理 - 根据点击位置选择人并匹配守护灵
+  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
-    if (!canvas)
+    if (!canvas || state !== 'attract')
       return
+
+    const persons = personTrackerRef.current.getPersons()
+    if (persons.length === 0)
+      return
+
+    // 计算点击位置（归一化）
+    const rect = canvas.getBoundingClientRect()
+    const clickX = (e.clientX - rect.left) / rect.width
+    const clickY = (e.clientY - rect.top) / rect.height
+
+    // 找到点击位置最近的人，或使用主要人物
+    let targetPerson: TrackedPerson | null = null
+
+    if (persons.length === 1) {
+      targetPerson = persons[0]!
+    }
+    else {
+      // 多人时，找点击位置最近的
+      targetPerson = personTrackerRef.current.findPersonNearPosition(clickX, clickY)
+      if (!targetPerson) {
+        // 如果点击位置没有人，使用最大的人
+        targetPerson = personTrackerRef.current.getPrimaryPerson()
+      }
+    }
+
+    if (!targetPerson || targetPerson.accumulator.getSampleCount() < 10) {
+      return // 数据不足
+    }
 
     // 保存当前画面
     const photo = canvas.toDataURL('image/jpeg', 0.9)
     setCapturedPhoto(photo)
+    setSelectedPersonId(targetPerson.id)
 
-    // 重置问答状态
-    setCurrentQuestionIndex(0)
-    setAnswers({})
-    setMatchedSpirit(null)
+    // 基于该人的累积表情数据匹配守护灵
+    const spirit = matchSpiritByExpression(targetPerson.accumulator)
+    setMatchedSpirit(spirit)
 
-    setState('interact')
+    // 停止渲染循环
     cancelAnimationFrame(animationRef.current)
-  }, [])
-
-  // 回答问题
-  const handleAnswer = useCallback((questionId: string, optionId: string) => {
-    const newAnswers = { ...answers, [questionId]: optionId }
-    setAnswers(newAnswers)
-
-    if (currentQuestionIndex < QUESTIONS.length - 1) {
-      // 下一题
-      setCurrentQuestionIndex(prev => prev + 1)
-    }
-    else {
-      // 问答完成，计算匹配结果
-      const spirit = matchSpirit(newAnswers)
-      setMatchedSpirit(spirit)
-      setState('result')
-    }
-  }, [answers, currentQuestionIndex])
+    setState('result')
+  }, [state])
 
   // 重新开始
   const restart = useCallback(() => {
     setCapturedPhoto(null)
-    setCurrentQuestionIndex(0)
-    setAnswers({})
     setMatchedSpirit(null)
     setGeneratedImage(null)
     setGenerateError(null)
+    setTrackedPersons([])
+    setSelectedPersonId(null)
+    personTrackerRef.current.reset()
     setState('attract')
   }, [])
 
@@ -320,7 +403,7 @@ export function LannaMirror() {
   // 初始化
   useEffect(() => {
     initCamera()
-    initSegmenter()
+    initMediaPipe()
 
     return () => {
       cancelAnimationFrame(animationRef.current)
@@ -329,7 +412,7 @@ export function LannaMirror() {
         tracks.forEach(track => track.stop())
       }
     }
-  }, [initCamera, initSegmenter])
+  }, [initCamera, initMediaPipe])
 
   // 开始渲染循环
   useEffect(() => {
@@ -352,94 +435,117 @@ export function LannaMirror() {
     )
   }
 
-  const currentQuestion = QUESTIONS[currentQuestionIndex]
+  const personCount = trackedPersons.length
+  const hasPersons = personCount > 0
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black">
-      {/* 隐藏的视频元素 */}
-      <video
-        ref={videoRef}
-        className="hidden"
-        playsInline
-        muted
-      />
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-black">
+      {/* 镜子区域 */}
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        {/* 隐藏的视频元素 */}
+        <video
+          ref={videoRef}
+          className="hidden"
+          playsInline
+          muted
+        />
 
-      {/* 主画布 */}
-      <canvas
-        ref={canvasRef}
-        className="h-full w-full object-contain"
-        onClick={state === 'attract' ? captureAndInteract : undefined}
-      />
+        {/* 主画布 */}
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 h-full w-full object-contain"
+          onClick={handleCanvasClick}
+        />
 
-      {/* 加载状态 */}
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-          <div className="text-center text-white">
-            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-            <p>正在加载兰纳照妖镜...</p>
-          </div>
-        </div>
-      )}
+        {/* 覆盖层画布 - 显示每人的编号 */}
+        <canvas
+          ref={overlayCanvasRef}
+          className="absolute inset-0 h-full w-full object-contain pointer-events-none"
+        />
 
-      {/* 吸引模式 - 提示文字 */}
-      {state === 'attract' && !isLoading && (
-        <div className="absolute bottom-8 left-0 right-0 text-center">
-          <p className="text-white text-2xl font-light tracking-wider animate-pulse">
-            点击屏幕，发现你的兰纳守护灵
-          </p>
-        </div>
-      )}
-
-      {/* 问答模式 */}
-      {state === 'interact' && currentQuestion && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-          <div className="bg-card/95 backdrop-blur p-8 rounded-2xl max-w-lg w-full mx-4 shadow-2xl">
-            {/* 进度指示 */}
-            <div className="flex justify-center gap-2 mb-6">
-              {QUESTIONS.map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    i < currentQuestionIndex
-                      ? 'bg-[#CC785C]'
-                      : i === currentQuestionIndex
-                        ? 'bg-[#D4AF37]'
-                        : 'bg-gray-300'
-                  }`}
-                />
-              ))}
+        {/* 加载状态 */}
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+            <div className="text-center text-white">
+              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
+              <p>正在加载兰纳照妖镜...</p>
             </div>
-
-            {/* 问题 */}
-            <h2
-              className="text-2xl font-bold text-center mb-8"
-              style={{ color: '#CC785C' }}
-            >
-              {currentQuestion.text}
-            </h2>
-
-            {/* 选项 */}
-            <div className="space-y-3">
-              {currentQuestion.options.map(option => (
-                <button
-                  key={option.id}
-                  onClick={() => handleAnswer(currentQuestion.id, option.id)}
-                  className="w-full p-4 text-left rounded-xl border-2 border-[#CC785C]/30 hover:border-[#CC785C] hover:bg-[#CC785C]/10 transition-all duration-200 text-lg"
-                >
-                  {option.text}
-                </button>
-              ))}
-            </div>
-
-            {/* 返回按钮 */}
-            <Button
-              onClick={restart}
-              variant="ghost"
-              className="w-full mt-6 text-muted-foreground"
-            >
-              返回镜子
-            </Button>
           </div>
+        )}
+
+        {/* 标题 */}
+        <div className="absolute top-6 left-0 right-0 text-center pointer-events-none">
+          <h1
+            className="text-3xl font-bold tracking-widest"
+            style={{ color: '#CC785C', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
+          >
+            兰纳照妖镜
+          </h1>
+          <p className="text-white/60 mt-1 text-sm">Lanna Spirit Mirror</p>
+        </div>
+
+        {/* 吸引模式提示 */}
+        {state === 'attract' && !isLoading && (
+          <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+            <p className={`text-xl font-light tracking-wider ${hasPersons ? 'text-[#D4AF37] animate-pulse' : 'text-white/40'}`}>
+              {hasPersons
+                ? personCount > 1
+                  ? '点击你想测试的人，照见守护灵'
+                  : '点击屏幕，照见你的兰纳守护灵'
+                : '请走近镜子...'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* 底部 HUD 区域 - 镜子外面 */}
+      {state === 'attract' && !isLoading && hasPersons && (
+        <div className="shrink-0 h-28 bg-black/90 border-t border-[#D4AF37]/30 flex justify-center items-center gap-3 px-4 py-2">
+          {trackedPersons.map((person, index) => (
+            <div
+              key={person.id}
+              className="flex items-center gap-3 bg-black/50 rounded-lg px-3 py-2 border border-[#D4AF37]/20"
+            >
+              {/* 编号 + 主导守护灵 */}
+              <div className="flex flex-col items-center">
+                <span className="w-6 h-6 rounded-full bg-[#CC785C] flex items-center justify-center text-white text-xs font-bold">
+                  {index + 1}
+                </span>
+                <span className="text-lg mt-1">
+                  {SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]?.emoji}
+                </span>
+              </div>
+
+              {/* 守护灵亲和度条形图 - 水平紧凑布局 */}
+              <div className="flex flex-col gap-0.5">
+                {SPIRIT_ORDER.map((spiritId) => {
+                  const info = SPIRIT_INFO[spiritId]
+                  const score = person.spiritScores[spiritId]
+                  const isDominant = spiritId === person.dominantSpirit
+
+                  return (
+                    <div key={spiritId} className="flex items-center gap-1">
+                      <span className="w-4 text-center text-xs">{info.emoji}</span>
+                      <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${score * 100}%`,
+                            backgroundColor: isDominant ? info.color : `${info.color}66`,
+                          }}
+                        />
+                      </div>
+                      <span
+                        className={`w-7 text-right text-[10px] ${isDominant ? 'text-white font-bold' : 'text-white/40'}`}
+                      >
+                        {Math.round(score * 100)}%
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -567,16 +673,6 @@ export function LannaMirror() {
         </div>
       )}
 
-      {/* 标题 */}
-      <div className="absolute top-8 left-0 right-0 text-center pointer-events-none">
-        <h1
-          className="text-4xl font-bold tracking-widest"
-          style={{ color: '#CC785C', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
-        >
-          兰纳照妖镜
-        </h1>
-        <p className="text-white/60 mt-2 text-sm">Lanna Spirit Mirror</p>
-      </div>
     </div>
   )
 }
