@@ -262,13 +262,48 @@ export function getExpressionDescription(scores: ExpressionScores): string {
   return names[dominant] || 'ช้าง'
 }
 
-// Spirit info for display (Thai / English)
+// Spirit info for display (Thai / English) - Extended for poster generation
 export const SPIRIT_INFO = {
-  naga: { name: 'พญานาค / Naga', emoji: '🐉', color: '#1E90FF' },
-  singha: { name: 'สิงห์ / Singha', emoji: '🦁', color: '#FF6B35' },
-  hong: { name: 'หงส์ / Hongsa', emoji: '🦢', color: '#FFD700' },
-  chang: { name: 'ช้าง / Chang', emoji: '🐘', color: '#8B4513' },
-  garuda: { name: 'ครุฑ / Garuda', emoji: '🦅', color: '#9932CC' },
+  naga: {
+    name: 'พญานาค',
+    nameEn: 'Naga',
+    emoji: '🐉',
+    color: '#1E90FF',
+    element: 'water' as const,
+    traits: ['ปัญญา', 'ปกป้อง', 'ลึกซึ้ง', 'ลึกลับ'],
+  },
+  singha: {
+    name: 'สิงห์',
+    nameEn: 'Singha',
+    emoji: '🦁',
+    color: '#FF6B35',
+    element: 'fire' as const,
+    traits: ['กล้าหาญ', 'พลัง', 'ผู้นำ', 'ผู้พิทักษ์'],
+  },
+  hong: {
+    name: 'หงส์',
+    nameEn: 'Hongsa',
+    emoji: '🦢',
+    color: '#FFD700',
+    element: 'air' as const,
+    traits: ['สง่างาม', 'บริสุทธิ์', 'ศิลปะ', 'อิสระ'],
+  },
+  chang: {
+    name: 'ช้าง',
+    nameEn: 'Chang',
+    emoji: '🐘',
+    color: '#8B4513',
+    element: 'earth' as const,
+    traits: ['มั่นคง', 'เจริญ', 'ซื่อสัตย์', 'ฉลาด'],
+  },
+  garuda: {
+    name: 'ครุฑ',
+    nameEn: 'Garuda',
+    emoji: '🦅',
+    color: '#9932CC',
+    element: 'spirit' as const,
+    traits: ['ศักดิ์สิทธิ์', 'รวดเร็ว', 'ยุติธรรม', 'สูงส่ง'],
+  },
 } as const
 
 // 归一化守护灵分数（总和为 1）
