@@ -1,6 +1,6 @@
 import { supabase } from './Supabase';
 
-const API_TIMEOUT_MS = 10000;
+const API_TIMEOUT_MS = 5000;
 
 /**
  * Wrap a promise with timeout

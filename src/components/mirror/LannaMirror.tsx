@@ -3,7 +3,14 @@
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable'
+import { version } from '../../../package.json'
 
 // 过滤 MediaPipe 的 INFO 日志（它们被错误地输出到 stderr）
 if (typeof window !== 'undefined') {
@@ -551,7 +558,7 @@ export function LannaMirror() {
   const hasPersons = personCount > 0
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-black">
+    <div className="h-screen w-screen overflow-hidden bg-black">
       {/* 隐藏的视频元素 */}
       <video
         ref={videoRef}
@@ -560,16 +567,31 @@ export function LannaMirror() {
         muted
       />
 
-      {/* 左侧面板 */}
-      <div className="w-80 shrink-0 flex flex-col bg-black/95 border-r border-[#D4AF37]/30 overflow-y-auto">
+      <ResizablePanelGroup
+        direction="horizontal"
+        autoSaveId="lanna-mirror-sidebar"
+        className="h-full"
+      >
+        {/* 左侧面板 */}
+        <ResizablePanel
+          defaultSize={20}
+          minSize={15}
+          maxSize={40}
+          className="flex flex-col bg-black/95 overflow-y-auto"
+        >
         {/* 标题区域 */}
         <div className="p-6 border-b border-[#D4AF37]/20">
-          <h1
-            className="text-2xl font-bold tracking-widest"
-            style={{ color: '#CC785C' }}
-          >
-            กระจกวิญญาณล้านนา
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1
+              className="text-2xl font-bold tracking-widest"
+              style={{ color: '#CC785C' }}
+            >
+              กระจกวิญญาณล้านนา
+            </h1>
+            <Badge variant="outline" className="text-[10px] text-white/40 border-white/20">
+              v{version}
+            </Badge>
+          </div>
           <p className="text-white/50 mt-1 text-sm">Lanna Spirit Mirror</p>
         </div>
 
@@ -894,10 +916,12 @@ export function LannaMirror() {
           <p className="text-white/30 text-xs">วิเคราะห์ใบหน้าด้วย AI</p>
           <p className="text-white/20 text-xs mt-0.5">AI Facial Analysis</p>
         </div>
-      </div>
+      </ResizablePanel>
+
+      <ResizableHandle withHandle className="bg-[#D4AF37]/30 hover:bg-[#D4AF37]/50 transition-colors" />
 
       {/* 右侧镜子区域 */}
-      <div className="flex-1 relative min-w-0 overflow-hidden">
+      <ResizablePanel defaultSize={80} className="relative min-w-0 overflow-hidden">
         {/* 主画布 */}
         <canvas
           ref={canvasRef}
@@ -916,7 +940,8 @@ export function LannaMirror() {
             <div className="text-6xl animate-pulse">🪞</div>
           </div>
         )}
-      </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
 
       {/* 大图预览浮层 */}
       {previewRecord && (
