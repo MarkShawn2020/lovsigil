@@ -533,13 +533,13 @@ export function LannaMirror() {
     }
   }, [initCamera, initMediaPipe, fetchHistory])
 
-  // 开始渲染循环
+  // 开始渲染循环 - 始终保持实时画面
   useEffect(() => {
-    if (!isLoading && state === 'attract') {
+    if (!isLoading) {
       animationRef.current = requestAnimationFrame(renderLoop)
     }
     return () => cancelAnimationFrame(animationRef.current)
-  }, [isLoading, state, renderLoop])
+  }, [isLoading, renderLoop])
 
   if (error) {
     return (
@@ -596,7 +596,7 @@ export function LannaMirror() {
         </div>
 
         {/* 主内容区 */}
-        <div className="flex-1 p-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">
           {/* 加载状态 */}
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-12 text-white">
@@ -777,13 +777,6 @@ export function LannaMirror() {
                       </div>
                     </div>
                   </div>
-                  {/* 完整生成画像 */}
-                  <img
-                    src={generatedImage}
-                    alt="Your Lanna Spirit"
-                    className="w-full rounded-lg border-2 shadow-lg"
-                    style={{ borderColor: matchedSpirit.color }}
-                  />
                 </div>
               )}
 
