@@ -9,10 +9,6 @@ const isDev = process.env.NODE_ENV === 'development';
 
 // Define the base Next.js configuration
 const baseConfig: NextConfig = {
-  eslint: {
-    dirs: ['.'],
-    ignoreDuringBuilds: true,
-  },
   poweredByHeader: false,
   reactStrictMode: true,
   // Enable Lovinsp for Turbopack (Next.js >= 15.3.x) - dev only
