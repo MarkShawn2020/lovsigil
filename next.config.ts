@@ -5,6 +5,8 @@ import { lovinspPlugin } from 'lovinsp';
 import createNextIntlPlugin from 'next-intl/plugin';
 import './src/libs/Env';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Define the base Next.js configuration
 const baseConfig: NextConfig = {
   eslint: {
@@ -13,10 +15,12 @@ const baseConfig: NextConfig = {
   },
   poweredByHeader: false,
   reactStrictMode: true,
-  // Enable Lovinsp for Turbopack (Next.js >= 15.3.x)
-  turbopack: {
-    rules: lovinspPlugin({ bundler: 'turbopack' }),
-  },
+  // Enable Lovinsp for Turbopack (Next.js >= 15.3.x) - dev only
+  ...(isDev && {
+    turbopack: {
+      rules: lovinspPlugin({ bundler: 'turbopack' }),
+    },
+  }),
   webpack: (config, { dev }) => {
     // Add lovinsp only in development
     if (dev) {
