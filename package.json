@@ -1,6 +1,6 @@
 {
   "name": "lanna-mirror-3",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "Ixartz (https://github.com/ixartz)",
   "engines": {
     "node": ">=20"
