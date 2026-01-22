@@ -29,6 +29,7 @@ interface PosterOptions {
   spiritName?: string
   spiritNameEn?: string
   spiritTraits?: string[]
+  includeOriginal?: boolean // 是否包含原始采集照片
 }
 
 /**
@@ -42,6 +43,30 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = reject
     img.src = src
   })
+}
+
+/**
+ * 绘制圆角矩形（兼容旧浏览器）
+ */
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  ctx.beginPath()
+  ctx.moveTo(x + radius, y)
+  ctx.lineTo(x + width - radius, y)
+  ctx.arcTo(x + width, y, x + width, y + radius, radius)
+  ctx.lineTo(x + width, y + height - radius)
+  ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius)
+  ctx.lineTo(x + radius, y + height)
+  ctx.arcTo(x, y + height, x, y + height - radius, radius)
+  ctx.lineTo(x, y + radius)
+  ctx.arcTo(x, y, x + radius, y, radius)
+  ctx.closePath()
 }
 
 /**
@@ -408,15 +433,46 @@ export async function generateLannaPoster(options: PosterOptions): Promise<strin
   ctx.fillStyle = COLORS.whiteTranslucent
   ctx.fillText('กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, 135)
 
-  // 4. 加载生成图
+  // 4. 加载图片
   const generatedImg = await loadImage(options.generatedImage)
 
-  // 5. 绘制生成图（主体 - 最大化，像游戏王卡图）
-  // 主图区域：y=160 到 y=1420，高度 1260px，宽度 980px
-  drawMainImage(ctx, generatedImg, POSTER_WIDTH / 2, 790, 980, 1200, spiritColor)
+  // 5. 根据模式绘制图片
+  if (options.includeOriginal && options.originalImage) {
+    // 对比模式：上方大图展示 spirit，下方小对比区
+    const originalImg = await loadImage(options.originalImage)
 
-  // 6. 底部信息区域（压缩，类似游戏王描述区）
-  const infoY = 1480
+    // 主图（spirit 生成图，占据主要视觉空间）
+    drawMainImage(ctx, generatedImg, POSTER_WIDTH / 2, 700, 900, 900, spiritColor)
+
+    // 底部对比区域背景
+    const compareY = 1280
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'
+    drawRoundedRect(ctx, 80, compareY - 80, POSTER_WIDTH - 160, 180, 20)
+    ctx.fill()
+
+    // 对比区标题
+    ctx.font = '20px sans-serif'
+    ctx.fillStyle = COLORS.goldDark
+    ctx.textAlign = 'center'
+    ctx.fillText('TRANSFORMATION', POSTER_WIDTH / 2, compareY - 48)
+
+    // 原图（左侧小圆）
+    const leftX = POSTER_WIDTH / 2 - 150
+    drawCircularImage(ctx, originalImg, leftX, compareY + 20, 60, COLORS.goldDark)
+
+    // 变形箭头（中间）
+    drawTransformArrow(ctx, POSTER_WIDTH / 2, compareY + 20, spiritColor)
+
+    // 生成图（右侧小圆）
+    const rightX = POSTER_WIDTH / 2 + 150
+    drawCircularImage(ctx, generatedImg, rightX, compareY + 20, 60, spiritColor)
+  } else {
+    // 纯生成图模式（最大化显示）
+    drawMainImage(ctx, generatedImg, POSTER_WIDTH / 2, 790, 980, 1200, spiritColor)
+  }
+
+  // 6. 底部信息区域
+  const infoY = options.includeOriginal ? 1540 : 1480
 
   // 守护灵 emoji + 泰文名
   ctx.font = 'bold 52px serif'
