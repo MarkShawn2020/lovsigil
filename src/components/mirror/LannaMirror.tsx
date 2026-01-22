@@ -35,20 +35,7 @@ import { SPIRIT_INFO } from './facsAnalyzer'
 import { PersonTracker } from './personTracker'
 import { downloadImage, generateLannaPoster } from './posterGenerator'
 import { LANNA_SPIRITS } from './spiritData'
-
-// 守护灵顺序（用于渲染）
-const SPIRIT_ORDER = ['naga', 'singha', 'hong', 'chang', 'garuda'] as const
-
-// 兰纳主色调
-const LANNA_GOLD = [212, 175, 55] // 金色
-
-// hex 转 rgb
-function hexToRgb(hex: string): [number, number, number] {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-  return result
-    ? [Number.parseInt(result[1]!, 16), Number.parseInt(result[2]!, 16), Number.parseInt(result[3]!, 16)]
-    : LANNA_GOLD as [number, number, number]
-}
+import { hexToNormalizedRgb, WebGLRenderer } from './webglRenderer'
 
 type MirrorState = 'attract' | 'generate' | 'result'
 
@@ -56,6 +43,7 @@ type MirrorState = 'attract' | 'generate' | 'result'
 let persistentStream: MediaStream | null = null
 let persistentSegmenter: any = null
 let persistentFaceLandmarker: any = null
+let persistentWebGLRenderer: WebGLRenderer | null = null
 
 export function LannaMirror() {
   const t = useTranslations('LannaMirror')
@@ -71,6 +59,7 @@ export function LannaMirror() {
   const animationRef = useRef<number>(0)
   const segmenterRef = useRef<any>(null)
   const faceLandmarkerRef = useRef<any>(null)
+  const webglRendererRef = useRef<WebGLRenderer | null>(null)
   const personTrackerRef = useRef<PersonTracker>(new PersonTracker())
 
   // 多人追踪状态
@@ -163,6 +152,27 @@ export function LannaMirror() {
     }
   }, [])
 
+  // 初始化 WebGL 渲染器
+  const initWebGL = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    // 复用持久化的 WebGL 渲染器
+    if (persistentWebGLRenderer) {
+      webglRendererRef.current = persistentWebGLRenderer
+      return
+    }
+
+    try {
+      const renderer = new WebGLRenderer({ canvas })
+      webglRendererRef.current = renderer
+      persistentWebGLRenderer = renderer
+    } catch (err) {
+      console.error('WebGL init error:', err)
+      // WebGL 失败时会回退到 CPU 渲染（renderLoop 中处理）
+    }
+  }, [])
+
   // 初始化 MediaPipe (Segmenter + Face Landmarker)
   const initMediaPipe = useCallback(async () => {
     try {
@@ -213,57 +223,39 @@ export function LannaMirror() {
     }
   }, [])
 
-  // 渲染循环 - 实时分割并染色 + FACS 表情分析
+  // 渲染循环 - 使用 WebGL 进行实时分割染色 + FACS 表情分析
   const renderLoop = useCallback(() => {
     const video = videoRef.current
     const canvas = canvasRef.current
     const segmenter = segmenterRef.current
     const faceLandmarker = faceLandmarkerRef.current
+    const webglRenderer = webglRendererRef.current
 
     if (!video || !canvas || !segmenter || video.readyState < 2) {
       animationRef.current = requestAnimationFrame(renderLoop)
       return
     }
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })
-    if (!ctx)
-      return
-
     const width = video.videoWidth
     const height = video.videoHeight
     const now = performance.now()
 
-    // 设置 canvas 尺寸（只设置一次）
-    if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width
-      canvas.height = height
-    }
-
-    // 先绘制原始视频（不镜像），用于分割
-    ctx.drawImage(video, 0, 0, width, height)
-
     // FACS 表情分析 - 多人追踪
+    let persons: TrackedPerson[] = []
     if (faceLandmarker) {
       const faceResult = faceLandmarker.detectForVideo(video, now)
       const faceLandmarksList: NormalizedLandmark[][] = faceResult.faceLandmarks || []
 
       // 更新人员追踪器
-      const persons = personTrackerRef.current.update(faceLandmarksList)
+      persons = personTrackerRef.current.update(faceLandmarksList)
       setTrackedPersons(persons)
 
-      // 绘制每人的表情状态覆盖层
+      // 同步 overlay canvas 尺寸
       const overlayCanvas = overlayCanvasRef.current
       if (overlayCanvas) {
-        const overlayCtx = overlayCanvas.getContext('2d')
-        if (overlayCtx) {
-          // 同步尺寸
-          if (overlayCanvas.width !== width || overlayCanvas.height !== height) {
-            overlayCanvas.width = width
-            overlayCanvas.height = height
-          }
-          overlayCtx.clearRect(0, 0, width, height)
-
-          // 不在镜子上绘制任何标注，保持镜子干净
+        if (overlayCanvas.width !== width || overlayCanvas.height !== height) {
+          overlayCanvas.width = width
+          overlayCanvas.height = height
         }
       }
     }
@@ -273,123 +265,39 @@ export function LannaMirror() {
 
     if (result.categoryMask) {
       const mask = result.categoryMask.getAsUint8Array()
-      const imageData = ctx.getImageData(0, 0, width, height)
-      const data = imageData.data
 
-      // 创建输出 imageData（镜像后的）
-      const outputData = ctx.createImageData(width, height)
-      const output = outputData.data
+      // 确定发光颜色（使用最大脸部的守护灵颜色）
+      let glowColor: [number, number, number] = [0.83, 0.69, 0.22] // 默认金色
+      if (persons.length > 0) {
+        // 按脸部大小排序，取最大的
+        const primaryPerson = persons.reduce((a, b) => a.size > b.size ? a : b)
+        const spiritInfo = SPIRIT_INFO[primaryPerson.dominantSpirit as keyof typeof SPIRIT_INFO]
+        if (spiritInfo) {
+          glowColor = hexToNormalizedRgb(spiritInfo.color)
+        }
+      }
 
-      // 第一遍：基础处理 + 镜像
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const srcIndex = y * width + x
-          const mirrorX = width - 1 - x
-          const dstIndex = y * width + mirrorX
+      // 使用 WebGL 渲染（如果可用）
+      if (webglRenderer) {
+        webglRenderer.render(video, mask, width, height, glowColor, 3.0)
 
-          const srcPixel = srcIndex * 4
-          const dstPixel = dstIndex * 4
-
-          const r = data[srcPixel]!
-          const g = data[srcPixel + 1]!
-          const b = data[srcPixel + 2]!
-
-          if (mask[srcIndex]! === 0) {
-            // 人像区域 (mask=0) - 保留原色，轻微暖色调提亮
-            output[dstPixel] = Math.min(255, Math.round(r * 1.1 + 15))
-            output[dstPixel + 1] = Math.min(255, Math.round(g * 1.05 + 10))
-            output[dstPixel + 2] = Math.min(255, Math.round(b * 0.95 + 5))
-            output[dstPixel + 3] = 255
-          }
-          else {
-            // 背景 (mask>0) - 暗化但保留可见度
-            output[dstPixel] = Math.round(r * 0.25)
-            output[dstPixel + 1] = Math.round(g * 0.25)
-            output[dstPixel + 2] = Math.round(b * 0.3)
-            output[dstPixel + 3] = 255
+        // 在 overlay canvas 上绘制边框
+        const overlayCanvas = overlayCanvasRef.current
+        if (overlayCanvas) {
+          const overlayCtx = overlayCanvas.getContext('2d')
+          if (overlayCtx) {
+            overlayCtx.clearRect(0, 0, width, height)
+            webglRenderer.drawBorder(overlayCtx, width, height, '#CC785C')
           }
         }
       }
 
-      // 第二遍：检测边缘并添加守护灵颜色发光
-      const edgeGlow = 3
-      const persons = personTrackerRef.current.getPersons()
-
-      for (let y = edgeGlow; y < height - edgeGlow; y++) {
-        for (let x = edgeGlow; x < width - edgeGlow; x++) {
-          const srcIndex = y * width + x
-          if (mask[srcIndex]! !== 0)
-            continue // 跳过背景
-
-          let isEdge = false
-          for (let dy = -1; dy <= 1 && !isEdge; dy++) {
-            for (let dx = -1; dx <= 1 && !isEdge; dx++) {
-              if (dx === 0 && dy === 0)
-                continue
-              const neighborIndex = (y + dy) * width + (x + dx)
-              if (mask[neighborIndex]! !== 0) {
-                isEdge = true // 邻居是背景，说明当前是边缘
-              }
-            }
-          }
-
-          if (isEdge) {
-            const mirrorX = width - 1 - x
-            // 归一化坐标（镜像后）
-            const normX = mirrorX / width
-            const normY = y / height
-
-            // 找最近的人，使用其守护灵颜色
-            let glowColor = LANNA_GOLD
-            let minDist = Infinity
-
-            for (const person of persons) {
-              const dx = normX - person.center.x
-              const dy = normY - person.center.y
-              const dist = dx * dx + dy * dy
-              if (dist < minDist) {
-                minDist = dist
-                const spiritInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
-                if (spiritInfo) {
-                  glowColor = hexToRgb(spiritInfo.color)
-                }
-              }
-            }
-
-            for (let gy = -edgeGlow; gy <= edgeGlow; gy++) {
-              for (let gx = -edgeGlow; gx <= edgeGlow; gx++) {
-                const dist = Math.sqrt(gx * gx + gy * gy)
-                if (dist > edgeGlow)
-                  continue
-
-                const glowY = y + gy
-                const glowX = mirrorX + gx
-                if (glowY < 0 || glowY >= height || glowX < 0 || glowX >= width)
-                  continue
-
-                const glowIndex = (glowY * width + glowX) * 4
-                const intensity = (1 - dist / edgeGlow) * 0.7
-
-                output[glowIndex] = Math.min(255, output[glowIndex]! + glowColor[0]! * intensity)
-                output[glowIndex + 1] = Math.min(255, output[glowIndex + 1]! + glowColor[1]! * intensity)
-                output[glowIndex + 2] = Math.min(255, output[glowIndex + 2]! + glowColor[2]! * intensity)
-              }
-            }
-          }
-        }
-      }
-
-      ctx.putImageData(outputData, 0, 0)
-
-      // 兰纳风格边框
-      ctx.strokeStyle = '#CC785C'
-      ctx.lineWidth = 4
-      ctx.strokeRect(2, 2, width - 4, height - 4)
-
-      // 提取头部真实抠像缩略图（节流：每 300ms 更新一次）
+      // 提取头部缩略图（节流：每 300ms 更新一次）
+      // 注意：这里仍需 CPU 处理，因为需要访问原始视频帧和 mask
       if (persons.length > 0 && now - lastThumbnailUpdateRef.current > 300) {
         lastThumbnailUpdateRef.current = now
 
+        // 创建临时 canvas 获取视频帧数据
         if (!thumbnailCanvasRef.current) {
           thumbnailCanvasRef.current = document.createElement('canvas')
         }
@@ -397,59 +305,65 @@ export function LannaMirror() {
         const thumbSize = 80
         const newThumbnails: Record<string, string> = {}
 
-        for (const person of persons) {
-          // 头部区域（原始坐标，未镜像）
-          const headRadius = person.size * 1.5
-          const srcCenterX = person.center.x * width
-          const srcCenterY = person.center.y * height
+        // 获取原始视频帧（用于缩略图）
+        thumbCanvas.width = width
+        thumbCanvas.height = height
+        const tempCtx = thumbCanvas.getContext('2d', { willReadFrequently: true })
+        if (tempCtx) {
+          tempCtx.drawImage(video, 0, 0, width, height)
+          const frameData = tempCtx.getImageData(0, 0, width, height).data
 
-          const srcX = Math.max(0, Math.round(srcCenterX - headRadius * width))
-          const srcY = Math.max(0, Math.round(srcCenterY - headRadius * height * 1.2))
-          const srcW = Math.min(width - srcX, Math.round(headRadius * width * 2))
-          const srcH = Math.min(height - srcY, Math.round(headRadius * height * 2.4))
+          for (const person of persons) {
+            // 头部区域（原始坐标，未镜像）
+            const headRadius = person.size * 1.5
+            const srcCenterX = person.center.x * width
+            const srcCenterY = person.center.y * height
 
-          if (srcW > 20 && srcH > 20) {
-            thumbCanvas.width = thumbSize
-            thumbCanvas.height = thumbSize
-            const thumbCtx = thumbCanvas.getContext('2d')
-            if (!thumbCtx) continue
+            const srcX = Math.max(0, Math.round(srcCenterX - headRadius * width))
+            const srcY = Math.max(0, Math.round(srcCenterY - headRadius * height * 1.2))
+            const srcW = Math.min(width - srcX, Math.round(headRadius * width * 2))
+            const srcH = Math.min(height - srcY, Math.round(headRadius * height * 2.4))
 
-            // 创建带透明通道的 imageData
-            const thumbData = thumbCtx.createImageData(thumbSize, thumbSize)
-            const thumbPixels = thumbData.data
+            if (srcW > 20 && srcH > 20) {
+              // 创建小画布用于缩略图
+              const smallCanvas = document.createElement('canvas')
+              smallCanvas.width = thumbSize
+              smallCanvas.height = thumbSize
+              const smallCtx = smallCanvas.getContext('2d')
+              if (!smallCtx) continue
 
-            for (let ty = 0; ty < thumbSize; ty++) {
-              for (let tx = 0; tx < thumbSize; tx++) {
-                // 源图坐标
-                const sx = Math.floor(srcX + (tx / thumbSize) * srcW)
-                const sy = Math.floor(srcY + (ty / thumbSize) * srcH)
+              const thumbData = smallCtx.createImageData(thumbSize, thumbSize)
+              const thumbPixels = thumbData.data
 
-                if (sx >= 0 && sx < width && sy >= 0 && sy < height) {
-                  const srcIdx = sy * width + sx
-                  const srcPixel = srcIdx * 4
-                  // 镜像 x
-                  const mirrorTx = thumbSize - 1 - tx
-                  const thumbIdx = (ty * thumbSize + mirrorTx) * 4
+              for (let ty = 0; ty < thumbSize; ty++) {
+                for (let tx = 0; tx < thumbSize; tx++) {
+                  const sx = Math.floor(srcX + (tx / thumbSize) * srcW)
+                  const sy = Math.floor(srcY + (ty / thumbSize) * srcH)
 
-                  // 用 mask 判断是否为人像（mask=0 是人像，mask>0 是背景）
-                  if (mask[srcIdx]! === 0) {
-                    thumbPixels[thumbIdx] = data[srcPixel]!
-                    thumbPixels[thumbIdx + 1] = data[srcPixel + 1]!
-                    thumbPixels[thumbIdx + 2] = data[srcPixel + 2]!
-                    thumbPixels[thumbIdx + 3] = 255
+                  if (sx >= 0 && sx < width && sy >= 0 && sy < height) {
+                    const srcIdx = sy * width + sx
+                    const srcPixel = srcIdx * 4
+                    const mirrorTx = thumbSize - 1 - tx
+                    const thumbIdx = (ty * thumbSize + mirrorTx) * 4
+
+                    if (mask[srcIdx]! === 0) {
+                      thumbPixels[thumbIdx] = frameData[srcPixel]!
+                      thumbPixels[thumbIdx + 1] = frameData[srcPixel + 1]!
+                      thumbPixels[thumbIdx + 2] = frameData[srcPixel + 2]!
+                      thumbPixels[thumbIdx + 3] = 255
+                    }
                   }
-                  // else: 背景保持透明
                 }
               }
+
+              smallCtx.putImageData(thumbData, 0, 0)
+              newThumbnails[person.id] = smallCanvas.toDataURL('image/png')
             }
-
-            thumbCtx.putImageData(thumbData, 0, 0)
-            newThumbnails[person.id] = thumbCanvas.toDataURL('image/png')
           }
-        }
 
-        if (Object.keys(newThumbnails).length > 0) {
-          setHeadThumbnails(newThumbnails)
+          if (Object.keys(newThumbnails).length > 0) {
+            setHeadThumbnails(newThumbnails)
+          }
         }
       }
 
@@ -569,22 +483,25 @@ export function LannaMirror() {
     return false
   }, [isAdmin, user])
 
-  // 初始化
+  // 标记组件已挂载（避免 ResizablePanel 宽度闪烁）
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // 初始化（必须在 mounted 后执行，否则 canvas 不存在）
+  useEffect(() => {
+    if (!mounted) return
+
     initCamera()
     initMediaPipe()
+    initWebGL()
 
     // 不在 cleanup 中停止摄像头，让 stream 跨语言切换保持活跃
     // 浏览器会在页面真正离开时自动释放资源
     return () => {
       cancelAnimationFrame(animationRef.current)
     }
-  }, [initCamera, initMediaPipe])
-
-  // 标记组件已挂载（避免 ResizablePanel 宽度闪烁）
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  }, [mounted, initCamera, initMediaPipe, initWebGL])
 
   // 开始渲染循环 - 始终保持实时画面
   useEffect(() => {
