@@ -36,7 +36,7 @@ export function SignUpForm({ redirectTo, onSuccess, onSignIn }: SignUpFormProps)
 
     try {
       const result = await signUp(data.email, data.password, data.displayName, {
-        redirectTo: redirectTo || `${window.location.origin}/dashboard`,
+        redirectTo: redirectTo || `${window.location.origin}/`,
       });
 
       if (result.error) {

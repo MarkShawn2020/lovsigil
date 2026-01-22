@@ -144,13 +144,13 @@ export default async function middleware(
       const localeMatch = pathname.match(/^\/([^/]+)\//);
       const locale = localeMatch?.[1];
 
-      // Build dashboard URL with proper locale
-      let dashboardUrl = '/dashboard';
+      // Build homepage URL with proper locale
+      let homeUrl = '/';
       if (locale && locale !== routing.defaultLocale) {
-        dashboardUrl = `/${locale}/dashboard`;
+        homeUrl = `/${locale}`;
       }
 
-      return NextResponse.redirect(new URL(dashboardUrl, request.url));
+      return NextResponse.redirect(new URL(homeUrl, request.url));
     }
   }
 

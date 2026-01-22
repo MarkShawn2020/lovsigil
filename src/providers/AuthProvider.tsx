@@ -165,25 +165,16 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
   return newState;
 }
 
-// Helper function to fetch user data directly from Supabase using RLS
-async function fetchUserData(userId: string): Promise<AuthUser | null> {
+// Helper function to fetch user profile - takes user from session, not from API call
+async function fetchUserData(user: User): Promise<AuthUser> {
+  // 即使 profile 获取失败，也返回基本用户信息
+  // 这样用户至少能登录，只是没有完整 profile
   try {
-    const { user, error } = await AuthClientService.getCurrentUser();
-
-    if (error || !user || user.id !== userId) {
-      return null;
-    }
-
-    const { profile, isAdmin } = await UserDataService.getUserData(userId);
-
-    return {
-      ...user,
-      profile: profile || undefined,
-      isAdmin,
-    };
+    const { profile, isAdmin } = await UserDataService.getUserData(user.id);
+    return { ...user, profile: profile || undefined, isAdmin };
   } catch (error) {
     console.error('Error fetching user data:', error);
-    return null;
+    return { ...user, profile: undefined, isAdmin: false };
   }
 }
 
@@ -199,165 +190,107 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isBackgroundValidating = false;
 
     const loadUser = async () => {
-      try {
-        dispatch({ type: 'SET_LOADING', payload: true });
+      const cachedState = getCachedAuthState();
+      console.log('[AuthProvider] loadUser: cachedUser=', !!cachedState.user);
 
-        const cachedState = getCachedAuthState();
-
-        if (cachedState.user && isMounted) {
-          dispatch({ type: 'UPDATE_USER', payload: cachedState.user });
-        }
-
-        const { session, error } = await AuthClientService.getSession();
-
-        if (error) {
-          console.warn('Error getting session:', error);
-          if (cachedState.user && error.includes('timed out')) {
-            console.log('Session timed out but have cached user, keeping cached state');
-            if (isMounted) {
-              dispatch({ type: 'SET_LOADING', payload: false });
-            }
-            return;
+      if (cachedState.user && isMounted) {
+        dispatch({ type: 'UPDATE_USER', payload: cachedState.user });
+        dispatch({ type: 'SET_LOADING', payload: false });
+      } else {
+        // 无缓存用户，设置超时防止永久 loading
+        setTimeout(() => {
+          if (isMounted && stateRef.current.loading) {
+            console.log('[AuthProvider] Timeout: setting loading to false');
+            dispatch({ type: 'SET_LOADING', payload: false });
           }
-          if (isMounted) {
-            dispatch({ type: 'SIGN_IN_ERROR', payload: error });
-          }
-          return;
-        }
-
-        if (session?.user) {
-          const completeUser = await fetchUserData(session.user.id);
-          if (isMounted) {
-            if (completeUser) {
-              dispatch({ type: 'SIGN_IN_SUCCESS', payload: completeUser });
-            } else {
-              console.warn('Failed to fetch complete user data, signing out');
-              dispatch({ type: 'SIGN_OUT' });
-            }
-          }
-        } else {
-          if (isMounted) {
-            dispatch({ type: 'SIGN_OUT' });
-          }
-        }
-      } catch (error) {
-        console.error('Error loading user:', error);
-        if (isMounted) {
-          dispatch({ type: 'SIGN_IN_ERROR', payload: 'Failed to load user' });
-        }
+        }, 3000);
       }
     };
 
     const validateUserSilently = async () => {
-      if (isBackgroundValidating) {
-        console.log('Background validation already in progress, skipping');
-        return;
-      }
+      if (isBackgroundValidating) return;
+
+      const currentUser = stateRef.current.user;
+      if (!currentUser) return; // 没有用户，无需验证
 
       try {
         isBackgroundValidating = true;
-        console.log('Starting silent background validation');
-
-        const { session, error } = await AuthClientService.getSession();
-
-        if (error || !session?.user) {
-          console.log('Silent validation: No valid session, signing out');
-          if (isMounted) {
-            dispatch({ type: 'SIGN_OUT' });
-          }
-          return;
-        }
-
-        const currentUser = stateRef.current.user;
-        if (currentUser && session.user.id === currentUser.id) {
-          console.log('Silent validation: Same user, refreshing profile silently');
-          const completeUser = await fetchUserData(session.user.id);
-          if (completeUser && isMounted) {
-            dispatch({ type: 'UPDATE_USER', payload: completeUser });
-          }
-        } else {
-          console.log('Silent validation: User changed, updating with loading');
-          if (isMounted) {
-            dispatch({ type: 'SIGN_IN_START' });
-            const completeUser = await fetchUserData(session.user.id);
-            dispatch({ type: 'SIGN_IN_SUCCESS', payload: completeUser || { ...session.user, isAdmin: false } });
-          }
+        const completeUser = await fetchUserData(currentUser);
+        if (isMounted) {
+          dispatch({ type: 'UPDATE_USER', payload: completeUser });
         }
       } catch (error) {
         console.error('Silent validation failed:', error);
       } finally {
         isBackgroundValidating = false;
-        console.log('Silent background validation completed');
       }
     };
 
     const handleVisibilityChange = () => {
       if (!document.hidden && isMounted) {
         const currentState = stateRef.current;
-
         if (!currentState.user || currentState.error) {
-          console.log('Page visible: No user data, loading with spinner');
           loadUser();
         } else {
-          console.log('Page visible: Have user data, validating silently');
           validateUserSilently();
         }
       }
     };
 
     loadUser();
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     authSubscription = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!isMounted) {
-          return;
-        }
+        console.log('[AuthProvider] onAuthStateChange:', event, session?.user?.id);
 
-        console.log('Auth state change:', event, session?.user?.id, `(backgroundValidating: ${isBackgroundValidating})`);
-
-        if (isBackgroundValidating) {
-          console.log('Ignoring auth event during background validation to prevent circular triggering');
-          return;
-        }
+        if (!isMounted || isBackgroundValidating) return;
 
         const currentUser = stateRef.current.user;
 
         switch (event) {
-          case 'SIGNED_IN':
+          case 'INITIAL_SESSION':
             if (session?.user) {
-              if (!currentUser || currentUser.id !== session.user.id) {
-                console.log('SIGNED_IN: New user detected, showing loading');
-                dispatch({ type: 'SIGN_IN_START' });
-                const completeUser = await fetchUserData(session.user.id);
-                if (completeUser) {
-                  dispatch({ type: 'SIGN_IN_SUCCESS', payload: completeUser });
-                } else {
-                  console.warn('Auth event SIGNED_IN but failed to fetch user data');
-                  dispatch({ type: 'SIGN_IN_ERROR', payload: 'Failed to load user profile' });
-                }
-              } else {
-                console.log('SIGNED_IN: Same user, updating without loading');
-                const completeUser = await fetchUserData(session.user.id);
-                if (completeUser) {
+              // 立即设置基本用户信息，不等待 profile
+              const basicUser: AuthUser = { ...session.user, profile: undefined, isAdmin: false };
+              dispatch({ type: 'SIGN_IN_SUCCESS', payload: basicUser });
+              // 后台获取完整 profile
+              fetchUserData(session.user).then((completeUser) => {
+                if (isMounted) {
                   dispatch({ type: 'UPDATE_USER', payload: completeUser });
                 }
+              });
+            } else {
+              dispatch({ type: 'SIGN_OUT' });
+            }
+            break;
+          case 'SIGNED_IN':
+            if (session?.user) {
+              // 立即设置基本用户信息
+              const basicUser: AuthUser = { ...session.user, profile: undefined, isAdmin: false };
+              if (!currentUser || currentUser.id !== session.user.id) {
+                dispatch({ type: 'SIGN_IN_SUCCESS', payload: basicUser });
               }
+              // 后台获取完整 profile
+              fetchUserData(session.user).then((completeUser) => {
+                if (isMounted) {
+                  dispatch({ type: 'UPDATE_USER', payload: completeUser });
+                }
+              });
             }
             break;
           case 'SIGNED_OUT':
+            console.log('[AuthProvider] SIGNED_OUT: dispatching SIGN_OUT');
             dispatch({ type: 'SIGN_OUT' });
             break;
           case 'TOKEN_REFRESHED':
             if (session?.user) {
-              const completeUser = await fetchUserData(session.user.id);
-              if (completeUser) {
-                dispatch({ type: 'UPDATE_USER', payload: completeUser });
-              } else {
-                console.warn('Token refreshed but failed to fetch user data, signing out');
-                dispatch({ type: 'SIGN_OUT' });
-              }
+              // 后台更新，不阻塞
+              fetchUserData(session.user).then((completeUser) => {
+                if (isMounted) {
+                  dispatch({ type: 'UPDATE_USER', payload: completeUser });
+                }
+              });
             }
             break;
         }
@@ -374,38 +307,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    console.log('🔑 AuthProvider signIn called with:', { email });
     dispatch({ type: 'SIGN_IN_START' });
-
-    console.log('🌐 Calling AuthClientService.signIn...');
     const result = await AuthClientService.signIn(email, password);
-    console.log('📋 AuthClientService result:', result);
-
     if (result.error) {
-      console.error('❌ AuthProvider signIn error:', result.error);
       dispatch({ type: 'SIGN_IN_ERROR', payload: result.error });
       return { error: result.error };
     }
-
-    console.log('✅ AuthProvider signIn successful, waiting for auth state change...');
     return {};
   };
 
   const signInWithGoogle = async (redirectTo?: string) => {
-    console.log('🔑 AuthProvider signInWithGoogle called');
     dispatch({ type: 'SIGN_IN_START' });
-
-    console.log('🌐 Calling AuthClientService.signInWithGoogle...');
     const result = await AuthClientService.signInWithGoogle(redirectTo);
-    console.log('📋 AuthClientService Google OAuth result:', result);
-
     if (result.error) {
-      console.error('❌ AuthProvider Google OAuth error:', result.error);
       dispatch({ type: 'SIGN_IN_ERROR', payload: result.error });
       return { error: result.error };
     }
-
-    console.log('✅ AuthProvider Google OAuth initiated successfully');
     return {};
   };
 
@@ -461,14 +378,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshUser = async () => {
-    if (!state.user) {
-      return;
-    }
-
-    const completeUser = await fetchUserData(state.user.id);
-    if (completeUser) {
-      dispatch({ type: 'UPDATE_USER', payload: completeUser });
-    }
+    if (!state.user) return;
+    const completeUser = await fetchUserData(state.user);
+    dispatch({ type: 'UPDATE_USER', payload: completeUser });
   };
 
   const value: AuthContextType = {
