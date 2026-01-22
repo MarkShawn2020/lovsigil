@@ -1,0 +1,170 @@
+{
+  "Header": {
+    "features": "คุณสมบัติ",
+    "cases": "กรณีศึกษา",
+    "community": "ชุมชน",
+    "pricing": "ราคา",
+    "blog": "บล็อก",
+    "login": "เข้าสู่ระบบ",
+    "try_now": "ลองเลย"
+  },
+  "RootLayout": {
+    "home_link": "หน้าแรก",
+    "about_link": "เกี่ยวกับเรา",
+    "counter_link": "ตัวนับ",
+    "portfolio_link": "ผลงาน",
+    "sign_in_link": "เข้าสู่ระบบ",
+    "sign_up_link": "สมัครสมาชิก"
+  },
+  "BaseTemplate": {
+    "description": "LannaMirror3 - Next.js SaaS Template พร้อมใช้งาน",
+    "made_with": "สร้างด้วยความใส่ใจโดย <author></author>"
+  },
+  "Index": {
+    "meta_title": "LannaMirror3 - Next.js SaaS Template พร้อมใช้งาน",
+    "meta_description": "Full-stack SaaS template ที่สร้างด้วย Next.js 15, Supabase และ Tailwind CSS เริ่มโปรเจกต์ใหม่ได้ในไม่กี่นาที",
+    "sponsors_title": "พันธมิตร"
+  },
+  "LannaMirror": {
+    "title": "กระจกวิญญาณล้านนา",
+    "subtitle": "Lanna Spirit Mirror",
+    "loading_ai": "กำลังโหลด AI...",
+    "loading_ai_en": "Loading AI...",
+    "camera_error": "ไม่สามารถเข้าถึงกล้อง",
+    "camera_error_en": "Cannot access camera",
+    "ai_load_error": "โหลด AI ล้มเหลว",
+    "ai_load_error_en": "Failed to load AI",
+    "retry": "ลองอีกครั้ง",
+    "retry_en": "Retry",
+    "step_closer": "เข้ามาใกล้กระจก...",
+    "step_closer_en": "Step closer to the mirror...",
+    "analyzing": "ระบบจะวิเคราะห์การแสดงออกของคุณ",
+    "analyzing_en": "System will analyze your expressions",
+    "generate_portrait": "สร้างภาพวิญญาณ",
+    "generate_portrait_en": "Generate Portrait",
+    "original": "ต้นฉบับ",
+    "original_en": "Original",
+    "spirit": "วิญญาณ",
+    "preview": "ดูตัวอย่าง",
+    "another_one": "ลองอีกครั้ง",
+    "generating": "กำลังสร้างภาพ...",
+    "generating_en": "Generating portrait...",
+    "generation_time": "ประมาณ 10-30 วินาที",
+    "generation_time_en": "About 10-30 seconds",
+    "generation_failed": "การสร้างล้มเหลว",
+    "generation_failed_en": "Generation Failed",
+    "start_over": "เริ่มใหม่",
+    "start_over_en": "Start Over",
+    "history": "ประวัติ",
+    "history_en": "History",
+    "no_history": "ยังไม่มีประวัติ",
+    "no_history_en": "No history yet",
+    "sign_in": "เข้าสู่ระบบ",
+    "sign_in_en": "Sign in",
+    "ai_effect": "AI Effect",
+    "raw_input": "Raw Input",
+    "generating_poster": "กำลังสร้างโปสเตอร์...",
+    "spirit_only": "เฉพาะวิญญาณ",
+    "with_original": "+ ต้นฉบับ",
+    "download": "ดาวน์โหลด",
+    "delete": "ลบ",
+    "deleting": "กำลังลบ..."
+  },
+  "Counter": {
+    "meta_title": "ตัวนับ",
+    "meta_description": "ตัวอย่างการดำเนินการฐานข้อมูล",
+    "loading_counter": "กำลังโหลดตัวนับ...",
+    "security_powered_by": "ความปลอดภัย การตรวจจับบอท และการจำกัดอัตราขับเคลื่อนโดย"
+  },
+  "CounterForm": {
+    "presentation": "ตัวนับถูกเก็บในฐานข้อมูลและจะเพิ่มตามค่าที่คุณระบุ",
+    "label_increment": "เพิ่มทีละ",
+    "button_increment": "เพิ่ม",
+    "error_increment_range": "ค่าต้องอยู่ระหว่าง 1 ถึง 3",
+    "loading_submit": "กำลังอัปเดต...",
+    "submitting": "กำลังส่ง..."
+  },
+  "CurrentCount": {
+    "count": "นับ: {count}"
+  },
+  "About": {
+    "meta_title": "เกี่ยวกับเรา",
+    "meta_description": "เรียนรู้เกี่ยวกับ LannaMirror3 template และทีม Lovstudio",
+    "about_paragraph": "ยินดีต้อนรับสู่ LannaMirror3! นี่คือ Next.js SaaS starter ที่พร้อมใช้งานจริง สร้างโดยทีม Lovstudio เพื่อช่วยนักพัฒนาสร้างเว็บแอปพลิเคชันสมัยใหม่อย่างรวดเร็ว",
+    "translation_powered_by": "การแปลขับเคลื่อนโดย"
+  },
+  "notifications": {
+    "close": "ปิด",
+    "success_title": "สำเร็จ",
+    "error_title": "ข้อผิดพลาด",
+    "warning_title": "คำเตือน",
+    "info_title": "ข้อมูล",
+    "save_success": "บันทึกสำเร็จ",
+    "save_error": "บันทึกล้มเหลว",
+    "delete_success": "ลบสำเร็จ",
+    "delete_error": "ลบล้มเหลว",
+    "loading": "กำลังโหลด...",
+    "please_wait": "กรุณารอสักครู่"
+  },
+  "button_states": {
+    "loading": "กำลังโหลด...",
+    "submitting": "กำลังส่ง...",
+    "saving": "กำลังบันทึก...",
+    "deleting": "กำลังลบ...",
+    "updating": "กำลังอัปเดต...",
+    "processing": "กำลังประมวลผล..."
+  },
+  "Auth": {
+    "loading": "กำลังโหลด..."
+  },
+  "SignIn": {
+    "meta_title": "เข้าสู่ระบบ - LannaMirror3",
+    "title": "เข้าสู่ระบบ",
+    "subtitle": "ยินดีต้อนรับกลับมา! กรุณาเข้าสู่ระบบ",
+    "email_label": "อีเมล",
+    "email_placeholder": "กรอกอีเมลของคุณ",
+    "password_label": "รหัสผ่าน",
+    "password_placeholder": "กรอกรหัสผ่านของคุณ",
+    "sign_in_button": "เข้าสู่ระบบ",
+    "signing_in": "กำลังเข้าสู่ระบบ...",
+    "no_account": "ยังไม่มีบัญชี?",
+    "sign_up_link": "สมัครสมาชิก"
+  },
+  "SignUp": {
+    "meta_title": "สมัครสมาชิก - LannaMirror3",
+    "title": "สร้างบัญชี",
+    "subtitle": "เข้าร่วมกับผู้สร้างหลายพันคนที่ใช้ LannaMirror3",
+    "sign_up_button": "สร้างบัญชี",
+    "creating_account": "กำลังสร้างบัญชี...",
+    "have_account": "มีบัญชีอยู่แล้ว?",
+    "sign_in_link": "เข้าสู่ระบบ"
+  },
+  "Dashboard": {
+    "meta_title": "แดชบอร์ด",
+    "welcome": "ยินดีต้อนรับกลับมา {name}!",
+    "welcome_subtitle": "นี่คือแดชบอร์ดของคุณ จัดการโปรเจกต์และการตั้งค่าได้ที่นี่"
+  },
+  "DashboardLayout": {
+    "dashboard_link": "แดชบอร์ด",
+    "user_profile_link": "จัดการบัญชีของคุณ",
+    "sign_out": "ออกจากระบบ"
+  },
+  "Footer": {
+    "company_title": "บริษัท",
+    "product_title": "ผลิตภัณฑ์",
+    "support_title": "สนับสนุน",
+    "rights_reserved": "สงวนลิขสิทธิ์"
+  },
+  "UserProfile": {
+    "meta_title": "ตั้งค่าโปรไฟล์ - LannaMirror3",
+    "title": "ตั้งค่าโปรไฟล์",
+    "loading": "กำลังโหลดโปรไฟล์...",
+    "locale_label": "ภาษา",
+    "locale_th": "ภาษาไทย",
+    "locale_en": "English (อังกฤษ)",
+    "locale_ko": "한국어 (เกาหลี)",
+    "locale_zh": "中文 (จีน)",
+    "update_profile": "อัปเดตโปรไฟล์",
+    "updating": "กำลังอัปเดต..."
+  }
+}

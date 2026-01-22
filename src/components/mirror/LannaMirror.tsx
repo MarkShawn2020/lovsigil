@@ -1,6 +1,7 @@
 'use client'
 
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
+import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +11,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
+import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { version } from '../../../package.json'
 
 // 过滤 MediaPipe 的 INFO 日志（它们被错误地输出到 stderr）
@@ -47,7 +49,13 @@ function hexToRgb(hex: string): [number, number, number] {
 
 type MirrorState = 'attract' | 'generate' | 'result'
 
+// 模块级变量：跨组件重新挂载保持状态（语言切换时不重新初始化）
+let persistentStream: MediaStream | null = null
+let persistentSegmenter: any = null
+let persistentFaceLandmarker: any = null
+
 export function LannaMirror() {
+  const t = useTranslations('LannaMirror')
   const { user, isAdmin, loading: authLoading, signInWithGoogle, signOut } = useAuth()
   const videoRef = useRef<HTMLVideoElement>(null)
   const rawVideoRef = useRef<HTMLVideoElement>(null)
@@ -55,6 +63,7 @@ export function LannaMirror() {
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const [state, setState] = useState<MirrorState>('attract')
   const [isLoading, setIsLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const animationRef = useRef<number>(0)
   const segmenterRef = useRef<any>(null)
@@ -122,22 +131,31 @@ export function LannaMirror() {
   // 初始化摄像头
   const initCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720, facingMode: 'user' },
-        audio: false,
-      })
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
+      // 复用持久化的 stream（语言切换时不重新获取摄像头）
+      let stream = persistentStream
+      if (!stream || !stream.active) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 1280, height: 720, facingMode: 'user' },
+          audio: false,
+        })
+        persistentStream = stream
       }
-      // 同时绑定到原始视频显示元素
-      if (rawVideoRef.current) {
+
+      if (videoRef.current && videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream
+        videoRef.current.play().catch((e) => {
+          if (e.name !== 'AbortError') console.error('Video play error:', e)
+        })
+      }
+      if (rawVideoRef.current && rawVideoRef.current.srcObject !== stream) {
         rawVideoRef.current.srcObject = stream
-        await rawVideoRef.current.play()
+        rawVideoRef.current.play().catch((e) => {
+          if (e.name !== 'AbortError') console.error('Raw video play error:', e)
+        })
       }
     }
     catch (err) {
-      setError('ไม่สามารถเข้าถึงกล้อง / Cannot access camera')
+      setError(`${t('camera_error')} / ${t('camera_error_en')}`)
       console.error('Camera error:', err)
     }
   }, [])
@@ -145,6 +163,14 @@ export function LannaMirror() {
   // 初始化 MediaPipe (Segmenter + Face Landmarker)
   const initMediaPipe = useCallback(async () => {
     try {
+      // 复用持久化的 MediaPipe 实例（语言切换时不重新加载模型）
+      if (persistentSegmenter && persistentFaceLandmarker) {
+        segmenterRef.current = persistentSegmenter
+        faceLandmarkerRef.current = persistentFaceLandmarker
+        setIsLoading(false)
+        return
+      }
+
       const { ImageSegmenter, FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision')
 
       const vision = await FilesetResolver.forVisionTasks(
@@ -161,6 +187,7 @@ export function LannaMirror() {
         outputCategoryMask: true,
       })
       segmenterRef.current = segmenter
+      persistentSegmenter = segmenter
 
       // 初始化 Face Landmarker (FACS 基础) - 支持多人
       const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
@@ -173,11 +200,12 @@ export function LannaMirror() {
         outputFaceBlendshapes: true,
       })
       faceLandmarkerRef.current = faceLandmarker
+      persistentFaceLandmarker = faceLandmarker
 
       setIsLoading(false)
     }
     catch (err) {
-      setError('โหลด AI ล้มเหลว / Failed to load AI')
+      setError(`${t('ai_load_error')} / ${t('ai_load_error_en')}`)
       console.error('MediaPipe error:', err)
     }
   }, [])
@@ -593,15 +621,17 @@ export function LannaMirror() {
     initMediaPipe()
     fetchHistory()
 
+    // 不在 cleanup 中停止摄像头，让 stream 跨语言切换保持活跃
+    // 浏览器会在页面真正离开时自动释放资源
     return () => {
       cancelAnimationFrame(animationRef.current)
-      // 停止摄像头 stream（两个 video 共享同一个 stream，只需停止一次）
-      if (videoRef.current?.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks()
-        tracks.forEach(track => track.stop())
-      }
     }
   }, [initCamera, initMediaPipe, fetchHistory])
+
+  // 标记组件已挂载（避免 ResizablePanel 宽度闪烁）
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // 开始渲染循环 - 始终保持实时画面
   useEffect(() => {
@@ -617,7 +647,7 @@ export function LannaMirror() {
         <div className="text-center">
           <p className="text-destructive text-lg">{error}</p>
           <Button onClick={() => window.location.reload()} className="mt-4">
-            ลองอีกครั้ง / Retry
+            {t('retry')} / {t('retry_en')}
           </Button>
         </div>
       </div>
@@ -626,6 +656,11 @@ export function LannaMirror() {
 
   const personCount = trackedPersons.length
   const hasPersons = personCount > 0
+
+  // 等待挂载后再渲染 ResizablePanelGroup，避免 localStorage 恢复导致的宽度闪烁
+  if (!mounted) {
+    return <div className="h-screen w-screen bg-black" />
+  }
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-black">
@@ -639,30 +674,34 @@ export function LannaMirror() {
 
       <ResizablePanelGroup
         direction="horizontal"
-        autoSaveId="lanna-mirror-sidebar"
         className="h-full"
+        autoSaveId="lanna-mirror-sidebar"
       >
-        {/* 左侧面板 */}
+        {/* 左侧面板 - 固定宽度320px */}
         <ResizablePanel
           defaultSize={20}
-          minSize={15}
-          maxSize={40}
+          minSize={5}
+          maxSize={35}
           className="flex flex-col bg-black/95 overflow-y-auto"
+          style={{ flexBasis: 320, minWidth: 120, maxWidth: 480 }}
         >
         {/* 标题区域 */}
-        <div className="p-6 border-b border-[#D4AF37]/20">
+        <div className="p-4 border-b border-[#D4AF37]/20">
           <div className="flex items-center gap-2">
             <h1
-              className="text-2xl font-bold tracking-widest"
+              className="text-xl font-bold tracking-widest"
               style={{ color: '#CC785C' }}
             >
-              กระจกวิญญาณล้านนา
+              {t('title')}
             </h1>
             <Badge variant="outline" className="text-[10px] text-white/40 border-white/20">
               v{version}
             </Badge>
           </div>
-          <p className="text-white/50 mt-1 text-sm">Lanna Spirit Mirror</p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-white/50 text-sm">{t('subtitle')}</p>
+            <LocaleSwitcher className="text-white" />
+          </div>
         </div>
 
         {/* 主内容区 */}
@@ -671,8 +710,8 @@ export function LannaMirror() {
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-12 text-white">
               <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-sm text-white/60">กำลังโหลด AI...</p>
-              <p className="text-xs text-white/40 mt-1">Loading AI...</p>
+              <p className="text-sm text-white/60">{t('loading_ai')}</p>
+              <p className="text-xs text-white/40 mt-1">{t('loading_ai_en')}</p>
             </div>
           )}
 
@@ -682,10 +721,10 @@ export function LannaMirror() {
               {!hasPersons ? (
                 <div className="text-center py-12">
                   <div className="text-4xl mb-4">🪞</div>
-                  <p className="text-white/40 text-sm">เข้ามาใกล้กระจก...</p>
-                  <p className="text-white/30 text-xs mt-1">Step closer to the mirror...</p>
-                  <p className="text-white/30 text-xs mt-3">ระบบจะวิเคราะห์การแสดงออกของคุณ</p>
-                  <p className="text-white/20 text-xs mt-1">System will analyze your expressions</p>
+                  <p className="text-white/40 text-sm">{t('step_closer')}</p>
+                  <p className="text-white/30 text-xs mt-1">{t('step_closer_en')}</p>
+                  <p className="text-white/30 text-xs mt-3">{t('analyzing')}</p>
+                  <p className="text-white/20 text-xs mt-1">{t('analyzing_en')}</p>
                 </div>
               ) : (
                 <>
@@ -764,7 +803,7 @@ export function LannaMirror() {
                           onClick={() => handleGenerateForPerson(person)}
                           className="w-full mt-3"
                         >
-                          ✨ สร้างภาพวิญญาณ / Generate Portrait
+                          ✨ {t('generate_portrait')} / {t('generate_portrait_en')}
                         </Button>
                       </div>
                       )
@@ -822,7 +861,7 @@ export function LannaMirror() {
                     {/* 原始头像 */}
                     {capturedPhoto && (
                       <div className="text-center">
-                        <p className="text-white/40 text-xs mb-1">ต้นฉบับ</p>
+                        <p className="text-white/40 text-xs mb-1">{t('original')}</p>
                         <div
                           className="w-20 h-20 rounded-full overflow-hidden border-2"
                           style={{
@@ -838,7 +877,7 @@ export function LannaMirror() {
                     <div className="text-white/30 text-xl">→</div>
                     {/* 生成结果缩略图 */}
                     <div className="text-center">
-                      <p className="text-white/40 text-xs mb-1">วิญญาณ</p>
+                      <p className="text-white/40 text-xs mb-1">{t('spirit')}</p>
                       <div
                         className="w-20 h-20 rounded-full overflow-hidden border-2"
                         style={{ borderColor: matchedSpirit.color }}
@@ -865,14 +904,14 @@ export function LannaMirror() {
                       className="flex-1"
                       style={{ backgroundColor: matchedSpirit.color }}
                     >
-                      Preview
+                      {t('preview')}
                     </Button>
                     <Button
                       onClick={restart}
                       variant="outline"
                       className="flex-1"
                     >
-                      Another One
+                      {t('another_one')}
                     </Button>
                   </div>
                 ) : (
@@ -881,7 +920,7 @@ export function LannaMirror() {
                     className="w-full"
                     style={{ backgroundColor: matchedSpirit.color }}
                   >
-                    สร้างภาพวิญญาณ / Generate Portrait
+                    {t('generate_portrait')} / {t('generate_portrait_en')}
                   </Button>
                 )}
               </div>
@@ -894,7 +933,7 @@ export function LannaMirror() {
               {/* 原始采集头像 */}
               {capturedPhoto && matchedSpirit && (
                 <div className="mb-4">
-                  <p className="text-white/40 text-xs mb-2">ภาพต้นฉบับ / Original</p>
+                  <p className="text-white/40 text-xs mb-2">{t('original')} / {t('original_en')}</p>
                   <div
                     className="w-24 h-24 mx-auto rounded-full overflow-hidden border-2"
                     style={{
@@ -909,23 +948,23 @@ export function LannaMirror() {
               {generateError ? (
                 <>
                   <div className="text-4xl mb-4">⚠️</div>
-                  <p className="text-red-400 mb-2">การสร้างล้มเหลว / Generation Failed</p>
+                  <p className="text-red-400 mb-2">{t('generation_failed')} / {t('generation_failed_en')}</p>
                   <p className="text-xs text-white/50 mb-4">{generateError}</p>
                   <div className="space-y-2">
                     <Button onClick={generateSpiritImage} size="sm" style={{ backgroundColor: '#CC785C' }}>
-                      ลองอีกครั้ง / Retry
+                      {t('retry')} / {t('retry_en')}
                     </Button>
                     <Button onClick={restart} variant="outline" size="sm" className="ml-2">
-                      เริ่มใหม่ / Start Over
+                      {t('start_over')} / {t('start_over_en')}
                     </Button>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent mx-auto" />
-                  <p className="text-white/80 text-sm">กำลังสร้างภาพ...</p>
-                  <p className="text-xs text-white/40 mt-1">Generating portrait...</p>
-                  <p className="text-xs text-white/30 mt-2">ประมาณ 10-30 วินาที / About 10-30 seconds</p>
+                  <p className="text-white/80 text-sm">{t('generating')}</p>
+                  <p className="text-xs text-white/40 mt-1">{t('generating_en')}</p>
+                  <p className="text-xs text-white/30 mt-2">{t('generation_time')} / {t('generation_time_en')}</p>
                 </>
               )}
             </div>
@@ -938,7 +977,7 @@ export function LannaMirror() {
             onClick={() => setShowHistory(!showHistory)}
             className="w-full p-3 flex items-center justify-between text-white/60 hover:text-white/80 transition-colors"
           >
-            <span className="text-sm">ประวัติ / History ({historyRecords.length})</span>
+            <span className="text-sm">{t('history')} / {t('history_en')} ({historyRecords.length})</span>
             <span className="text-xs">{showHistory ? '▼' : '▶'}</span>
           </button>
           {showHistory && historyRecords.length > 0 && (
@@ -989,7 +1028,7 @@ export function LannaMirror() {
             </div>
           )}
           {showHistory && historyRecords.length === 0 && (
-            <p className="px-3 pb-3 text-white/30 text-xs text-center">ยังไม่มีประวัติ / No history yet</p>
+            <p className="px-3 pb-3 text-white/30 text-xs text-center">{t('no_history')} / {t('no_history_en')}</p>
           )}
         </div>
 
@@ -1040,7 +1079,7 @@ export function LannaMirror() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              登录 / Sign in
+              {t('sign_in')} / {t('sign_in_en')}
             </Button>
           )}
         </div>
@@ -1076,7 +1115,7 @@ export function LannaMirror() {
           onClick={() => setShowRawVideoInput(!showRawVideoInput)}
           className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white/70 hover:text-white hover:bg-black/70 transition-colors text-xs border border-white/20"
         >
-          {showRawVideoInput ? '🎨 AI Effect' : '📹 Raw Input'}
+          {showRawVideoInput ? `🎨 ${t('ai_effect')}` : `📹 ${t('raw_input')}`}
         </button>
 
         {/* 镜子加载占位 */}
@@ -1105,7 +1144,7 @@ export function LannaMirror() {
             ) : (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent" />
-                <p className="text-white/60 text-sm">生成海报中...</p>
+                <p className="text-white/60 text-sm">{t('generating_poster')}</p>
               </div>
             )}
 
@@ -1117,7 +1156,7 @@ export function LannaMirror() {
                     onClick={() => setIncludeOriginalInPoster(!includeOriginalInPoster)}
                     className="bg-white/20 text-white border border-white/30 hover:bg-white/30"
                   >
-                    {includeOriginalInPoster ? 'Spirit Only' : '+ Original'}
+                    {includeOriginalInPoster ? t('spirit_only') : t('with_original')}
                   </Button>
                 )}
                 <Button
@@ -1133,7 +1172,7 @@ export function LannaMirror() {
                   <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  Download
+                  {t('download')}
                 </Button>
                 {canDelete(previewRecord) && (
                   <Button
@@ -1144,7 +1183,7 @@ export function LannaMirror() {
                     <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                    {isDeleting ? '删除中...' : '删除'}
+                    {isDeleting ? t('deleting') : t('delete')}
                   </Button>
                 )}
               </div>

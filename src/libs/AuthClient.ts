@@ -142,11 +142,16 @@ export class AuthClientService {
    */
   static async getSession() {
     try {
+      console.log('[DEBUG][AuthClient] getSession 开始, timeout:', API_TIMEOUT_MS);
+      const startTime = Date.now();
+
       const { data: { session }, error } = await withTimeout(
         supabase.auth.getSession(),
         API_TIMEOUT_MS,
         'Session request timed out'
       );
+
+      console.log('[DEBUG][AuthClient] getSession 完成, 耗时:', Date.now() - startTime, 'ms, session:', !!session);
       return { session, error: error?.message };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An unexpected error occurred';

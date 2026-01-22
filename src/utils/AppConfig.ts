@@ -5,26 +5,33 @@ const localePrefix: LocalePrefixMode = 'as-needed';
 // Helper function to detect user's preferred language
 export const detectUserLocale = (acceptLanguage?: string | null): string => {
   if (!acceptLanguage) {
-    return 'en';
+    return 'th';
   }
 
-  // Parse Accept-Language header and check for Chinese variants
+  // Parse Accept-Language header
   const languages = acceptLanguage
     .split(',')
     .map(lang => lang.split(';')[0]?.trim().toLowerCase())
     .filter(Boolean);
 
-  // Check for any Chinese variant (zh, zh-CN, zh-Hans, zh-TW, zh-Hant, etc.)
-  const hasChineseVariant = languages.some(lang =>
-    lang && (lang.startsWith('zh') || lang.includes('chinese')),
-  );
+  // Check for supported languages in order of priority
+  for (const lang of languages) {
+    if (lang?.startsWith('th'))
+      return 'th';
+    if (lang?.startsWith('ko'))
+      return 'ko';
+    if (lang?.startsWith('zh') || lang?.includes('chinese'))
+      return 'zh';
+    if (lang?.startsWith('en'))
+      return 'en';
+  }
 
-  return hasChineseVariant ? 'zh' : 'en';
+  return 'th';
 };
 
 export const AppConfig = {
   name: 'LannaMirror3',
-  locales: ['zh', 'en'],
-  defaultLocale: 'zh', // Default to Chinese
+  locales: ['th', 'en', 'ko', 'zh'],
+  defaultLocale: 'th', // Default to Thai (Lanna Mirror is Thai-focused)
   localePrefix,
 };

@@ -1,0 +1,170 @@
+{
+  "Header": {
+    "features": "기능",
+    "cases": "사례",
+    "community": "커뮤니티",
+    "pricing": "가격",
+    "blog": "블로그",
+    "login": "로그인",
+    "try_now": "지금 시작"
+  },
+  "RootLayout": {
+    "home_link": "홈",
+    "about_link": "소개",
+    "counter_link": "카운터",
+    "portfolio_link": "포트폴리오",
+    "sign_in_link": "로그인",
+    "sign_up_link": "가입하기"
+  },
+  "BaseTemplate": {
+    "description": "LannaMirror3 - 프로덕션 레디 Next.js SaaS 템플릿",
+    "made_with": "<author></author>가 정성껏 만들었습니다."
+  },
+  "Index": {
+    "meta_title": "LannaMirror3 - 프로덕션 레디 Next.js SaaS 템플릿",
+    "meta_description": "Next.js 15, Supabase, Tailwind CSS로 구축된 풀스택 SaaS 템플릿. 몇 분 만에 프로젝트를 시작하세요.",
+    "sponsors_title": "파트너"
+  },
+  "LannaMirror": {
+    "title": "란나 영혼의 거울",
+    "subtitle": "Lanna Spirit Mirror",
+    "loading_ai": "AI 로딩 중...",
+    "loading_ai_en": "Loading AI...",
+    "camera_error": "카메라에 접근할 수 없습니다",
+    "camera_error_en": "Cannot access camera",
+    "ai_load_error": "AI 로드 실패",
+    "ai_load_error_en": "Failed to load AI",
+    "retry": "다시 시도",
+    "retry_en": "Retry",
+    "step_closer": "거울에 가까이 다가오세요...",
+    "step_closer_en": "Step closer to the mirror...",
+    "analyzing": "시스템이 표정을 분석합니다",
+    "analyzing_en": "System will analyze your expressions",
+    "generate_portrait": "영혼 초상화 생성",
+    "generate_portrait_en": "Generate Portrait",
+    "original": "원본",
+    "original_en": "Original",
+    "spirit": "영혼",
+    "preview": "미리보기",
+    "another_one": "다시 하기",
+    "generating": "이미지 생성 중...",
+    "generating_en": "Generating portrait...",
+    "generation_time": "약 10-30초 소요",
+    "generation_time_en": "About 10-30 seconds",
+    "generation_failed": "생성 실패",
+    "generation_failed_en": "Generation Failed",
+    "start_over": "처음부터",
+    "start_over_en": "Start Over",
+    "history": "기록",
+    "history_en": "History",
+    "no_history": "기록이 없습니다",
+    "no_history_en": "No history yet",
+    "sign_in": "로그인",
+    "sign_in_en": "Sign in",
+    "ai_effect": "AI 효과",
+    "raw_input": "원본 입력",
+    "generating_poster": "포스터 생성 중...",
+    "spirit_only": "영혼만",
+    "with_original": "+ 원본",
+    "download": "다운로드",
+    "delete": "삭제",
+    "deleting": "삭제 중..."
+  },
+  "Counter": {
+    "meta_title": "카운터",
+    "meta_description": "DB 작업 예제",
+    "loading_counter": "카운터 로딩 중...",
+    "security_powered_by": "보안, 봇 탐지 및 속도 제한 제공"
+  },
+  "CounterForm": {
+    "presentation": "카운터는 데이터베이스에 저장되며 제공한 값만큼 증가합니다.",
+    "label_increment": "증가값",
+    "button_increment": "증가",
+    "error_increment_range": "값은 1에서 3 사이여야 합니다",
+    "loading_submit": "업데이트 중...",
+    "submitting": "제출 중..."
+  },
+  "CurrentCount": {
+    "count": "카운트: {count}"
+  },
+  "About": {
+    "meta_title": "소개",
+    "meta_description": "LannaMirror3 템플릿과 Lovstudio 팀에 대해 알아보세요",
+    "about_paragraph": "LannaMirror3에 오신 것을 환영합니다! Lovstudio 팀이 개발자들이 현대적인 웹 애플리케이션을 빠르게 구축할 수 있도록 만든 프로덕션 레디 Next.js SaaS 스타터입니다.",
+    "translation_powered_by": "번역 제공"
+  },
+  "notifications": {
+    "close": "닫기",
+    "success_title": "성공",
+    "error_title": "오류",
+    "warning_title": "경고",
+    "info_title": "정보",
+    "save_success": "저장 완료",
+    "save_error": "저장 실패",
+    "delete_success": "삭제 완료",
+    "delete_error": "삭제 실패",
+    "loading": "로딩 중...",
+    "please_wait": "잠시만 기다려주세요"
+  },
+  "button_states": {
+    "loading": "로딩 중...",
+    "submitting": "제출 중...",
+    "saving": "저장 중...",
+    "deleting": "삭제 중...",
+    "updating": "업데이트 중...",
+    "processing": "처리 중..."
+  },
+  "Auth": {
+    "loading": "로딩 중..."
+  },
+  "SignIn": {
+    "meta_title": "로그인 - LannaMirror3",
+    "title": "로그인",
+    "subtitle": "다시 오신 것을 환영합니다! 로그인해 주세요",
+    "email_label": "이메일 주소",
+    "email_placeholder": "이메일을 입력하세요",
+    "password_label": "비밀번호",
+    "password_placeholder": "비밀번호를 입력하세요",
+    "sign_in_button": "로그인",
+    "signing_in": "로그인 중...",
+    "no_account": "계정이 없으신가요?",
+    "sign_up_link": "가입하기"
+  },
+  "SignUp": {
+    "meta_title": "가입하기 - LannaMirror3",
+    "title": "계정 만들기",
+    "subtitle": "LannaMirror3를 사용하는 수천 명의 크리에이터와 함께하세요",
+    "sign_up_button": "계정 만들기",
+    "creating_account": "계정 생성 중...",
+    "have_account": "이미 계정이 있으신가요?",
+    "sign_in_link": "로그인"
+  },
+  "Dashboard": {
+    "meta_title": "대시보드",
+    "welcome": "다시 오신 것을 환영합니다, {name}님!",
+    "welcome_subtitle": "여기는 대시보드입니다. 프로젝트와 설정을 관리하세요."
+  },
+  "DashboardLayout": {
+    "dashboard_link": "대시보드",
+    "user_profile_link": "계정 관리",
+    "sign_out": "로그아웃"
+  },
+  "Footer": {
+    "company_title": "회사",
+    "product_title": "제품",
+    "support_title": "지원",
+    "rights_reserved": "모든 권리 보유."
+  },
+  "UserProfile": {
+    "meta_title": "프로필 설정 - LannaMirror3",
+    "title": "프로필 설정",
+    "loading": "프로필 로딩 중...",
+    "locale_label": "언어",
+    "locale_th": "ภาษาไทย (태국어)",
+    "locale_en": "English (영어)",
+    "locale_ko": "한국어",
+    "locale_zh": "中文 (중국어)",
+    "update_profile": "프로필 업데이트",
+    "updating": "업데이트 중..."
+  }
+}
