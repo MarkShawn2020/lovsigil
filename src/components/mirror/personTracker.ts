@@ -1,7 +1,7 @@
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 
-import { ExpressionAccumulator, extractExpressionScores, getExpressionDescription, getNormalizedSpiritScores } from './facsAnalyzer'
 import type { ExpressionScores, SpiritScores } from './facsAnalyzer'
+import { ExpressionAccumulator, extractExpressionScores, getExpressionDescription, getNormalizedSpiritScores } from './facsAnalyzer'
 
 export interface TrackedPerson {
   id: string

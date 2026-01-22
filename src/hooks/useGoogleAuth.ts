@@ -28,7 +28,7 @@ export function useGoogleAuth(redirectTo?: string) {
     setIsLoading(true);
     setError(null);
     try {
-      const redirectUrl = redirectTo ? getLocalizedPath(redirectTo) : getLocalizedPath('/dashboard');
+      const redirectUrl = redirectTo ? getLocalizedPath(redirectTo) : getLocalizedPath('/');
       const fullRedirectUrl = `${window.location.origin}${redirectUrl}`;
       const result = await signInWithGoogle(fullRedirectUrl);
       if (result.error) {

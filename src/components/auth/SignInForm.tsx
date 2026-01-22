@@ -49,7 +49,7 @@ export function SignInForm({ redirectTo, onSuccess, onForgotPassword, onSignUp }
       } else if (redirectTo) {
         router.push(redirectTo);
       } else {
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (error) {
       setError('root', { message: 'An unexpected error occurred' });

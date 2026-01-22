@@ -1,19 +1,5 @@
 import { supabase } from './Supabase';
 
-const API_TIMEOUT_MS = 5000;
-
-/**
- * Wrap a promise with timeout
- */
-function withTimeout<T>(promise: PromiseLike<T>, ms: number, errorMessage: string): Promise<T> {
-  return Promise.race([
-    Promise.resolve(promise),
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(errorMessage)), ms)
-    ),
-  ]);
-}
-
 /**
  * Client-side authentication utilities
  * 只包含可在浏览器中安全运行的操作
@@ -24,25 +10,10 @@ export class AuthClientService {
    */
   static async signIn(email: string, password: string) {
     try {
-      console.log('🔧 AuthClientService.signIn called with:', { email });
-      console.log('🌐 Calling supabase.auth.signInWithPassword...');
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      console.log('📊 Supabase auth response:', { user: data.user?.id, error: error?.message });
-
-      if (error) {
-        console.error('❌ Supabase auth error:', error.message);
-        return { error: error.message };
-      }
-
-      console.log('✅ Supabase auth successful for user:', data.user?.id);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { error: error.message };
       return { user: data.user };
-    } catch (error) {
-      console.error('💥 AuthClientService unexpected error:', error);
+    } catch {
       return { error: 'An unexpected error occurred' };
     }
   }
@@ -52,37 +23,21 @@ export class AuthClientService {
    */
   static async signInWithGoogle(redirectTo?: string) {
     try {
-      console.log('🔧 AuthClientService.signInWithGoogle called');
-      console.log('🌐 Calling supabase.auth.signInWithOAuth...');
-
-      // 使用非 locale 的 callback 页面处理 OAuth callback
       const callbackUrl = new URL('/auth/callback', window.location.origin);
-
-      // 获取当前 locale 用于 next 参数
       const locale = window.location.pathname.match(/^\/([^/]+)\//)?.[1] || 'zh';
       const redirectPath = redirectTo
         ? (redirectTo.startsWith('http') ? new URL(redirectTo).pathname : redirectTo)
-        : `/${locale}/dashboard`;
+        : `/${locale}`;
       callbackUrl.searchParams.set('next', redirectPath);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: callbackUrl.toString(),
-        },
+        options: { redirectTo: callbackUrl.toString() },
       });
 
-      console.log('📊 Google OAuth response:', { data, error: error?.message });
-
-      if (error) {
-        console.error('❌ Google OAuth error:', error.message);
-        return { error: error.message };
-      }
-
-      console.log('✅ Google OAuth initiated successfully');
+      if (error) return { error: error.message };
       return { data };
-    } catch (error) {
-      console.error('💥 AuthClientService Google OAuth unexpected error:', error);
+    } catch {
       return { error: 'An unexpected error occurred' };
     }
   }
@@ -138,26 +93,22 @@ export class AuthClientService {
   }
 
   /**
-   * Get current session with timeout
+   * @deprecated 不要直接调用，使用 onAuthStateChange 代替
+   * @supabase/ssr 的 getSession() 会死锁
    */
   static async getSession() {
-    try {
-      console.log('[DEBUG][AuthClient] getSession 开始, timeout:', API_TIMEOUT_MS);
-      const startTime = Date.now();
+    // 通过 onAuthStateChange 获取 session（它会立即触发当前状态）
+    return new Promise<{ session: any; error?: string }>((resolve) => {
+      const timeout = setTimeout(() => {
+        resolve({ session: null, error: undefined });
+      }, 3000);
 
-      const { data: { session }, error } = await withTimeout(
-        supabase.auth.getSession(),
-        API_TIMEOUT_MS,
-        'Session request timed out'
-      );
-
-      console.log('[DEBUG][AuthClient] getSession 完成, 耗时:', Date.now() - startTime, 'ms, session:', !!session);
-      return { session, error: error?.message };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'An unexpected error occurred';
-      console.error('[AuthClient] getSession error:', message);
-      return { session: null, error: message };
-    }
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+        clearTimeout(timeout);
+        subscription.unsubscribe();
+        resolve({ session, error: undefined });
+      });
+    });
   }
 
   /**

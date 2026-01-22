@@ -1,7 +1,7 @@
 'use client';
 
+import { ChevronDown } from 'lucide-react';
 import { useLocale } from 'next-intl';
-import { AppConfig } from '@/utils/AppConfig';
 import { useState } from 'react';
 import {
   DropdownMenu,
@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown } from 'lucide-react';
+import { AppConfig } from '@/utils/AppConfig';
 
 const localeConfig: Record<string, { flag: string; name: string }> = {
   th: { flag: '🇹🇭', name: 'ไทย' },

@@ -124,13 +124,13 @@ export function AuthForm({
         if (onSuccess) {
           onSuccess();
         } else {
-          const target = redirectTo ? getLocalizedPath(redirectTo) : getLocalizedPath('/dashboard');
+          const target = redirectTo ? getLocalizedPath(redirectTo) : getLocalizedPath('/');
           window.location.href = `${target}?just_signed_in=true`;
         }
       } else {
         const signUpData = data as SignUpFormData;
         const result = await signUp(signUpData.email, signUpData.password, signUpData.displayName, {
-          redirectTo: redirectTo || `${window.location.origin}/dashboard`,
+          redirectTo: redirectTo || `${window.location.origin}/`,
         });
         if (result.error) {
           setError('root', { message: result.error });

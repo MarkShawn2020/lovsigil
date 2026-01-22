@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
+import { useEffect } from 'react';
 
 export default function AuthCallbackPage() {
   useEffect(() => {
@@ -10,7 +10,7 @@ export default function AuthCallbackPage() {
     const handleCallback = async () => {
       try {
         const params = new URLSearchParams(window.location.search);
-        const next = params.get('next') || '/zh/dashboard';
+        const next = params.get('next') || '/zh';
         const code = params.get('code');
 
         console.log('📋 Callback params:', { next, code });

@@ -42,7 +42,7 @@ export function ProtectedRoute({
 
   // Check admin requirement
   if (requireAdmin && !isAdmin) {
-    router.push('/dashboard');
+    router.push('/');
     return null;
   }
 

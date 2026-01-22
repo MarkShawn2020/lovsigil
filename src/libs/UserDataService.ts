@@ -3,7 +3,7 @@
 import type { UserProfile } from '@/providers/AuthProvider';
 import { supabase } from './Supabase';
 
-const API_TIMEOUT_MS = 3000;
+const API_TIMEOUT_MS = 10000;
 
 function withTimeout<T>(promise: PromiseLike<T>, ms: number, errorMessage: string): Promise<T> {
   return Promise.race([

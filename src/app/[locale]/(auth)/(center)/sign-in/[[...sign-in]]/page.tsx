@@ -23,6 +23,6 @@ export default async function SignInPage(props: ISignInPageProps) {
   setRequestLocale(locale);
 
   return (
-    <AuthWrapper initialMode="signin" redirectTo="/dashboard" />
+    <AuthWrapper initialMode="signin" redirectTo="/" />
   );
 };
