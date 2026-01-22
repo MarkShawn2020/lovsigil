@@ -297,9 +297,13 @@ export function LannaMirror() {
         // 即使 ID 相同，也需要更新表情数据
         if (prev.length === persons.length) {
           for (let i = 0; i < prev.length; i++) {
-            prev[i].expressionScores = persons[i].expressionScores
-            prev[i].spiritScores = persons[i].spiritScores
-            prev[i].dominantSpirit = persons[i].dominantSpirit
+            const prevPerson = prev[i]
+            const newPerson = persons[i]
+            if (prevPerson && newPerson) {
+              prevPerson.currentExpression = newPerson.currentExpression
+              prevPerson.spiritScores = newPerson.spiritScores
+              prevPerson.dominantSpirit = newPerson.dominantSpirit
+            }
           }
         }
         return prev
