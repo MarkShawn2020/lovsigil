@@ -158,7 +158,7 @@ export function LannaMirror() {
       }
     }
     catch (err) {
-      setError(`${t('camera_error')} / ${t('camera_error_en')}`)
+      setError(t('camera_error'))
       console.error('Camera error:', err)
     }
   }, [])
@@ -208,7 +208,7 @@ export function LannaMirror() {
       setIsLoading(false)
     }
     catch (err) {
-      setError(`${t('ai_load_error')} / ${t('ai_load_error_en')}`)
+      setError(t('ai_load_error'))
       console.error('MediaPipe error:', err)
     }
   }, [])
@@ -600,7 +600,7 @@ export function LannaMirror() {
         <div className="text-center">
           <p className="text-destructive text-lg">{error}</p>
           <Button onClick={() => window.location.reload()} className="mt-4">
-            {t('retry')} / {t('retry_en')}
+            {t('retry')}
           </Button>
         </div>
       </div>
@@ -664,7 +664,6 @@ export function LannaMirror() {
             <div className="flex flex-col items-center justify-center py-12 text-white">
               <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               <p className="text-sm text-white/60">{t('loading_ai')}</p>
-              <p className="text-xs text-white/40 mt-1">{t('loading_ai_en')}</p>
             </div>
           )}
 
@@ -675,9 +674,7 @@ export function LannaMirror() {
                 <div className="text-center py-12">
                   <div className="text-4xl mb-4">🪞</div>
                   <p className="text-white/40 text-sm">{t('step_closer')}</p>
-                  <p className="text-white/30 text-xs mt-1">{t('step_closer_en')}</p>
                   <p className="text-white/30 text-xs mt-3">{t('analyzing')}</p>
-                  <p className="text-white/20 text-xs mt-1">{t('analyzing_en')}</p>
                 </div>
               ) : (
                 <>
@@ -756,7 +753,7 @@ export function LannaMirror() {
                           onClick={() => handleGenerateForPerson(person)}
                           className="w-full mt-3"
                         >
-                          ✨ {t('generate_portrait')} / {t('generate_portrait_en')}
+                          ✨ {t('generate_portrait')}
                         </Button>
                       </div>
                       )
@@ -873,7 +870,7 @@ export function LannaMirror() {
                     className="w-full"
                     style={{ backgroundColor: matchedSpirit.color }}
                   >
-                    {t('generate_portrait')} / {t('generate_portrait_en')}
+                    {t('generate_portrait')}
                   </Button>
                 )}
               </div>
@@ -886,7 +883,7 @@ export function LannaMirror() {
               {/* 原始采集头像 */}
               {capturedPhoto && matchedSpirit && (
                 <div className="mb-4">
-                  <p className="text-white/40 text-xs mb-2">{t('original')} / {t('original_en')}</p>
+                  <p className="text-white/40 text-xs mb-2">{t('original')}</p>
                   <div
                     className="w-24 h-24 mx-auto rounded-full overflow-hidden border-2"
                     style={{
@@ -901,14 +898,14 @@ export function LannaMirror() {
               {generateError ? (
                 <>
                   <div className="text-4xl mb-4">⚠️</div>
-                  <p className="text-red-400 mb-2">{t('generation_failed')} / {t('generation_failed_en')}</p>
+                  <p className="text-red-400 mb-2">{t('generation_failed')}</p>
                   <p className="text-xs text-white/50 mb-4">{generateError}</p>
                   <div className="space-y-2">
                     <Button onClick={generateSpiritImage} size="sm" style={{ backgroundColor: '#CC785C' }}>
-                      {t('retry')} / {t('retry_en')}
+                      {t('retry')}
                     </Button>
                     <Button onClick={restart} variant="outline" size="sm" className="ml-2">
-                      {t('start_over')} / {t('start_over_en')}
+                      {t('start_over')}
                     </Button>
                   </div>
                 </>
@@ -916,8 +913,7 @@ export function LannaMirror() {
                 <>
                   <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent mx-auto" />
                   <p className="text-white/80 text-sm">{t('generating')}</p>
-                  <p className="text-xs text-white/40 mt-1">{t('generating_en')}</p>
-                  <p className="text-xs text-white/30 mt-2">{t('generation_time')} / {t('generation_time_en')}</p>
+                  <p className="text-xs text-white/30 mt-2">{t('generation_time')}</p>
                 </>
               )}
             </div>
@@ -930,7 +926,7 @@ export function LannaMirror() {
             onClick={() => setShowHistory(!showHistory)}
             className="w-full p-3 flex items-center justify-between text-white/60 hover:text-white/80 transition-colors"
           >
-            <span className="text-sm">{t('history')} / {t('history_en')} ({historyRecords.length})</span>
+            <span className="text-sm">{t('history')} ({historyRecords.length})</span>
             <span className="text-xs">{showHistory ? '▼' : '▶'}</span>
           </button>
           {showHistory && historyRecords.length > 0 && (
@@ -980,7 +976,7 @@ export function LannaMirror() {
             </div>
           )}
           {showHistory && historyRecords.length === 0 && (
-            <p className="px-3 pb-3 text-white/30 text-xs text-center">{t('no_history')} / {t('no_history_en')}</p>
+            <p className="px-3 pb-3 text-white/30 text-xs text-center">{t('no_history')}</p>
           )}
         </div>
 
@@ -1031,7 +1027,7 @@ export function LannaMirror() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              {t('sign_in')} / {t('sign_in_en')}
+              {t('sign_in')}
             </Button>
           )}
         </div>
