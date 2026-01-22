@@ -63,8 +63,6 @@ export function LannaMirror() {
   const poseLandmarkerRef = useRef<any>(null)
   const webglRendererRef = useRef<WebGLRenderer | null>(null)
   const personTrackerRef = useRef<PersonTracker>(new PersonTracker())
-  // 骨骼点平滑滤波缓存
-  const smoothedPoseLandmarksRef = useRef<NormalizedLandmark[][]>([])
 
   // 多人追踪状态
   const [trackedPersons, setTrackedPersons] = useState<TrackedPerson[]>([])
@@ -302,36 +300,12 @@ export function LannaMirror() {
       }
     }
 
-    // 人体姿态检测 + 平滑滤波
+    // 人体姿态检测
     const poseLandmarker = poseLandmarkerRef.current
     let poseLandmarksList: NormalizedLandmark[][] = []
     if (poseLandmarker) {
       const poseResult = poseLandmarker.detectForVideo(video, now)
-      const rawLandmarks = poseResult.landmarks || []
-
-      // EMA 平滑滤波 (alpha=0.3 较平滑，alpha=0.5 较灵敏)
-      const alpha = 0.35
-      const smoothed = smoothedPoseLandmarksRef.current
-
-      for (let p = 0; p < rawLandmarks.length; p++) {
-        const raw = rawLandmarks[p]
-        if (!smoothed[p]) {
-          // 第一帧，直接使用原始值
-          smoothed[p] = raw.map(pt => ({ ...pt }))
-        }
-        else {
-          // 后续帧，进行 EMA 平滑
-          for (let i = 0; i < Math.min(raw.length, smoothed[p].length); i++) {
-            smoothed[p][i].x = alpha * raw[i].x + (1 - alpha) * smoothed[p][i].x
-            smoothed[p][i].y = alpha * raw[i].y + (1 - alpha) * smoothed[p][i].y
-            smoothed[p][i].z = alpha * raw[i].z + (1 - alpha) * smoothed[p][i].z
-            smoothed[p][i].visibility = raw[i].visibility
-          }
-        }
-      }
-      // 移除多余的人
-      smoothed.length = rawLandmarks.length
-      poseLandmarksList = smoothed
+      poseLandmarksList = poseResult.landmarks || []
     }
 
     // 执行分割
@@ -363,55 +337,42 @@ export function LannaMirror() {
             overlayCtx.clearRect(0, 0, width, height)
             webglRenderer.drawBorder(overlayCtx, width, height, '#CC785C')
 
-            // MediaPipe Pose 骨骼连接
-            const POSE_CONNECTIONS: [number, number][] = [
-              // 面部
-              [0, 1], [1, 2], [2, 3], [3, 7], // 左眼
-              [0, 4], [4, 5], [5, 6], [6, 8], // 右眼
-              [9, 10], // 嘴巴
-              // 躯干
-              [11, 12], // 肩膀
-              [11, 23], [12, 24], // 躯干侧边
-              [23, 24], // 臀部
-              // 左臂
-              [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], [17, 19],
-              // 右臂
-              [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], [18, 20],
-              // 左腿
-              [23, 25], [25, 27], [27, 29], [27, 31], [29, 31],
-              // 右腿
-              [24, 26], [26, 28], [28, 30], [28, 32], [30, 32],
-            ]
+            // 绘制人体轮廓（基于分割 mask 边缘检测，加粗版）
+            const edgeData = overlayCtx.createImageData(width, height)
+            const edgePixels = edgeData.data
+            const lineWidth = 4 // 轮廓线宽度
 
-            // 绘制每个人的骨骼
-            for (const landmarks of poseLandmarksList) {
-              if (landmarks.length < 33) continue
+            for (let y = lineWidth; y < height - lineWidth; y++) {
+              for (let x = lineWidth; x < width - lineWidth; x++) {
+                const idx = y * width + x
+                const current = mask[idx]
 
-              // 绘制骨骼连线
-              overlayCtx.strokeStyle = '#CC785C'
-              overlayCtx.lineWidth = 3
-              for (const [i, j] of POSE_CONNECTIONS) {
-                const pt1 = landmarks[i]
-                const pt2 = landmarks[j]
-                if (pt1.visibility && pt1.visibility < 0.5) continue
-                if (pt2.visibility && pt2.visibility < 0.5) continue
+                // 检测边缘：当前是人物，检查更大范围的邻居
+                if (current > 0) {
+                  let isEdge = false
+                  for (let dy = -lineWidth; dy <= lineWidth && !isEdge; dy++) {
+                    for (let dx = -lineWidth; dx <= lineWidth && !isEdge; dx++) {
+                      if (mask[(y + dy) * width + (x + dx)] === 0) {
+                        isEdge = true
+                      }
+                    }
+                  }
 
-                overlayCtx.beginPath()
-                overlayCtx.moveTo((1 - pt1.x) * width, pt1.y * height)
-                overlayCtx.lineTo((1 - pt2.x) * width, pt2.y * height)
-                overlayCtx.stroke()
-              }
-
-              // 绘制关节点
-              overlayCtx.fillStyle = '#F9F9F7'
-              for (let i = 0; i < 33; i++) {
-                const pt = landmarks[i]
-                if (pt.visibility && pt.visibility < 0.5) continue
-                overlayCtx.beginPath()
-                overlayCtx.arc((1 - pt.x) * width, pt.y * height, 4, 0, Math.PI * 2)
-                overlayCtx.fill()
+                  if (isEdge) {
+                    // 镜像 X 坐标
+                    const mirrorX = width - 1 - x
+                    const pixelIdx = (y * width + mirrorX) * 4
+                    // 陶土色 #CC785C
+                    edgePixels[pixelIdx] = 204
+                    edgePixels[pixelIdx + 1] = 120
+                    edgePixels[pixelIdx + 2] = 92
+                    edgePixels[pixelIdx + 3] = 255
+                  }
+                }
               }
             }
+
+            overlayCtx.putImageData(edgeData, 0, 0)
           }
         }
       }
