@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.1.6
+
+### Patch Changes
+
+- 修复 TooltipProvider 组件类型错误
+
 ## 0.1.5
 
 ### Patch Changes
