@@ -11,8 +11,8 @@ async function migrateRecord(supabase: SupabaseClient, record: { id: number, spi
     return { id: record.id, error: 'Invalid base64 format' }
   }
 
-  const ext = matches[1]
-  const base64 = matches[2]
+  const ext = matches[1]!
+  const base64 = matches[2]!
   const buffer = Buffer.from(base64, 'base64')
 
   // 生成唯一文件名

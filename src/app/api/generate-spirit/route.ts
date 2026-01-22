@@ -39,8 +39,8 @@ async function uploadImageToStorage(base64Data: string, spiritId: string): Promi
     throw new Error('Invalid base64 image format')
   }
 
-  const ext = matches[1]
-  const base64 = matches[2]
+  const ext = matches[1]!
+  const base64 = matches[2]!
   const buffer = Buffer.from(base64, 'base64')
 
   // 生成唯一文件名

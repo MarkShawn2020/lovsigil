@@ -49,7 +49,7 @@ export const LocaleSwitcher = ({ className }: LocaleSwitcherProps) => {
     window.location.replace(newPath || '/');
   };
 
-  const currentConfig = localeConfig[locale] || localeConfig.en;
+  const currentConfig = localeConfig[locale] ?? localeConfig.en!;
 
   return (
     <DropdownMenu>
@@ -62,7 +62,7 @@ export const LocaleSwitcher = ({ className }: LocaleSwitcherProps) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[120px]">
         {AppConfig.locales.map((loc) => {
-          const config = localeConfig[loc];
+          const config = localeConfig[loc]!;
           const isActive = loc === locale;
           return (
             <DropdownMenuItem
