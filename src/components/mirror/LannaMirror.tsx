@@ -48,6 +48,7 @@ type MirrorState = 'attract' | 'generate' | 'result'
 
 export function LannaMirror() {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const rawVideoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const [state, setState] = useState<MirrorState>('attract')
@@ -84,29 +85,33 @@ export function LannaMirror() {
     createdAt: string
   }>>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [hasMoreHistory, setHasMoreHistory] = useState(true)
+  const [isLoadingMoreHistory, setIsLoadingMoreHistory] = useState(false)
+  const historyStateRef = useRef({ isLoading: false, hasMore: true, offset: 0 })
   const [previewRecord, setPreviewRecord] = useState<{
     generatedImage: string
     userPhoto: string | null
     spiritId: string
   } | null>(null)
   const [previewPoster, setPreviewPoster] = useState<string | null>(null)
-  const [showOriginal, setShowOriginal] = useState(false)
+  const [includeOriginalInPoster, setIncludeOriginalInPoster] = useState(false)
+  const [showRawVideoInput, setShowRawVideoInput] = useState(false)
 
-  // 预览时自动生成海报
+  // 预览时自动生成海报（根据模式生成不同版本）
   useEffect(() => {
-    setShowOriginal(false)
-    if (!previewRecord?.generatedImage || !previewRecord.userPhoto) {
+    if (!previewRecord?.generatedImage) {
       setPreviewPoster(null)
       return
     }
     generateLannaPoster({
-      originalImage: previewRecord.userPhoto,
+      originalImage: previewRecord.userPhoto || '',
       generatedImage: previewRecord.generatedImage,
       spiritId: previewRecord.spiritId,
+      includeOriginal: includeOriginalInPoster && !!previewRecord.userPhoto,
     })
       .then(setPreviewPoster)
       .catch(console.error)
-  }, [previewRecord])
+  }, [previewRecord, includeOriginalInPoster])
 
   // 初始化摄像头
   const initCamera = useCallback(async () => {
@@ -118,6 +123,11 @@ export function LannaMirror() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
+      }
+      // 同时绑定到原始视频显示元素
+      if (rawVideoRef.current) {
+        rawVideoRef.current.srcObject = stream
+        await rawVideoRef.current.play()
       }
     }
     catch (err) {
@@ -459,15 +469,37 @@ export function LannaMirror() {
   }, [matchedSpirit, capturedPhoto])
 
   // 获取历史记录
-  const fetchHistory = useCallback(async () => {
+  const fetchHistory = useCallback(async (reset = true) => {
+    const state = historyStateRef.current
+    console.log('[DEBUG][fetchHistory] 入口:', { reset, state: { ...state } })
+    if (!reset && (state.isLoading || !state.hasMore)) {
+      console.log('[DEBUG][fetchHistory] 提前返回:', { isLoading: state.isLoading, hasMore: state.hasMore })
+      return
+    }
+
+    if (!reset) {
+      state.isLoading = true
+      setIsLoadingMoreHistory(true)
+    }
+
     try {
-      const res = await fetch('/api/spirit-history?limit=20')
+      const offset = reset ? 0 : state.offset
+      console.log('[DEBUG][fetchHistory] 请求:', { offset, reset })
+      const res = await fetch(`/api/spirit-history?limit=20&offset=${offset}`)
       const data = await res.json()
+      console.log('[DEBUG][fetchHistory] 响应:', { hasMore: data.hasMore, recordsCount: data.records?.length })
       if (data.records) {
-        setHistoryRecords(data.records)
+        setHistoryRecords(prev => reset ? data.records : [...prev, ...data.records])
+        state.hasMore = data.hasMore ?? false
+        state.offset = reset ? data.records.length : state.offset + data.records.length
+        console.log('[DEBUG][fetchHistory] 更新state:', { ...state })
+        setHasMoreHistory(state.hasMore)
       }
     } catch (err) {
       console.error('Failed to fetch history:', err)
+    } finally {
+      state.isLoading = false
+      setIsLoadingMoreHistory(false)
     }
   }, [])
 
@@ -526,6 +558,7 @@ export function LannaMirror() {
 
     return () => {
       cancelAnimationFrame(animationRef.current)
+      // 停止摄像头 stream（两个 video 共享同一个 stream，只需停止一次）
       if (videoRef.current?.srcObject) {
         const tracks = (videoRef.current.srcObject as MediaStream).getTracks()
         tracks.forEach(track => track.stop())
@@ -559,7 +592,7 @@ export function LannaMirror() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-black">
-      {/* 隐藏的视频元素 */}
+      {/* 隐藏的视频元素 - 用于 AI 处理 */}
       <video
         ref={videoRef}
         className="hidden"
@@ -870,7 +903,17 @@ export function LannaMirror() {
             <span className="text-xs">{showHistory ? '▼' : '▶'}</span>
           </button>
           {showHistory && historyRecords.length > 0 && (
-            <div className="px-3 pb-3 grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+            <div
+              className="px-3 pb-3 grid grid-cols-4 gap-2 max-h-48 overflow-y-auto"
+              onScroll={(e) => {
+                const el = e.currentTarget
+                const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10
+                console.log('[DEBUG][onScroll]', { scrollTop: el.scrollTop, clientHeight: el.clientHeight, scrollHeight: el.scrollHeight, atBottom })
+                if (atBottom) {
+                  fetchHistory(false)
+                }
+              }}
+            >
               {historyRecords.map((record) => {
                 const info = SPIRIT_INFO[record.spiritId as keyof typeof SPIRIT_INFO]
                 return (
@@ -897,6 +940,11 @@ export function LannaMirror() {
                   </div>
                 )
               })}
+              {isLoadingMoreHistory && (
+                <div className="col-span-4 py-2 text-center">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent mx-auto" />
+                </div>
+              )}
             </div>
           )}
           {showHistory && historyRecords.length === 0 && (
@@ -915,17 +963,34 @@ export function LannaMirror() {
 
       {/* 右侧镜子区域 */}
       <ResizablePanel defaultSize={80} className="relative min-w-0 overflow-hidden">
-        {/* 主画布 */}
+        {/* 原始视频输入 - 镜像显示 */}
+        <video
+          ref={rawVideoRef}
+          className={`absolute inset-0 h-full w-full object-cover ${showRawVideoInput ? '' : 'hidden'}`}
+          style={{ transform: 'scaleX(-1)' }}
+          playsInline
+          muted
+        />
+
+        {/* 主画布 - AI 处理后效果 */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 h-full w-full object-cover"
+          className={`absolute inset-0 h-full w-full object-cover ${showRawVideoInput ? 'hidden' : ''}`}
         />
 
         {/* 覆盖层画布 - 显示每人的编号 */}
         <canvas
           ref={overlayCanvasRef}
-          className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+          className={`absolute inset-0 h-full w-full object-cover pointer-events-none ${showRawVideoInput ? 'hidden' : ''}`}
         />
+
+        {/* 切换原始/处理后画面按钮 */}
+        <button
+          onClick={() => setShowRawVideoInput(!showRawVideoInput)}
+          className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white/70 hover:text-white hover:bg-black/70 transition-colors text-xs border border-white/20"
+        >
+          {showRawVideoInput ? '🎨 AI Effect' : '📹 Raw Input'}
+        </button>
 
         {/* 镜子加载占位 */}
         {isLoading && (
@@ -943,14 +1008,8 @@ export function LannaMirror() {
           onClick={() => setPreviewRecord(null)}
         >
           <div className="relative flex flex-col items-center gap-4" onClick={e => e.stopPropagation()}>
-            {/* 图片展示 */}
-            {showOriginal && previewRecord.userPhoto ? (
-              <img
-                src={previewRecord.userPhoto}
-                alt="Original"
-                className="max-h-[80vh] object-contain rounded-lg shadow-2xl"
-              />
-            ) : previewPoster ? (
+            {/* 海报展示 */}
+            {previewPoster ? (
               <img
                 src={previewPoster}
                 alt="Lanna Spirit Poster"
@@ -968,16 +1027,16 @@ export function LannaMirror() {
               <div className="flex gap-3 p-3 bg-black/50 rounded-xl backdrop-blur-sm">
                 {previewRecord.userPhoto && (
                   <Button
-                    onClick={() => setShowOriginal(!showOriginal)}
+                    onClick={() => setIncludeOriginalInPoster(!includeOriginalInPoster)}
                     className="bg-white/20 text-white border border-white/30 hover:bg-white/30"
                   >
-                    {showOriginal ? 'Poster' : 'Original'}
+                    {includeOriginalInPoster ? 'Spirit Only' : '+ Original'}
                   </Button>
                 )}
                 <Button
                   onClick={() => downloadImage(
-                    showOriginal && previewRecord.userPhoto ? previewRecord.userPhoto : previewPoster,
-                    `lanna-spirit-${showOriginal ? 'original' : 'poster'}-${previewRecord.spiritId}-${Date.now()}.png`
+                    previewPoster,
+                    `lanna-spirit-poster-${includeOriginalInPoster ? 'compare' : 'spirit'}-${previewRecord.spiritId}-${Date.now()}.png`
                   )}
                   className="text-white font-medium"
                   style={{

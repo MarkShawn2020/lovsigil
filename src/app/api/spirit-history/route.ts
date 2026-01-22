@@ -6,12 +6,18 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const limit = Math.min(Number(searchParams.get('limit')) || 20, 100)
+    const offset = Math.max(Number(searchParams.get('offset')) || 0, 0)
+
+    // 先获取总数
+    const { count } = await supabaseServer
+      .from('spirit_generations')
+      .select('*', { count: 'exact', head: true })
 
     const { data: records, error } = await supabaseServer
       .from('spirit_generations')
       .select('id, spirit_id, spirit_name, user_photo, generated_image, spirit_scores, created_at')
       .order('created_at', { ascending: false })
-      .limit(limit)
+      .range(offset, offset + limit - 1)
 
     if (error) throw error
 
@@ -26,7 +32,9 @@ export async function GET(request: Request) {
       createdAt: r.created_at,
     })) || []
 
-    return NextResponse.json({ records: formattedRecords })
+    const hasMore = offset + formattedRecords.length < (count || 0)
+
+    return NextResponse.json({ records: formattedRecords, hasMore, total: count })
   }
   catch (error) {
     console.error('Fetch history error:', error)
