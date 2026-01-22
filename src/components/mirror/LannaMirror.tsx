@@ -43,6 +43,7 @@ type MirrorState = 'attract' | 'generate' | 'result'
 let persistentStream: MediaStream | null = null
 let persistentSegmenter: any = null
 let persistentFaceLandmarker: any = null
+let persistentPoseLandmarker: any = null
 let persistentWebGLRenderer: WebGLRenderer | null = null
 
 export function LannaMirror() {
@@ -59,12 +60,16 @@ export function LannaMirror() {
   const animationRef = useRef<number>(0)
   const segmenterRef = useRef<any>(null)
   const faceLandmarkerRef = useRef<any>(null)
+  const poseLandmarkerRef = useRef<any>(null)
   const webglRendererRef = useRef<WebGLRenderer | null>(null)
   const personTrackerRef = useRef<PersonTracker>(new PersonTracker())
+  // 骨骼点平滑滤波缓存
+  const smoothedPoseLandmarksRef = useRef<NormalizedLandmark[][]>([])
 
   // 多人追踪状态
   const [trackedPersons, setTrackedPersons] = useState<TrackedPerson[]>([])
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
+  const prevPersonsRef = useRef<string>('')
   // 头部抠像缩略图 (personId -> dataURL)
   const [headThumbnails, setHeadThumbnails] = useState<Record<string, string>>({})
   const lastThumbnailUpdateRef = useRef<number>(0)
@@ -173,18 +178,19 @@ export function LannaMirror() {
     }
   }, [])
 
-  // 初始化 MediaPipe (Segmenter + Face Landmarker)
+  // 初始化 MediaPipe (Segmenter + Face Landmarker + Pose Landmarker)
   const initMediaPipe = useCallback(async () => {
     try {
       // 复用持久化的 MediaPipe 实例（语言切换时不重新加载模型）
-      if (persistentSegmenter && persistentFaceLandmarker) {
+      if (persistentSegmenter && persistentFaceLandmarker && persistentPoseLandmarker) {
         segmenterRef.current = persistentSegmenter
         faceLandmarkerRef.current = persistentFaceLandmarker
+        poseLandmarkerRef.current = persistentPoseLandmarker
         setIsLoading(false)
         return
       }
 
-      const { ImageSegmenter, FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision')
+      const { ImageSegmenter, FaceLandmarker, PoseLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision')
 
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
@@ -211,9 +217,27 @@ export function LannaMirror() {
         runningMode: 'VIDEO',
         numFaces: 4, // 支持最多 4 人同时检测
         outputFaceBlendshapes: true,
+        minFaceDetectionConfidence: 0.3, // 降低检测阈值，提高对遮挡情况的容忍度
+        minFacePresenceConfidence: 0.3, // 降低存在确认阈值
+        minTrackingConfidence: 0.3, // 降低追踪阈值，减少丢失
       })
       faceLandmarkerRef.current = faceLandmarker
       persistentFaceLandmarker = faceLandmarker
+
+      // 初始化 Pose Landmarker - 人体骨骼检测
+      const poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task',
+          delegate: 'GPU',
+        },
+        runningMode: 'VIDEO',
+        numPoses: 4, // 支持最多 4 人
+        minPoseDetectionConfidence: 0.3,
+        minPosePresenceConfidence: 0.3,
+        minTrackingConfidence: 0.3,
+      })
+      poseLandmarkerRef.current = poseLandmarker
+      persistentPoseLandmarker = poseLandmarker
 
       setIsLoading(false)
     }
@@ -242,13 +266,31 @@ export function LannaMirror() {
 
     // FACS 表情分析 - 多人追踪
     let persons: TrackedPerson[] = []
+    let faceLandmarksList: NormalizedLandmark[][] = []
     if (faceLandmarker) {
       const faceResult = faceLandmarker.detectForVideo(video, now)
-      const faceLandmarksList: NormalizedLandmark[][] = faceResult.faceLandmarks || []
+      faceLandmarksList = faceResult.faceLandmarks || []
 
       // 更新人员追踪器
       persons = personTrackerRef.current.update(faceLandmarksList)
-      setTrackedPersons(persons)
+
+      // 只在人员数量或ID变化时更新状态，避免无限渲染循环
+      setTrackedPersons((prev) => {
+        const prevIds = prev.map(p => p.id).join(',')
+        const newIds = persons.map(p => p.id).join(',')
+        if (prevIds !== newIds) {
+          return persons
+        }
+        // 即使 ID 相同，也需要更新表情数据
+        if (prev.length === persons.length) {
+          for (let i = 0; i < prev.length; i++) {
+            prev[i].expressionScores = persons[i].expressionScores
+            prev[i].spiritScores = persons[i].spiritScores
+            prev[i].dominantSpirit = persons[i].dominantSpirit
+          }
+        }
+        return prev
+      })
 
       // 同步 overlay canvas 尺寸
       const overlayCanvas = overlayCanvasRef.current
@@ -258,6 +300,38 @@ export function LannaMirror() {
           overlayCanvas.height = height
         }
       }
+    }
+
+    // 人体姿态检测 + 平滑滤波
+    const poseLandmarker = poseLandmarkerRef.current
+    let poseLandmarksList: NormalizedLandmark[][] = []
+    if (poseLandmarker) {
+      const poseResult = poseLandmarker.detectForVideo(video, now)
+      const rawLandmarks = poseResult.landmarks || []
+
+      // EMA 平滑滤波 (alpha=0.3 较平滑，alpha=0.5 较灵敏)
+      const alpha = 0.35
+      const smoothed = smoothedPoseLandmarksRef.current
+
+      for (let p = 0; p < rawLandmarks.length; p++) {
+        const raw = rawLandmarks[p]
+        if (!smoothed[p]) {
+          // 第一帧，直接使用原始值
+          smoothed[p] = raw.map(pt => ({ ...pt }))
+        }
+        else {
+          // 后续帧，进行 EMA 平滑
+          for (let i = 0; i < Math.min(raw.length, smoothed[p].length); i++) {
+            smoothed[p][i].x = alpha * raw[i].x + (1 - alpha) * smoothed[p][i].x
+            smoothed[p][i].y = alpha * raw[i].y + (1 - alpha) * smoothed[p][i].y
+            smoothed[p][i].z = alpha * raw[i].z + (1 - alpha) * smoothed[p][i].z
+            smoothed[p][i].visibility = raw[i].visibility
+          }
+        }
+      }
+      // 移除多余的人
+      smoothed.length = rawLandmarks.length
+      poseLandmarksList = smoothed
     }
 
     // 执行分割
@@ -281,13 +355,63 @@ export function LannaMirror() {
       if (webglRenderer) {
         webglRenderer.render(video, mask, width, height, glowColor, 3.0)
 
-        // 在 overlay canvas 上绘制边框
+        // 在 overlay canvas 上绘制边框和人体骨骼
         const overlayCanvas = overlayCanvasRef.current
         if (overlayCanvas) {
           const overlayCtx = overlayCanvas.getContext('2d')
           if (overlayCtx) {
             overlayCtx.clearRect(0, 0, width, height)
             webglRenderer.drawBorder(overlayCtx, width, height, '#CC785C')
+
+            // MediaPipe Pose 骨骼连接
+            const POSE_CONNECTIONS: [number, number][] = [
+              // 面部
+              [0, 1], [1, 2], [2, 3], [3, 7], // 左眼
+              [0, 4], [4, 5], [5, 6], [6, 8], // 右眼
+              [9, 10], // 嘴巴
+              // 躯干
+              [11, 12], // 肩膀
+              [11, 23], [12, 24], // 躯干侧边
+              [23, 24], // 臀部
+              // 左臂
+              [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], [17, 19],
+              // 右臂
+              [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], [18, 20],
+              // 左腿
+              [23, 25], [25, 27], [27, 29], [27, 31], [29, 31],
+              // 右腿
+              [24, 26], [26, 28], [28, 30], [28, 32], [30, 32],
+            ]
+
+            // 绘制每个人的骨骼
+            for (const landmarks of poseLandmarksList) {
+              if (landmarks.length < 33) continue
+
+              // 绘制骨骼连线
+              overlayCtx.strokeStyle = '#CC785C'
+              overlayCtx.lineWidth = 3
+              for (const [i, j] of POSE_CONNECTIONS) {
+                const pt1 = landmarks[i]
+                const pt2 = landmarks[j]
+                if (pt1.visibility && pt1.visibility < 0.5) continue
+                if (pt2.visibility && pt2.visibility < 0.5) continue
+
+                overlayCtx.beginPath()
+                overlayCtx.moveTo((1 - pt1.x) * width, pt1.y * height)
+                overlayCtx.lineTo((1 - pt2.x) * width, pt2.y * height)
+                overlayCtx.stroke()
+              }
+
+              // 绘制关节点
+              overlayCtx.fillStyle = '#F9F9F7'
+              for (let i = 0; i < 33; i++) {
+                const pt = landmarks[i]
+                if (pt.visibility && pt.visibility < 0.5) continue
+                overlayCtx.beginPath()
+                overlayCtx.arc((1 - pt.x) * width, pt.y * height, 4, 0, Math.PI * 2)
+                overlayCtx.fill()
+              }
+            }
           }
         }
       }
