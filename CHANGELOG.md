@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.1.5
+
+### Patch Changes
+
+- 清理认证模块冗余代码，优化 AuthClient 实现
+
 ## 0.1.4
 
 ### Patch Changes
