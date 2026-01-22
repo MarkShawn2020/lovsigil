@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 
 import { EnvServer } from '@/libs/EnvServer'
 import { supabaseAdmin, supabaseServer } from '@/libs/SupabaseServer'
-import { buildLannaSpiritPrompt, generateImage } from '@/libs/ZenMux'
+import { buildLannaGroupSpiritPrompt, buildLannaSpiritPrompt, generateImage, generateImageWithMultipleRefs } from '@/libs/ZenMux'
 
 // Get authenticated user from cookies (optional - not required for generation)
 async function getAuthUser() {
@@ -63,8 +63,14 @@ async function uploadImageToStorage(base64Data: string, spiritId: string): Promi
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { spirit, userPhoto, spiritScores } = body
+    const { spirit, userPhoto, spiritScores, group } = body
 
+    // 多人合像模式
+    if (group && Array.isArray(group.persons) && group.persons.length >= 2) {
+      return handleGroupGeneration(group)
+    }
+
+    // 单人模式
     if (!spirit) {
       return NextResponse.json(
         { error: 'Missing spirit data' },
@@ -115,4 +121,63 @@ export async function POST(request: Request) {
       { status: 500 },
     )
   }
+}
+
+// 多人合像生成
+async function handleGroupGeneration(group: {
+  persons: Array<{
+    photo: string | null
+    spirit: {
+      id: string
+      name: string
+      nameEn: string
+      element: string
+      traits: string[]
+    }
+  }>
+}) {
+  const { persons } = group
+
+  // 构建多人合像 prompt
+  const prompt = buildLannaGroupSpiritPrompt({
+    persons: persons.map(p => ({
+      spiritName: p.spirit.name,
+      spiritNameEn: p.spirit.nameEn,
+      element: p.spirit.element,
+      traits: p.spirit.traits,
+    })),
+    hasReferenceImages: persons.some(p => !!p.photo),
+  })
+
+  // 收集所有参考图片（过滤掉 null）
+  const referenceImages = persons
+    .map(p => p.photo)
+    .filter((photo): photo is string => !!photo)
+
+  // 调用多图生成
+  const generatedImageBase64 = await generateImageWithMultipleRefs(prompt, referenceImages)
+
+  // 上传到 Storage（使用 "group" 作为目录）
+  const imageUrl = await uploadImageToStorage(generatedImageBase64, 'group')
+
+  // Get current user (optional)
+  const user = await getAuthUser()
+
+  // 保存生成记录（合像模式）
+  await supabaseServer.from('spirit_generations').insert({
+    spirit_id: 'group',
+    spirit_name: persons.map(p => p.spirit.name).join(' + '),
+    user_photo: null, // 多人模式不存单个照片
+    generated_image: imageUrl,
+    prompt,
+    spirit_scores: null,
+    user_id: user?.id || null,
+  })
+
+  return NextResponse.json({
+    success: true,
+    image: imageUrl,
+    prompt,
+    isGroup: true,
+  })
 }

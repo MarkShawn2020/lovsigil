@@ -37,6 +37,16 @@ import { downloadImage, generateLannaPoster } from './posterGenerator'
 import { LANNA_SPIRITS } from './spiritData'
 import { hexToNormalizedRgb, WebGLRenderer } from './webglRenderer'
 
+// 合像生成中单人的状态
+interface GroupGenerationPerson {
+  personId: string
+  photo: string | null
+  spirit: LannaSpirit
+  status: 'pending' | 'generating' | 'done' | 'error'
+  generatedImage: string | null
+  error: string | null
+}
+
 type MirrorState = 'attract' | 'generate' | 'result'
 
 // 模块级变量：跨组件重新挂载保持状态（语言切换时不重新初始化）
@@ -106,6 +116,11 @@ export function LannaMirror() {
   const [previewPoster, setPreviewPoster] = useState<string | null>(null)
   const [includeOriginalInPoster, setIncludeOriginalInPoster] = useState(false)
   const [showRawVideoInput, setShowRawVideoInput] = useState(false)
+
+  // 合像相关状态
+  const [groupGenerating, setGroupGenerating] = useState(false)
+  const [groupPersons, setGroupPersons] = useState<GroupGenerationPerson[]>([])
+  const [groupPoster, setGroupPoster] = useState<string | null>(null)
 
   // 预览时自动生成海报（根据模式生成不同版本）
   useEffect(() => {
@@ -532,6 +547,84 @@ export function LannaMirror() {
     )
   }, [headThumbnails, generateMutation])
 
+  // 生成合像（单次 API 调用，多人一起生成）
+  const handleGenerateGroupPortrait = useCallback(async () => {
+    if (trackedPersons.length < 2) return
+
+    // 准备所有人的数据
+    const persons: GroupGenerationPerson[] = trackedPersons.map((person) => {
+      const spirit = LANNA_SPIRITS.find(s => s.id === person.dominantSpirit)!
+      return {
+        personId: person.id,
+        photo: headThumbnails[person.id] || null,
+        spirit,
+        status: 'generating' as const, // 全部同时生成
+        generatedImage: null,
+        error: null,
+      }
+    })
+
+    setGroupPersons(persons)
+    setGroupGenerating(true)
+    setGroupPoster(null)
+
+    try {
+      // 单次 API 调用，传入所有人的数据
+      const response = await fetch('/api/generate-spirit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          group: {
+            persons: persons.map(p => ({
+              photo: p.photo,
+              spirit: {
+                id: p.spirit.id,
+                name: p.spirit.name,
+                nameEn: p.spirit.nameEn,
+                element: p.spirit.element,
+                traits: p.spirit.traits,
+              },
+            })),
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Generation failed')
+      }
+
+      const data = await response.json()
+
+      // 全部标记为完成，共享同一张生成图
+      setGroupPersons(prev => prev.map(p => ({
+        ...p,
+        status: 'done' as const,
+        generatedImage: data.image,
+      })))
+
+      // 直接使用生成的合像作为海报（无需前端拼接）
+      setGroupPoster(data.image)
+    } catch (err) {
+      console.error('Group generation error:', err)
+      // 全部标记为错误
+      setGroupPersons(prev => prev.map(p => ({
+        ...p,
+        status: 'error' as const,
+        error: err instanceof Error ? err.message : 'Failed',
+      })))
+    }
+
+    setGroupGenerating(false)
+  }, [trackedPersons, headThumbnails])
+
+  // 关闭合像弹窗
+  const closeGroupModal = useCallback(() => {
+    setGroupGenerating(false)
+    setGroupPersons([])
+    setGroupPoster(null)
+  }, [])
+
   // 下载当前生成的图片（结果页使用）
   const downloadCurrentImage = useCallback(() => {
     if (!generatedImage || !matchedSpirit)
@@ -760,6 +853,24 @@ export function LannaMirror() {
                       </div>
                       )
                     })}
+
+                    {/* 合像按钮（当检测到 2+ 人时显示） */}
+                    {trackedPersons.length >= 2 && (
+                      <Button
+                        onClick={handleGenerateGroupPortrait}
+                        disabled={groupGenerating}
+                        className="w-full mt-4 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D] text-white font-medium"
+                      >
+                        {groupGenerating ? (
+                          <>
+                            <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            {t('generating_group')}
+                          </>
+                        ) : (
+                          <>👥 {t('generate_group_portrait')}</>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
@@ -1076,6 +1187,125 @@ export function LannaMirror() {
         )}
       </ResizablePanel>
     </ResizablePanelGroup>
+
+      {/* 合像生成浮层 */}
+      {(groupGenerating || groupPersons.length > 0) && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={closeGroupModal}
+        >
+          <div
+            className="relative flex flex-col items-center gap-6 max-w-4xl w-full"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 标题 */}
+            <h2 className="text-2xl font-bold text-[#D4AF37]">
+              👥 {t('group_portrait')}
+            </h2>
+
+            {/* 生成进度或海报结果 */}
+            {groupPoster ? (
+              // 显示合像海报
+              <>
+                <img
+                  src={groupPoster}
+                  alt="Group Portrait"
+                  className="max-h-[70vh] object-contain rounded-lg shadow-2xl"
+                />
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => downloadImage(groupPoster, `lanna-group-portrait-${Date.now()}.png`)}
+                    className="bg-[#D4AF37] hover:bg-[#E5C04B] text-white"
+                  >
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    {t('download')}
+                  </Button>
+                  <Button
+                    onClick={closeGroupModal}
+                    variant="outline"
+                    className="text-white border-white/30 hover:bg-white/10"
+                  >
+                    {t('close')}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              // 显示生成进度
+              <div className="w-full max-w-md space-y-4">
+                {groupPersons.map((person, idx) => {
+                  const spiritInfo = SPIRIT_INFO[person.spirit.id as keyof typeof SPIRIT_INFO]
+                  return (
+                    <div
+                      key={person.personId}
+                      className="flex items-center gap-4 p-3 rounded-lg bg-white/5 border border-white/10"
+                    >
+                      {/* 头像/缩略图 */}
+                      <div
+                        className="w-12 h-12 rounded-full overflow-hidden border-2 shrink-0"
+                        style={{
+                          borderColor: spiritInfo?.color || '#D4AF37',
+                          background: `radial-gradient(circle, ${spiritInfo?.color}40 0%, ${spiritInfo?.color}20 100%)`,
+                        }}
+                      >
+                        {person.photo ? (
+                          <img src={person.photo} alt="" className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white/30">
+                            {idx + 1}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 守护灵信息 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{spiritInfo?.emoji}</span>
+                          <span className="text-white/80 text-sm">{spiritInfo?.name}</span>
+                        </div>
+                        <p className="text-xs text-white/40 truncate">{spiritInfo?.nameEn}</p>
+                      </div>
+
+                      {/* 状态指示 */}
+                      <div className="shrink-0">
+                        {person.status === 'pending' && (
+                          <span className="text-white/30 text-sm">{t('waiting')}</span>
+                        )}
+                        {person.status === 'generating' && (
+                          <div className="w-5 h-5 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
+                        )}
+                        {person.status === 'done' && (
+                          <span className="text-green-400 text-lg">✓</span>
+                        )}
+                        {person.status === 'error' && (
+                          <span className="text-red-400 text-lg" title={person.error || ''}>✗</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {/* 合像生成提示 */}
+                {groupPersons.every(p => p.status === 'done' || p.status === 'error') && !groupPoster && (
+                  <div className="text-center py-4">
+                    <div className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent mx-auto" />
+                    <p className="text-white/60 text-sm">{t('composing_group_poster')}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 关闭按钮 */}
+            <button
+              className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
+              onClick={closeGroupModal}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 大图预览浮层 */}
       {previewRecord && (

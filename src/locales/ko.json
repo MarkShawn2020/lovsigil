@@ -53,7 +53,13 @@
     "with_original": "+ 원본",
     "download": "다운로드",
     "delete": "삭제",
-    "deleting": "삭제 중..."
+    "deleting": "삭제 중...",
+    "close": "닫기",
+    "generate_group_portrait": "그룹 초상화 생성",
+    "generating_group": "생성 중...",
+    "group_portrait": "그룹 영혼 초상화",
+    "waiting": "대기 중",
+    "composing_group_poster": "그룹 포스터 합성 중..."
   },
   "Counter": {
     "meta_title": "카운터",

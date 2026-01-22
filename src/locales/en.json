@@ -53,7 +53,13 @@
     "with_original": "+ Original",
     "download": "Download",
     "delete": "Delete",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "close": "Close",
+    "generate_group_portrait": "Generate Group Portrait",
+    "generating_group": "Generating...",
+    "group_portrait": "Group Portrait",
+    "waiting": "Waiting",
+    "composing_group_poster": "Composing group poster..."
   },
   "Counter": {
     "meta_title": "Counter",

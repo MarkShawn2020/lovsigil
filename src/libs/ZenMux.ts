@@ -24,36 +24,33 @@ function getClient(): GoogleGenAI {
 }
 
 export async function generateImage(prompt: string, referenceImage?: string): Promise<string> {
+  return generateImageWithMultipleRefs(prompt, referenceImage ? [referenceImage] : [])
+}
+
+// 支持多张参考图片的生成函数
+export async function generateImageWithMultipleRefs(prompt: string, referenceImages: string[]): Promise<string> {
   const client = getClient()
 
   // 构建多模态内容
-  let contents: any
-  if (referenceImage) {
-    // 从 data URL 中提取 base64 和 mime type
-    const match = referenceImage.match(/^data:([^;]+);base64,(.+)$/)
+  const parts: any[] = [{ text: prompt }]
+
+  // 添加所有参考图片
+  for (const refImage of referenceImages) {
+    const match = refImage.match(/^data:([^;]+);base64,(.+)$/)
     if (match) {
       const [, mimeType, base64Data] = match
-      contents = [
-        {
-          role: 'user',
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType,
-                data: base64Data,
-              },
-            },
-          ],
+      parts.push({
+        inlineData: {
+          mimeType,
+          data: base64Data,
         },
-      ]
-    } else {
-      // 无效的 data URL，回退到纯文本
-      contents = prompt
+      })
     }
-  } else {
-    contents = prompt
   }
+
+  const contents = parts.length > 1
+    ? [{ role: 'user', parts }]
+    : prompt
 
   const response = await client.models.generateContent({
     model: 'google/gemini-3-pro-image-preview',
@@ -64,13 +61,13 @@ export async function generateImage(prompt: string, referenceImage?: string): Pr
   })
 
   // 从响应中提取图像
-  const parts = response.candidates?.[0]?.content?.parts
-  if (!parts || parts.length === 0) {
+  const responseParts = response.candidates?.[0]?.content?.parts
+  if (!responseParts || responseParts.length === 0) {
     throw new Error('No content in response')
   }
 
   // 查找图像部分
-  for (const part of parts) {
+  for (const part of responseParts) {
     if (part.inlineData?.data && part.inlineData?.mimeType?.startsWith('image/')) {
       // 返回 base64 data URL
       return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
@@ -128,6 +125,63 @@ ${traits.map(t => `- ${t}`).join('\n')}
 ${basePrompt}
 
 The artwork should feel sacred and mystical. The person appears blessed and protected by their guardian spirit from Lanna traditions.`
+
+  return prompt
+}
+
+// 多人合像 prompt 构建
+export interface GroupPersonInfo {
+  spiritName: string
+  spiritNameEn: string
+  element: string
+  traits: string[]
+}
+
+export function buildLannaGroupSpiritPrompt(params: {
+  persons: GroupPersonInfo[]
+  hasReferenceImages: boolean
+}): string {
+  const { persons, hasReferenceImages } = params
+  const count = persons.length
+
+  const referenceInstruction = hasReferenceImages
+    ? `CRITICAL REQUIREMENTS for the ${count} people in the reference images:
+- Preserve EXACT facial features of EACH person (eyes, nose, mouth shape, face contour)
+- Keep their YOUTHFUL appearance - do NOT age them
+- Each person should be clearly distinguishable and recognizable
+- Maintain the relative positions/arrangement suggested by the reference images
+
+`
+    : ''
+
+  // 构建每个人的守护灵描述
+  const spiritDescriptions = persons.map((p, i) => {
+    return `Person ${i + 1}: Protected by ${p.spiritNameEn} (${p.spiritName}), a ${p.element} element spirit
+   Traits: ${p.traits.slice(0, 3).join(', ')}`
+  }).join('\n')
+
+  const prompt = `${referenceInstruction}Create a mystical GROUP PORTRAIT artwork in traditional Lanna (Northern Thai) art style featuring ${count} PEOPLE TOGETHER.
+
+COMPOSITION (GROUP PORTRAIT with ${count} PERSONS):
+${spiritDescriptions}
+
+IMPORTANT GROUP PORTRAIT REQUIREMENTS:
+- All ${count} persons must appear TOGETHER in ONE harmonious composition
+- Each person has their OWN guardian spirit appearing behind/beside them
+- The spirits should be semi-transparent, ethereal, or glowing
+- The people are NOT merged with spirits - they remain fully human
+- Create a sense of unity and connection between the group
+- Balance the composition so all persons are equally prominent
+
+Style Requirements:
+- Traditional Lanna temple mural art style
+- Rich gold leaf accents and ornate decorations
+- Thai Buddhist artistic elements
+- Warm earth tones (terracotta #CC785C, gold #D4AF37, deep brown)
+- Intricate patterns inspired by Lanna textiles
+- Mystical auras emanating from each spirit guardian
+
+The artwork should feel sacred and mystical, showing a group blessed and protected by their guardian spirits from Lanna traditions. The composition should celebrate their connection and shared spiritual protection.`
 
   return prompt
 }

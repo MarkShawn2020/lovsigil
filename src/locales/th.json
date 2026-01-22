@@ -53,7 +53,13 @@
     "with_original": "+ ต้นฉบับ",
     "download": "ดาวน์โหลด",
     "delete": "ลบ",
-    "deleting": "กำลังลบ..."
+    "deleting": "กำลังลบ...",
+    "close": "ปิด",
+    "generate_group_portrait": "สร้างภาพรวมกลุ่ม",
+    "generating_group": "กำลังสร้าง...",
+    "group_portrait": "ภาพวิญญาณรวมกลุ่ม",
+    "waiting": "กำลังรอ",
+    "composing_group_poster": "กำลังสร้างโปสเตอร์กลุ่ม..."
   },
   "Counter": {
     "meta_title": "ตัวนับ",

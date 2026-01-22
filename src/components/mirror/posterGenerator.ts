@@ -32,6 +32,18 @@ interface PosterOptions {
   includeOriginal?: boolean // 是否包含原始采集照片
 }
 
+// 合像海报选项
+export interface GroupPosterPerson {
+  originalImage: string | null
+  generatedImage: string
+  spiritId: string
+}
+
+export interface GroupPosterOptions {
+  persons: GroupPosterPerson[]
+  includeOriginal?: boolean
+}
+
 /**
  * 加载图片
  */
@@ -550,4 +562,154 @@ export async function getImageDataUrl(src: string): Promise<string> {
   const ctx = canvas.getContext('2d')!
   ctx.drawImage(img, 0, 0)
   return canvas.toDataURL('image/png', 1.0)
+}
+
+/**
+ * 生成合像海报（多人守护灵）
+ */
+export async function generateGroupPoster(options: GroupPosterOptions): Promise<string> {
+  const { persons, includeOriginal = false } = options
+  const count = persons.length
+
+  if (count < 2) {
+    throw new Error('Group poster requires at least 2 persons')
+  }
+
+  const canvas = document.createElement('canvas')
+  canvas.width = POSTER_WIDTH
+  canvas.height = POSTER_HEIGHT
+  const ctx = canvas.getContext('2d')!
+
+  // 1. 绘制背景渐变
+  const gradient = ctx.createLinearGradient(0, 0, 0, POSTER_HEIGHT)
+  gradient.addColorStop(0, COLORS.background)
+  gradient.addColorStop(0.5, COLORS.backgroundGradientEnd)
+  gradient.addColorStop(1, COLORS.background)
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT)
+
+  // 微妙纹理
+  ctx.globalAlpha = 0.03
+  for (let i = 0; i < 5000; i++) {
+    const x = Math.random() * POSTER_WIDTH
+    const y = Math.random() * POSTER_HEIGHT
+    ctx.fillStyle = Math.random() > 0.5 ? COLORS.white : COLORS.gold
+    ctx.fillRect(x, y, 1, 1)
+  }
+  ctx.globalAlpha = 1
+
+  // 2. 绘制装饰边框
+  drawLannaBorder(ctx, POSTER_WIDTH, POSTER_HEIGHT, COLORS.gold)
+
+  // 3. 顶部标题
+  ctx.textAlign = 'center'
+  ctx.font = 'bold 48px serif'
+  ctx.fillStyle = COLORS.gold
+  ctx.shadowColor = COLORS.gold
+  ctx.shadowBlur = 15
+  ctx.fillText('LANNA SPIRITS', POSTER_WIDTH / 2, 100)
+  ctx.shadowBlur = 0
+
+  ctx.font = '22px serif'
+  ctx.fillStyle = COLORS.whiteTranslucent
+  ctx.fillText('กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, 135)
+
+  // 4. 加载所有图片
+  const loadedPersons = await Promise.all(
+    persons.map(async (p) => ({
+      ...p,
+      generatedImg: await loadImage(p.generatedImage),
+      originalImg: p.originalImage ? await loadImage(p.originalImage).catch(() => null) : null,
+    })),
+  )
+
+  // 5. 根据人数计算布局
+  const layouts = getGroupLayout(count, includeOriginal)
+  const startY = 180
+  const availableHeight = includeOriginal ? 1100 : 1300
+
+  for (let i = 0; i < loadedPersons.length; i++) {
+    const person = loadedPersons[i]!
+    const layout = layouts[i]!
+    const spiritInfo = SPIRIT_INFO[person.spiritId as keyof typeof SPIRIT_INFO]
+    const spiritColor = spiritInfo?.color || COLORS.gold
+
+    // 计算位置
+    const centerX = POSTER_WIDTH * layout.x
+    const centerY = startY + availableHeight * layout.y
+    const maxSize = Math.min(POSTER_WIDTH, availableHeight) * layout.size
+
+    // 绘制生成图
+    drawMainImage(ctx, person.generatedImg, centerX, centerY, maxSize, maxSize, spiritColor)
+
+    // 守护灵 emoji 和名称（图片下方）
+    const labelY = centerY + maxSize / 2 + 40
+    ctx.font = 'bold 28px serif'
+    ctx.fillStyle = spiritColor
+    ctx.shadowColor = spiritColor
+    ctx.shadowBlur = 8
+    ctx.fillText(`${spiritInfo?.emoji || '✨'} ${spiritInfo?.name || ''}`, centerX, labelY)
+    ctx.shadowBlur = 0
+  }
+
+  // 6. 底部对比区（如果包含原图）
+  if (includeOriginal) {
+    const compareY = 1380
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'
+    drawRoundedRect(ctx, 60, compareY - 30, POSTER_WIDTH - 120, 140, 20)
+    ctx.fill()
+
+    ctx.font = '18px sans-serif'
+    ctx.fillStyle = COLORS.goldDark
+    ctx.fillText('TRANSFORMATION', POSTER_WIDTH / 2, compareY)
+
+    // 绘制原图 -> 生成图 缩略对
+    const pairWidth = (POSTER_WIDTH - 120) / count
+    for (let i = 0; i < loadedPersons.length; i++) {
+      const person = loadedPersons[i]!
+      const spiritInfo = SPIRIT_INFO[person.spiritId as keyof typeof SPIRIT_INFO]
+      const spiritColor = spiritInfo?.color || COLORS.gold
+      const pairX = 60 + pairWidth * (i + 0.5)
+
+      if (person.originalImg) {
+        drawCircularImage(ctx, person.originalImg, pairX - 45, compareY + 55, 30, COLORS.goldDark)
+      }
+      ctx.fillStyle = spiritColor
+      ctx.font = '16px sans-serif'
+      ctx.fillText('→', pairX, compareY + 60)
+      drawCircularImage(ctx, person.generatedImg, pairX + 45, compareY + 55, 30, spiritColor)
+    }
+  }
+
+  // 7. 底部水印
+  ctx.font = '18px sans-serif'
+  ctx.fillStyle = COLORS.goldDark
+  ctx.fillText('Lanna Spirit Mirror · กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, POSTER_HEIGHT - 50)
+
+  return canvas.toDataURL('image/png', 1.0)
+}
+
+// 根据人数计算布局位置
+function getGroupLayout(count: number, includeOriginal: boolean): Array<{ x: number, y: number, size: number }> {
+  // x, y 是中心点的相对位置 (0-1)，size 是相对尺寸
+  if (count === 2) {
+    return [
+      { x: 0.3, y: 0.4, size: 0.45 },
+      { x: 0.7, y: 0.4, size: 0.45 },
+    ]
+  }
+  if (count === 3) {
+    return [
+      { x: 0.5, y: 0.25, size: 0.4 },
+      { x: 0.3, y: 0.65, size: 0.35 },
+      { x: 0.7, y: 0.65, size: 0.35 },
+    ]
+  }
+  // 4人：2x2 网格
+  return [
+    { x: 0.3, y: 0.28, size: 0.38 },
+    { x: 0.7, y: 0.28, size: 0.38 },
+    { x: 0.3, y: 0.72, size: 0.38 },
+    { x: 0.7, y: 0.72, size: 0.38 },
+  ]
 }
