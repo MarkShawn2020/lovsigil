@@ -7,6 +7,7 @@ import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 import { routing } from '@/libs/I18nRouting';
 import { AuthProvider } from '@/providers/AuthProvider';
+import { QueryProvider } from '@/providers/QueryProvider';
 import '@/styles/global.css';
 
 const inter = Inter({
@@ -190,9 +191,11 @@ export default async function RootLayout(props: {
         <NextIntlClientProvider>
           <PostHogProvider>
             <ToastProvider>
-              <AuthProvider>
-                {props.children}
-              </AuthProvider>
+              <QueryProvider>
+                <AuthProvider>
+                  {props.children}
+                </AuthProvider>
+              </QueryProvider>
             </ToastProvider>
           </PostHogProvider>
         </NextIntlClientProvider>

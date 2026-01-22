@@ -4,6 +4,7 @@ import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,7 +12,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
-import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { version } from '../../../package.json'
 
 // 过滤 MediaPipe 的 INFO 日志（它们被错误地输出到 stderr）
@@ -25,13 +25,16 @@ if (typeof window !== 'undefined') {
     originalError.apply(console, args)
   }
 }
-import { useAuth } from '@/providers/AuthProvider'
-import { matchSpiritByExpression, SPIRIT_INFO } from './facsAnalyzer'
-import { PersonTracker } from './personTracker'
 import type { TrackedPerson } from './personTracker'
+import type { LannaSpirit } from './types'
+import { useDeleteRecord } from '@/hooks/useDeleteRecord'
+import { useGenerateSpirit } from '@/hooks/useGenerateSpirit'
+import { useSpiritHistory } from '@/hooks/useSpiritHistory'
+import { useAuth } from '@/providers/AuthProvider'
+import { SPIRIT_INFO } from './facsAnalyzer'
+import { PersonTracker } from './personTracker'
 import { downloadImage, generateLannaPoster } from './posterGenerator'
 import { LANNA_SPIRITS } from './spiritData'
-import type { LannaSpirit } from './types'
 
 // 守护灵顺序（用于渲染）
 const SPIRIT_ORDER = ['naga', 'singha', 'hong', 'chang', 'garuda'] as const
@@ -43,7 +46,7 @@ const LANNA_GOLD = [212, 175, 55] // 金色
 function hexToRgb(hex: string): [number, number, number] {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
   return result
-    ? [parseInt(result[1]!, 16), parseInt(result[2]!, 16), parseInt(result[3]!, 16)]
+    ? [Number.parseInt(result[1]!, 16), Number.parseInt(result[2]!, 16), Number.parseInt(result[3]!, 16)]
     : LANNA_GOLD as [number, number, number]
 }
 
@@ -86,20 +89,21 @@ export function LannaMirror() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [generateError, setGenerateError] = useState<string | null>(null)
 
-  // 历史记录状态
-  const [historyRecords, setHistoryRecords] = useState<Array<{
-    id: number
-    spiritId: string
-    spiritName: string | null
-    userPhoto: string | null
-    generatedImage: string
-    createdAt: string
-    userId: string | null
-  }>>([])
+  // 历史记录 - 使用 react-query
+  const {
+    data: historyData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useSpiritHistory()
+  const historyRecords = historyData?.records ?? []
+  const hasMoreHistory = hasNextPage ?? false
+  const isLoadingMoreHistory = isFetchingNextPage
   const [showHistory, setShowHistory] = useState(false)
-  const [hasMoreHistory, setHasMoreHistory] = useState(true)
-  const [isLoadingMoreHistory, setIsLoadingMoreHistory] = useState(false)
-  const historyStateRef = useRef({ isLoading: false, hasMore: true, offset: 0 })
+
+  // Mutations
+  const generateMutation = useGenerateSpirit()
+  const deleteMutation = useDeleteRecord()
   const [previewRecord, setPreviewRecord] = useState<{
     id: number
     generatedImage: string
@@ -110,7 +114,6 @@ export function LannaMirror() {
   const [previewPoster, setPreviewPoster] = useState<string | null>(null)
   const [includeOriginalInPoster, setIncludeOriginalInPoster] = useState(false)
   const [showRawVideoInput, setShowRawVideoInput] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   // 预览时自动生成海报（根据模式生成不同版本）
   useEffect(() => {
@@ -502,45 +505,12 @@ export function LannaMirror() {
     }
   }, [matchedSpirit, capturedPhoto])
 
-  // 获取历史记录
-  const fetchHistory = useCallback(async (reset = true) => {
-    const state = historyStateRef.current
-    console.log('[DEBUG][fetchHistory] 入口:', { reset, state: { ...state } })
-    if (!reset && (state.isLoading || !state.hasMore)) {
-      console.log('[DEBUG][fetchHistory] 提前返回:', { isLoading: state.isLoading, hasMore: state.hasMore })
-      return
-    }
-
-    if (!reset) {
-      state.isLoading = true
-      setIsLoadingMoreHistory(true)
-    }
-
-    try {
-      const offset = reset ? 0 : state.offset
-      console.log('[DEBUG][fetchHistory] 请求:', { offset, reset })
-      const res = await fetch(`/api/spirit-history?limit=20&offset=${offset}`)
-      const data = await res.json()
-      console.log('[DEBUG][fetchHistory] 响应:', { hasMore: data.hasMore, recordsCount: data.records?.length })
-      if (data.records) {
-        setHistoryRecords(prev => reset ? data.records : [...prev, ...data.records])
-        state.hasMore = data.hasMore ?? false
-        state.offset = reset ? data.records.length : state.offset + data.records.length
-        console.log('[DEBUG][fetchHistory] 更新state:', { ...state })
-        setHasMoreHistory(state.hasMore)
-      }
-    } catch (err) {
-      console.error('Failed to fetch history:', err)
-    } finally {
-      state.isLoading = false
-      setIsLoadingMoreHistory(false)
-    }
-  }, [])
 
   // 从 attract 状态直接生成某人的守护灵画像
   const handleGenerateForPerson = useCallback(async (person: TrackedPerson) => {
     const spirit = LANNA_SPIRITS.find(s => s.id === person.dominantSpirit)
-    if (!spirit) return
+    if (!spirit)
+      return
 
     const photo = headThumbnails[person.id] || null
     setMatchedSpirit(spirit)
@@ -548,28 +518,20 @@ export function LannaMirror() {
     setState('generate')
     setGenerateError(null)
 
-    try {
-      const response = await fetch('/api/generate-spirit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          spirit,
-          userPhoto: photo,
-          spiritScores: person.spiritScores,
-        }),
-      })
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || 'Generation failed')
-      }
-      setGeneratedImage(data.image)
-      setState('result')
-      fetchHistory() // 刷新历史记录
-    } catch (err) {
-      console.error('Generation error:', err)
-      setGenerateError(err instanceof Error ? err.message : 'Generation failed')
-    }
-  }, [headThumbnails, fetchHistory])
+    generateMutation.mutate(
+      { spirit, userPhoto: photo, spiritScores: person.spiritScores },
+      {
+        onSuccess: (data) => {
+          setGeneratedImage(data.image)
+          setState('result')
+        },
+        onError: (err) => {
+          console.error('Generation error:', err)
+          setGenerateError(err instanceof Error ? err.message : 'Generation failed')
+        },
+      },
+    )
+  }, [headThumbnails, generateMutation])
 
   // 下载当前生成的图片（结果页使用）
   const downloadCurrentImage = useCallback(() => {
@@ -585,27 +547,19 @@ export function LannaMirror() {
   }, [generatedImage, matchedSpirit])
 
   // 删除历史记录
-  const deleteRecord = useCallback(async (recordId: number) => {
-    if (isDeleting) return
-    setIsDeleting(true)
-    try {
-      const res = await fetch(`/api/spirit-history/${recordId}`, { method: 'DELETE' })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to delete')
-      }
-      // 从本地列表移除
-      setHistoryRecords(prev => prev.filter(r => r.id !== recordId))
-      setPreviewRecord(null)
-    }
-    catch (err) {
-      console.error('Delete error:', err)
-      alert(err instanceof Error ? err.message : '删除失败')
-    }
-    finally {
-      setIsDeleting(false)
-    }
-  }, [isDeleting])
+  const handleDeleteRecord = useCallback((recordId: number) => {
+    deleteMutation.mutate(recordId, {
+      onSuccess: () => {
+        setPreviewRecord(null)
+      },
+      onError: (err) => {
+        console.error('Delete error:', err)
+        alert(err instanceof Error ? err.message : '删除失败')
+      },
+    })
+  }, [deleteMutation])
+
+  const isDeleting = deleteMutation.isPending
 
   // 检查是否可以删除（管理员或所有者，且是已保存的记录）
   const canDelete = useCallback((record: { id: number; userId: string | null }) => {
@@ -619,14 +573,13 @@ export function LannaMirror() {
   useEffect(() => {
     initCamera()
     initMediaPipe()
-    fetchHistory()
 
     // 不在 cleanup 中停止摄像头，让 stream 跨语言切换保持活跃
     // 浏览器会在页面真正离开时自动释放资源
     return () => {
       cancelAnimationFrame(animationRef.current)
     }
-  }, [initCamera, initMediaPipe, fetchHistory])
+  }, [initCamera, initMediaPipe])
 
   // 标记组件已挂载（避免 ResizablePanel 宽度闪烁）
   useEffect(() => {
@@ -986,9 +939,8 @@ export function LannaMirror() {
               onScroll={(e) => {
                 const el = e.currentTarget
                 const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10
-                console.log('[DEBUG][onScroll]', { scrollTop: el.scrollTop, clientHeight: el.clientHeight, scrollHeight: el.scrollHeight, atBottom })
-                if (atBottom) {
-                  fetchHistory(false)
+                if (atBottom && hasMoreHistory && !isLoadingMoreHistory) {
+                  fetchNextPage()
                 }
               }}
             >
@@ -1176,7 +1128,7 @@ export function LannaMirror() {
                 </Button>
                 {canDelete(previewRecord) && (
                   <Button
-                    onClick={() => deleteRecord(previewRecord.id)}
+                    onClick={() => handleDeleteRecord(previewRecord.id)}
                     disabled={isDeleting}
                     className="bg-red-600/80 text-white hover:bg-red-600"
                   >
