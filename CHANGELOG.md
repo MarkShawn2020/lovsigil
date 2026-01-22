@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.1.4
+
+### Patch Changes
+
+- feat(i18n): 添加韩语和泰语支持
+
 ## 0.1.3
 
 ### Patch Changes
