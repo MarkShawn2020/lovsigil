@@ -300,7 +300,7 @@ export function LannaMirror() {
             const prevPerson = prev[i]
             const newPerson = persons[i]
             if (prevPerson && newPerson) {
-              prevPerson.currentExpression = newPerson.currentExpression
+              prevPerson.currentStructure = newPerson.currentStructure
               prevPerson.spiritScores = newPerson.spiritScores
               prevPerson.dominantSpirit = newPerson.dominantSpirit
             }
@@ -406,7 +406,7 @@ export function LannaMirror() {
           thumbnailCanvasRef.current = document.createElement('canvas')
         }
         const thumbCanvas = thumbnailCanvasRef.current
-        const thumbSize = 80
+        const thumbSize = 200 // 增大尺寸保留面部细节，帮助 AI 准确识别年龄
         const newThumbnails: Record<string, string> = {}
 
         // 获取原始视频帧（用于缩略图）

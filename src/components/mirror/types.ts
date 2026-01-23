@@ -4,7 +4,7 @@ export interface LannaSpirit {
   name: string // 泰语名
   nameEn: string // 英文名
   nameCn: string // 中文名
-  element: 'fire' | 'water' | 'earth' | 'air' | 'spirit'
+  element: 'fire' | 'water' | 'earth' | 'air' | 'spirit' | 'mystery'
   description: string
   traits: string[]
   color: string // 主色调 hex

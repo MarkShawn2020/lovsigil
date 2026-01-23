@@ -1,17 +1,17 @@
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 
-import type { ExpressionScores, SpiritScores } from './facsAnalyzer'
-import { ExpressionAccumulator, extractExpressionScores, getExpressionDescription, getNormalizedSpiritScores } from './facsAnalyzer'
+import type { FacialStructure, SpiritScores } from './faceStructureAnalyzer'
+import { extractFacialStructure, getDominantSpirit, mapStructureToSpirits, StructureAccumulator } from './faceStructureAnalyzer'
 
 export interface TrackedPerson {
   id: string
   // 脸部边界框（归一化坐标 0-1）
   center: { x: number, y: number }
   size: number // 脸部大小（用于匹配）
-  // 表情数据
-  accumulator: ExpressionAccumulator
-  currentExpression: ExpressionScores | null
-  expressionDescription: string
+  // 面部结构数据（静态特征，用于气质匹配）
+  accumulator: StructureAccumulator
+  currentStructure: FacialStructure | null
+  structureDescription: string
   // 守护灵亲和度（实时）
   spiritScores: SpiritScores
   dominantSpirit: string
@@ -121,15 +121,20 @@ export class PersonTracker {
         person.lastSeenFrame = this.currentFrame
         person.frameCount++
 
-        // 更新表情
-        const scores = extractExpressionScores(face.landmarks)
-        person.accumulator.addSample(scores)
-        person.currentExpression = scores
-        person.expressionDescription = getExpressionDescription(scores)
+        // 更新面部结构
+        const structure = extractFacialStructure(face.landmarks)
+        if (structure) {
+          person.accumulator.addSample(structure)
+          person.currentStructure = structure
 
-        // 更新守护灵亲和度
-        person.spiritScores = getNormalizedSpiritScores(scores)
-        person.dominantSpirit = this.getDominantSpirit(person.spiritScores)
+          // 使用累积平均结构计算守护灵亲和度（更稳定）
+          const avgStructure = person.accumulator.getAverageStructure()
+          if (avgStructure) {
+            person.spiritScores = mapStructureToSpirits(avgStructure)
+            person.dominantSpirit = getDominantSpirit(person.spiritScores)
+            person.structureDescription = person.dominantSpirit
+          }
+        }
 
         matched.add(bestMatch)
         usedFaces.add(faceIdx)
@@ -142,20 +147,28 @@ export class PersonTracker {
         continue
 
       const face = detectedFaces[i]!
-      const scores = extractExpressionScores(face.landmarks)
-      const accumulator = new ExpressionAccumulator()
-      accumulator.addSample(scores)
-      const spiritScores = getNormalizedSpiritScores(scores)
+      const structure = extractFacialStructure(face.landmarks)
+      const accumulator = new StructureAccumulator()
+
+      // 默认分数
+      let spiritScores: SpiritScores = { chang: 0.28, singha: 0.25, kinnari: 0.20, garuda: 0.17, mom: 0.10 }
+      let dominantSpirit = 'chang'
+
+      if (structure) {
+        accumulator.addSample(structure)
+        spiritScores = mapStructureToSpirits(structure)
+        dominantSpirit = getDominantSpirit(spiritScores)
+      }
 
       const newPerson: TrackedPerson = {
         id: generateId(),
         center: face.center,
         size: face.size,
         accumulator,
-        currentExpression: scores,
-        expressionDescription: getExpressionDescription(scores),
+        currentStructure: structure,
+        structureDescription: dominantSpirit,
         spiritScores,
-        dominantSpirit: this.getDominantSpirit(spiritScores),
+        dominantSpirit,
         lastSeenFrame: this.currentFrame,
         frameCount: 1,
       }
@@ -218,20 +231,5 @@ export class PersonTracker {
   // 获取追踪人数
   getCount(): number {
     return this.persons.size
-  }
-
-  // 获取主导守护灵
-  private getDominantSpirit(scores: SpiritScores): string {
-    let maxScore = 0
-    let dominant = 'chang'
-
-    Object.entries(scores).forEach(([id, score]) => {
-      if (score > maxScore) {
-        maxScore = score
-        dominant = id
-      }
-    })
-
-    return dominant
   }
 }
