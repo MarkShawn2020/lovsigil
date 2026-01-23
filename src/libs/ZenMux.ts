@@ -23,6 +23,89 @@ function getClient(): GoogleGenAI {
   return genaiClient
 }
 
+// Vision AI 气质分析结果
+export interface VibeAnalysisResult {
+  scores: {
+    mom: number // 野性实诚、敦实稳重
+    naga: number // 清冷魅惑、仙气飘飘
+    singha: number // 威严霸气、天生领袖
+    makara: number // 能说会道、欲望强烈
+    hadsadiling: number // 清高贵族、疏离优雅
+  }
+  dominantVibe: string
+  description: string
+}
+
+// 使用 Vision AI 分析面部气质（30% 权重）
+export async function analyzeVibeFromImage(imageBase64: string): Promise<VibeAnalysisResult> {
+  const client = getClient()
+
+  const prompt = `分析这张人脸照片的气质特征，判断最符合以下哪种类型：
+
+1. Mom (莫) - 野性实诚、敦实稳重、外冷内热、忠诚可靠
+2. Naga (纳迦) - 清冷魅惑、仙气飘飘、直觉敏锐、艺术天分
+3. Singha (醒狮) - 威严霸气、天生领袖、掌控欲强、正义感重
+4. Makara (摩羯) - 能说会道、欲望强烈、务实精明、看透本质
+5. Hadsadiling (哈萨迪灵) - 清高贵族、疏离优雅、多才多艺、精神洁癖
+
+请根据：
+- 整体气场和氛围
+- 眼神特质（清澈/深邃/锐利/温和）
+- 面部给人的第一印象
+- 是否有"发量浓密"、"混血感"、"五官立体"等特征
+
+返回 JSON 格式：
+{
+  "scores": {
+    "mom": 0.0-1.0,
+    "naga": 0.0-1.0,
+    "singha": 0.0-1.0,
+    "makara": 0.0-1.0,
+    "hadsadiling": 0.0-1.0
+  },
+  "dominantVibe": "最匹配的类型ID",
+  "description": "简短的气质描述（20字以内）"
+}
+
+只返回 JSON，不要其他内容。`
+
+  // 解析 base64
+  const match = imageBase64.match(/^data:([^;]+);base64,(.+)$/)
+  if (!match) {
+    throw new Error('Invalid image format')
+  }
+  const [, mimeType, base64Data] = match
+
+  const response = await client.models.generateContent({
+    model: 'google/gemini-2.0-flash',
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType: mimeType!, data: base64Data! } },
+        ],
+      },
+    ],
+  })
+
+  const text = response.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+  // 解析 JSON
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    // 返回默认值
+    return {
+      scores: { mom: 0.2, naga: 0.2, singha: 0.2, makara: 0.2, hadsadiling: 0.2 },
+      dominantVibe: 'mom',
+      description: '无法分析',
+    }
+  }
+
+  const result = JSON.parse(jsonMatch[0]) as VibeAnalysisResult
+  return result
+}
+
 export async function generateImage(prompt: string, referenceImage?: string): Promise<string> {
   return generateImageWithMultipleRefs(prompt, referenceImage ? [referenceImage] : [])
 }
@@ -88,13 +171,23 @@ export function buildLannaSpiritPrompt(params: {
 }): string {
   const { spiritName, spiritNameEn, element, traits, basePrompt, hasReferenceImage } = params
 
-  // 当有参考图像时，强调保持人物相似性和年轻化
+  // 当有参考图像时，强调保持人物相似性和年龄
   const referenceInstruction = hasReferenceImage
-    ? `CRITICAL REQUIREMENTS for the person in reference image:
-- Preserve EXACT facial features (eyes, nose, mouth shape, face contour)
-- Keep their YOUTHFUL appearance - do NOT age them, make them look the same age or slightly younger
-- Maintain smooth, healthy skin - avoid wrinkles or aged appearance
-- The person should look vibrant and full of life
+    ? `⚠️ ABSOLUTE CRITICAL - AGE PRESERVATION REQUIREMENTS ⚠️
+The person in the reference image is YOUNG. You MUST:
+- Preserve their EXACT AGE - they should look the SAME AGE as in the photo, NOT older
+- Keep their youthful, smooth, flawless skin - NO wrinkles, NO aging lines, NO mature features
+- Maintain their young facial structure - soft features, not hardened or aged
+- Eyes should be bright and lively, not tired or aged
+- If the person looks like a teenager or young adult (18-25), keep them looking 18-25
+- DO NOT add any signs of aging: no crow's feet, no forehead lines, no nasolabial folds
+- Hair should be full and healthy, not thinned or grayed
+- The person should radiate youth and vitality
+
+FACE PRESERVATION:
+- Preserve EXACT facial features (eyes shape, nose, mouth, face contour, skin tone)
+- Keep their natural expression and energy
+- The generated face must be immediately recognizable as the same person
 
 `
     : ''
@@ -145,11 +238,19 @@ export function buildLannaGroupSpiritPrompt(params: {
   const count = persons.length
 
   const referenceInstruction = hasReferenceImages
-    ? `CRITICAL REQUIREMENTS for the ${count} people in the reference images:
-- Preserve EXACT facial features of EACH person (eyes, nose, mouth shape, face contour)
-- Keep their YOUTHFUL appearance - do NOT age them
-- Each person should be clearly distinguishable and recognizable
-- Maintain the relative positions/arrangement suggested by the reference images
+    ? `⚠️ ABSOLUTE CRITICAL - AGE PRESERVATION FOR ALL ${count} PERSONS ⚠️
+The people in the reference images are YOUNG. You MUST for EACH person:
+- Preserve their EXACT AGE - they should look the SAME AGE as in photos, NOT older
+- Keep youthful, smooth, flawless skin - NO wrinkles, NO aging lines, NO mature features
+- Maintain young facial structures - soft features, not hardened or aged
+- Eyes should be bright and lively, not tired or aged
+- DO NOT add any signs of aging to anyone
+- Each person should radiate youth and vitality
+
+FACE PRESERVATION FOR EACH PERSON:
+- Preserve EXACT facial features (eyes, nose, mouth, face contour, skin tone)
+- Each person must be clearly distinguishable and immediately recognizable
+- Maintain their natural expressions and energy
 
 `
     : ''

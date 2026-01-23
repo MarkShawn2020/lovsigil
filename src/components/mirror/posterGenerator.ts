@@ -334,15 +334,38 @@ function drawElementSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, 
   ctx.lineWidth = 2
 
   switch (element) {
-    case 'water':
-      // 水滴
+    case 'earth-water':
+      // 山与水滴结合
+      ctx.beginPath()
+      ctx.moveTo(-15, 10)
+      ctx.lineTo(0, -5)
+      ctx.lineTo(15, 10)
+      ctx.closePath()
+      ctx.fill()
+      ctx.beginPath()
+      ctx.moveTo(0, -12)
+      ctx.bezierCurveTo(-5, -8, -4, -2, 0, 0)
+      ctx.bezierCurveTo(4, -2, 5, -8, 0, -12)
+      ctx.fillStyle = '#4A90D9'
+      ctx.fill()
+      break
+    case 'water-spirit':
+      // 水滴与光芒
       ctx.beginPath()
       ctx.moveTo(0, -12)
       ctx.bezierCurveTo(-10, 0, -8, 12, 0, 12)
       ctx.bezierCurveTo(8, 12, 10, 0, 0, -12)
       ctx.fill()
+      // 光芒环绕
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2
+        ctx.beginPath()
+        ctx.moveTo(Math.cos(angle) * 14, Math.sin(angle) * 14)
+        ctx.lineTo(Math.cos(angle) * 18, Math.sin(angle) * 18)
+        ctx.stroke()
+      }
       break
-    case 'fire':
+    case 'fire-gold':
       // 火焰
       ctx.beginPath()
       ctx.moveTo(0, -15)
@@ -353,42 +376,37 @@ function drawElementSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, 
       ctx.moveTo(0, -8)
       ctx.bezierCurveTo(5, -2, 4, 6, 0, 10)
       ctx.bezierCurveTo(-4, 6, -5, -2, 0, -8)
-      ctx.fillStyle = '#FFFFFF'
-      ctx.globalAlpha = 0.5
+      ctx.fillStyle = '#FFD700'
+      ctx.globalAlpha = 0.7
       ctx.fill()
       ctx.globalAlpha = 1
       break
-    case 'earth':
-      // 山形
+    case 'illusion':
+      // 漩涡/幻象
       ctx.beginPath()
-      ctx.moveTo(-15, 10)
-      ctx.lineTo(0, -10)
-      ctx.lineTo(15, 10)
-      ctx.closePath()
+      for (let i = 0; i < 3; i++) {
+        const r = 5 + i * 4
+        ctx.arc(0, 0, r, 0, Math.PI * 1.5)
+      }
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(0, 0, 3, 0, Math.PI * 2)
       ctx.fill()
       break
-    case 'air':
-      // 风纹
+    case 'wind-air':
+      // 风纹与羽毛
       for (let i = 0; i < 3; i++) {
         ctx.beginPath()
         ctx.moveTo(-12, -6 + i * 6)
         ctx.quadraticCurveTo(0, -10 + i * 6, 12, -6 + i * 6)
         ctx.stroke()
       }
-      break
-    case 'spirit':
-      // 光芒
-      for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * Math.PI * 2
-        const innerR = 5
-        const outerR = 12
-        ctx.beginPath()
-        ctx.moveTo(Math.cos(angle) * innerR, Math.sin(angle) * innerR)
-        ctx.lineTo(Math.cos(angle) * outerR, Math.sin(angle) * outerR)
-        ctx.stroke()
-      }
+      // 羽毛尖
       ctx.beginPath()
-      ctx.arc(0, 0, 5, 0, Math.PI * 2)
+      ctx.moveTo(15, -6)
+      ctx.lineTo(20, -8)
+      ctx.lineTo(18, -4)
+      ctx.closePath()
       ctx.fill()
       break
   }
@@ -503,11 +521,16 @@ export async function generateLannaPoster(options: PosterOptions): Promise<strin
 
   // 特质翻译映射（泰 -> 英）
   const traitTranslations: Record<string, string> = {
-    'ปัญญา': 'Wisdom', 'ปกป้อง': 'Protection', 'ลึกซึ้ง': 'Depth', 'ลึกลับ': 'Mystery',
-    'กล้าหาญ': 'Courage', 'พลัง': 'Power', 'ผู้นำ': 'Leader', 'ผู้พิทักษ์': 'Guardian',
-    'สง่างาม': 'Grace', 'บริสุทธิ์': 'Purity', 'ศิลปะ': 'Art', 'อิสระ': 'Freedom',
-    'มั่นคง': 'Stability', 'เจริญ': 'Prosperity', 'ซื่อสัตย์': 'Loyalty', 'ฉลาด': 'Wisdom',
-    'ศักดิ์สิทธิ์': 'Sacred', 'รวดเร็ว': 'Swift', 'ยุติธรรม': 'Justice', 'สูงส่ง': 'Noble',
+    // Mom
+    'ความอดทน': 'Resilience', 'ปรับตัว': 'Adaptive', 'ซื่อสัตย์': 'Loyalty', 'ทำงานหนัก': 'Hardworking',
+    // Naga
+    'ปัญญา': 'Wisdom', 'ปกป้อง': 'Protection', 'ลึกลับ': 'Mystery', 'ศิลปะ': 'Artistic',
+    // Singha
+    'ผู้นำ': 'Leader', 'ยุติธรรม': 'Justice', 'สง่างาม': 'Majestic', 'ตรงไปตรงมา': 'Direct',
+    // Makara
+    'ทะเยอทะยาน': 'Ambitious', 'พูดเก่ง': 'Eloquent', 'ปฏิบัติ': 'Practical', 'มองทะลุ': 'Perceptive',
+    // Hadsadiling
+    'สูงส่ง': 'Noble', 'หลากหลาย': 'Versatile', 'บริสุทธิ์': 'Purist', 'มีชื่อเสียง': 'Distinguished',
   }
 
   // 特质标签（双语）

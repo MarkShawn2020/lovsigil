@@ -63,11 +63,11 @@ async function uploadImageToStorage(base64Data: string, spiritId: string): Promi
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { spirit, userPhoto, spiritScores, group } = body
+    const { spirit, userPhoto, spiritScores, group, orderId } = body
 
     // 多人合像模式
     if (group && Array.isArray(group.persons) && group.persons.length >= 2) {
-      return handleGroupGeneration(group)
+      return handleGroupGeneration(group, orderId)
     }
 
     // 单人模式
@@ -76,6 +76,14 @@ export async function POST(request: Request) {
         { error: 'Missing spirit data' },
         { status: 400 },
       )
+    }
+
+    // If orderId provided, update existing order status to 'generating'
+    if (orderId) {
+      await supabaseServer
+        .from('spirit_generations')
+        .update({ status: 'generating' })
+        .eq('order_id', orderId)
     }
 
     // 构建生成 prompt
@@ -88,31 +96,57 @@ export async function POST(request: Request) {
       hasReferenceImage: !!userPhoto,
     })
 
-    // 调用 ZenMux 生成图像（传入用户头像作为参考）
-    const generatedImageBase64 = await generateImage(prompt, userPhoto || undefined)
+    try {
+      // 调用 ZenMux 生成图像（传入用户头像作为参考）
+      const generatedImageBase64 = await generateImage(prompt, userPhoto || undefined)
 
-    // 上传生成的图片到 Storage
-    const imageUrl = await uploadImageToStorage(generatedImageBase64, spirit.id)
+      // 上传生成的图片到 Storage
+      const imageUrl = await uploadImageToStorage(generatedImageBase64, spirit.id)
 
-    // Get current user (optional)
-    const user = await getAuthUser()
+      if (orderId) {
+        // Update existing order with result
+        await supabaseServer
+          .from('spirit_generations')
+          .update({
+            generated_image: imageUrl,
+            prompt,
+            status: 'completed',
+          })
+          .eq('order_id', orderId)
+      } else {
+        // Create new record (legacy mode)
+        const user = await getAuthUser()
+        await supabaseServer.from('spirit_generations').insert({
+          spirit_id: spirit.id,
+          spirit_name: spirit.name,
+          user_photo: userPhoto || null,
+          generated_image: imageUrl,
+          prompt,
+          spirit_scores: spiritScores || null,
+          user_id: user?.id || null,
+          status: 'completed',
+        })
+      }
 
-    // 保存生成记录到数据库（存储 URL 而非 base64）
-    await supabaseServer.from('spirit_generations').insert({
-      spirit_id: spirit.id,
-      spirit_name: spirit.name,
-      user_photo: userPhoto || null,
-      generated_image: imageUrl,
-      prompt,
-      spirit_scores: spiritScores || null,
-      user_id: user?.id || null,
-    })
-
-    return NextResponse.json({
-      success: true,
-      image: imageUrl,
-      prompt,
-    })
+      return NextResponse.json({
+        success: true,
+        image: imageUrl,
+        prompt,
+        orderId,
+      })
+    } catch (genError) {
+      // Update order status to failed if orderId was provided
+      if (orderId) {
+        await supabaseServer
+          .from('spirit_generations')
+          .update({
+            status: 'failed',
+            metadata: { error: genError instanceof Error ? genError.message : 'Generation failed' },
+          })
+          .eq('order_id', orderId)
+      }
+      throw genError
+    }
   }
   catch (error) {
     console.error('Spirit generation error:', error)
@@ -135,8 +169,16 @@ async function handleGroupGeneration(group: {
       traits: string[]
     }
   }>
-}) {
+}, orderId?: string) {
   const { persons } = group
+
+  // If orderId provided, update existing order status to 'generating'
+  if (orderId) {
+    await supabaseServer
+      .from('spirit_generations')
+      .update({ status: 'generating' })
+      .eq('order_id', orderId)
+  }
 
   // 构建多人合像 prompt
   const prompt = buildLannaGroupSpiritPrompt({
@@ -154,30 +196,56 @@ async function handleGroupGeneration(group: {
     .map(p => p.photo)
     .filter((photo): photo is string => !!photo)
 
-  // 调用多图生成
-  const generatedImageBase64 = await generateImageWithMultipleRefs(prompt, referenceImages)
+  try {
+    // 调用多图生成
+    const generatedImageBase64 = await generateImageWithMultipleRefs(prompt, referenceImages)
 
-  // 上传到 Storage（使用 "group" 作为目录）
-  const imageUrl = await uploadImageToStorage(generatedImageBase64, 'group')
+    // 上传到 Storage（使用 "group" 作为目录）
+    const imageUrl = await uploadImageToStorage(generatedImageBase64, 'group')
 
-  // Get current user (optional)
-  const user = await getAuthUser()
+    if (orderId) {
+      // Update existing order with result
+      await supabaseServer
+        .from('spirit_generations')
+        .update({
+          generated_image: imageUrl,
+          prompt,
+          status: 'completed',
+        })
+        .eq('order_id', orderId)
+    } else {
+      // Create new record (legacy mode)
+      const user = await getAuthUser()
+      await supabaseServer.from('spirit_generations').insert({
+        spirit_id: 'group',
+        spirit_name: persons.map(p => p.spirit.name).join(' + '),
+        user_photo: null,
+        generated_image: imageUrl,
+        prompt,
+        spirit_scores: null,
+        user_id: user?.id || null,
+        status: 'completed',
+      })
+    }
 
-  // 保存生成记录（合像模式）
-  await supabaseServer.from('spirit_generations').insert({
-    spirit_id: 'group',
-    spirit_name: persons.map(p => p.spirit.name).join(' + '),
-    user_photo: null, // 多人模式不存单个照片
-    generated_image: imageUrl,
-    prompt,
-    spirit_scores: null,
-    user_id: user?.id || null,
-  })
-
-  return NextResponse.json({
-    success: true,
-    image: imageUrl,
-    prompt,
-    isGroup: true,
-  })
+    return NextResponse.json({
+      success: true,
+      image: imageUrl,
+      prompt,
+      isGroup: true,
+      orderId,
+    })
+  } catch (genError) {
+    // Update order status to failed if orderId was provided
+    if (orderId) {
+      await supabaseServer
+        .from('spirit_generations')
+        .update({
+          status: 'failed',
+          metadata: { error: genError instanceof Error ? genError.message : 'Generation failed' },
+        })
+        .eq('order_id', orderId)
+    }
+    throw genError
+  }
 }

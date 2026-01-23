@@ -46,11 +46,11 @@ export interface ExpressionScores {
 }
 
 export interface SpiritScores {
-  chang: number
-  singha: number
-  kinnari: number
-  garuda: number
   mom: number
+  naga: number
+  singha: number
+  makara: number
+  hadsadiling: number
 }
 
 // 计算两点之间的距离
@@ -132,35 +132,36 @@ export function extractExpressionScores(landmarks: NormalizedLandmark[]): Expres
   }
 }
 
-// 表情到守护灵的映射规则（新版5守护神）
-// Chang (土) - 温和稳重 → 中性、稳定、轻微微笑
-// Singha (火) - 自信勇敢 → 强烈、直视、自信表情
-// Kinnari (空) - 优雅敏感 → 微笑、放松、眉毛舒展
-// Garuda (灵) - 正义冒险 → 专注、眼睛大睁、眉毛上扬
-// Mom (谜) - 神秘多变 → 不稳定、难以归类的表情
+// 表情到守护灵的映射规则（已弃用，保留兼容）
+// 新系统使用 faceFeatureAnalyzer.ts 的静态面部特征分析
+// Mom - 坚韧生存者：稳定、不极端
+// Naga - 灵性守护者：平静、神秘
+// Singha - 天生领袖：自信、强度高
+// Makara - 现实野心家：嘴巴活跃、表情丰富
+// Hadsadiling - 清高贵族：专注、超然
 
 export function mapExpressionToSpirits(scores: ExpressionScores): SpiritScores {
   const { smile, browRaise, browFurrow, eyeOpenness, mouthOpen, intensity } = scores
 
   // 计算每个守护灵的匹配度
   const spiritScores: SpiritScores = {
-    // Chang: 稳定型 - 各项中等、不极端、温和表情
-    chang: (1 - Math.abs(smile - 0.3)) * 0.3
+    // Mom: 稳定型 - 各项中等、不极端、踏实
+    mom: (1 - Math.abs(smile - 0.3)) * 0.3
       + (1 - Math.abs(browFurrow - 0.2)) * 0.3
       + (1 - intensity) * 0.2
       + (1 - mouthOpen) * 0.2,
 
-    // Singha: 自信型 - 强度高、眼睛大、嘴巴略张
-    singha: intensity * 0.3 + eyeOpenness * 0.3 + mouthOpen * 0.2 + (1 - browFurrow) * 0.2,
+    // Naga: 思考型 - 皱眉高、微笑低、嘴巴闭合、神秘
+    naga: browFurrow * 0.4 + (1 - smile) * 0.3 + (1 - mouthOpen) * 0.2 + (1 - intensity) * 0.1,
 
-    // Kinnari: 优雅型 - 微笑高、眉毛舒展、放松
-    kinnari: smile * 0.5 + (1 - browFurrow) * 0.3 + browRaise * 0.1 + (1 - intensity) * 0.1,
+    // Singha: 自信型 - 强度高、眼睛大、气场强
+    singha: intensity * 0.3 + eyeOpenness * 0.3 + (1 - browFurrow) * 0.25 + browRaise * 0.15,
 
-    // Garuda: 专注型 - 眼睛大睁、眉毛上扬、强度高
-    garuda: eyeOpenness * 0.4 + browRaise * 0.3 + intensity * 0.2 + (1 - smile) * 0.1,
+    // Makara: 表达型 - 嘴巴活跃、表情丰富、眼神深邃
+    makara: mouthOpen * 0.35 + intensity * 0.25 + smile * 0.2 + (1 - eyeOpenness) * 0.2,
 
-    // Mom: 异常型 - 表情变化大、难以归类
-    mom: Math.abs(smile - 0.5) * 0.3 + Math.abs(browFurrow - 0.5) * 0.3 + Math.abs(intensity - 0.5) * 0.4,
+    // Hadsadiling: 超然型 - 眼睛大睁、眉毛上扬、不笑、疏离
+    hadsadiling: eyeOpenness * 0.4 + browRaise * 0.3 + (1 - smile) * 0.2 + (1 - intensity) * 0.1,
   }
 
   return spiritScores
@@ -222,7 +223,7 @@ export function matchSpiritByExpression(accumulator: ExpressionAccumulator): Lan
 
   // 找出得分最高的守护灵
   let maxScore = 0
-  let matchedId = 'chang' // 默认
+  let matchedId = 'mom' // 默认
 
   Object.entries(spiritScores).forEach(([id, score]) => {
     if (score > maxScore) {
@@ -232,7 +233,7 @@ export function matchSpiritByExpression(accumulator: ExpressionAccumulator): Lan
   })
 
   const found = LANNA_SPIRITS.find(s => s.id === matchedId)
-  // Chang (index 0) 作为默认
+  // Mom (index 0) 作为默认
   return found ?? LANNA_SPIRITS[0]!
 }
 
@@ -242,7 +243,7 @@ export function getExpressionDescription(scores: ExpressionScores): string {
 
   // 找出得分最高的守护灵
   let maxScore = 0
-  let dominant = 'chang'
+  let dominant = 'mom'
 
   Object.entries(spiritScores).forEach(([id, score]) => {
     if (score > maxScore) {
@@ -252,57 +253,62 @@ export function getExpressionDescription(scores: ExpressionScores): string {
   })
 
   const names: Record<string, string> = {
-    chang: 'ช้าง',
-    singha: 'สิงห์',
-    kinnari: 'กินรี',
-    garuda: 'ครุฑ',
     mom: 'มอม',
+    naga: 'นาค',
+    singha: 'สิงห์',
+    makara: 'มกร',
+    hadsadiling: 'หัสดีลิงค์',
   }
 
-  return names[dominant] || 'ช้าง'
+  return names[dominant] || 'มอม'
 }
 
-// Spirit info for display (Thai / English) - Himaphan 森林神兽体系
+// Spirit info for display (Thai / English) - Extended for poster generation
 export const SPIRIT_INFO = {
-  chang: {
-    name: 'ช้าง',
-    nameEn: 'Chang',
-    emoji: '🐘',
-    color: '#8B4513',
-    element: 'earth' as const,
-    traits: ['温和', '智慧', '慈悲', '可靠'],
+  mom: {
+    name: 'มอม',
+    nameEn: 'Mom',
+    nameCn: '莫',
+    emoji: '🦏',
+    color: '#5D4E37',
+    element: 'earth-water' as const,
+    traits: ['ความอดทน', 'ปรับตัว', 'ซื่อสัตย์', 'ทำงานหนัก'],
+  },
+  naga: {
+    name: 'นาค',
+    nameEn: 'Naga',
+    nameCn: '纳迦',
+    emoji: '🐉',
+    color: '#1E90FF',
+    element: 'water-spirit' as const,
+    traits: ['ปัญญา', 'ปกป้อง', 'ลึกลับ', 'ศิลปะ'],
   },
   singha: {
     name: 'สิงห์',
     nameEn: 'Singha',
+    nameCn: '醒狮',
     emoji: '🦁',
     color: '#FF6B35',
-    element: 'fire' as const,
-    traits: ['自信', '勇敢', '果断', '领导'],
+    element: 'fire-gold' as const,
+    traits: ['ผู้นำ', 'ยุติธรรม', 'สง่างาม', 'ตรงไปตรงมา'],
   },
-  kinnari: {
-    name: 'กินรี',
-    nameEn: 'Kinnari',
-    emoji: '🧚',
-    color: '#FFD700',
-    element: 'air' as const,
-    traits: ['优雅', '创造', '敏感', '浪漫'],
+  makara: {
+    name: 'มกร',
+    nameEn: 'Makara',
+    nameCn: '摩羯',
+    emoji: '🐊',
+    color: '#8B008B',
+    element: 'illusion' as const,
+    traits: ['ทะเยอทะยาน', 'พูดเก่ง', 'ปฏิบัติ', 'มองทะลุ'],
   },
-  garuda: {
-    name: 'ครุฑ',
-    nameEn: 'Garuda',
+  hadsadiling: {
+    name: 'หัสดีลิงค์',
+    nameEn: 'Hadsadiling',
+    nameCn: '哈萨迪灵',
     emoji: '🦅',
     color: '#9932CC',
-    element: 'spirit' as const,
-    traits: ['正义', '热情', '冒险', '理想'],
-  },
-  mom: {
-    name: 'มอม',
-    nameEn: 'Mom',
-    emoji: '🌀',
-    color: '#2F4F4F',
-    element: 'mystery' as const,
-    traits: ['独特', '神秘', '多变', '不可预测'],
+    element: 'wind-air' as const,
+    traits: ['สูงส่ง', 'หลากหลาย', 'บริสุทธิ์', 'มีชื่อเสียง'],
   },
 } as const
 
@@ -312,14 +318,14 @@ export function getNormalizedSpiritScores(scores: ExpressionScores): SpiritScore
   const total = Object.values(raw).reduce((sum, v) => sum + v, 0)
 
   if (total === 0) {
-    return { chang: 0.28, singha: 0.25, kinnari: 0.20, garuda: 0.17, mom: 0.10 }
+    return { mom: 0.2, naga: 0.2, singha: 0.2, makara: 0.2, hadsadiling: 0.2 }
   }
 
   return {
-    chang: raw.chang / total,
-    singha: raw.singha / total,
-    kinnari: raw.kinnari / total,
-    garuda: raw.garuda / total,
     mom: raw.mom / total,
+    naga: raw.naga / total,
+    singha: raw.singha / total,
+    makara: raw.makara / total,
+    hadsadiling: raw.hadsadiling / total,
   }
 }

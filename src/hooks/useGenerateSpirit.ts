@@ -1,4 +1,4 @@
-import type { SpiritScores } from '@/components/mirror/facsAnalyzer'
+import type { SpiritMatchScores as SpiritScores } from '@/components/mirror/faceFeatureAnalyzer'
 
 import type { LannaSpirit } from '@/components/mirror/types'
 import { useMutation, useQueryClient } from '@tanstack/react-query'

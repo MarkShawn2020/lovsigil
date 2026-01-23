@@ -59,7 +59,13 @@
     "generating_group": "Generating...",
     "group_portrait": "Group Portrait",
     "waiting": "Waiting",
-    "composing_group_poster": "Composing group poster..."
+    "composing_group_poster": "Composing group poster...",
+    "qr_title": "Scan to View",
+    "qr_subtitle": "Scan the QR code or click the link to view your portrait",
+    "qr_generating": "Generating your portrait...",
+    "qr_completed": "Generation complete!",
+    "qr_or_link": "Or click to open",
+    "qr_close": "Close"
   },
   "Counter": {
     "meta_title": "Counter",
@@ -421,6 +427,40 @@
         "content": "If you have any questions about our use of cookies, please contact us at mark@cs-magic.com"
       }
     }
+  },
+  "SpiritOrder": {
+    "loading": "Loading...",
+    "error": "Error",
+    "order_not_found": "Order not found",
+    "fetch_error": "Failed to load order",
+    "spirit_portrait": "Your Guardian Spirit",
+    "group_portrait": "Group Portrait",
+    "status_pending": "Preparing your portrait...",
+    "status_generating": "Creating your guardian spirit portrait...",
+    "status_failed": "Generation Failed",
+    "unknown_error": "An unknown error occurred",
+    "generation_time": "This may take 10-30 seconds",
+    "download": "Download",
+    "original_photo": "Original",
+    "spirit_result": "Spirit",
+    "show_image": "Show Image",
+    "show_poster": "Show Poster",
+    "spirit_only": "Spirit Only",
+    "with_original": "+ Original",
+    "share_title": "Share This Page",
+    "share_hint": "Scan QR code or share the link with friends",
+    "print_title": "Bring Your Spirit to Life",
+    "print_subtitle": "Transform your guardian spirit into a physical keepsake",
+    "print_tattoo": "Tattoo Sticker",
+    "print_tattoo_desc": "Temporary tattoo",
+    "print_frame": "Photo Frame",
+    "print_frame_desc": "Mounted with frame",
+    "print_figurine": "3D Figurine",
+    "print_figurine_desc": "Custom 3D print",
+    "print_postcard": "Postcard",
+    "print_postcard_desc": "High-quality print",
+    "coming_soon": "Coming soon! This feature is under development.",
+    "powered_by": "Powered by Lanna Spirit Mirror"
   },
   "Auth": {
     "loading": "Loading..."

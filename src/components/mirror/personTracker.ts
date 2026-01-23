@@ -1,19 +1,24 @@
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 
-import type { FacialStructure, SpiritScores } from './faceStructureAnalyzer'
-import { extractFacialStructure, getDominantSpirit, mapStructureToSpirits, StructureAccumulator } from './faceStructureAnalyzer'
+import type { FaceFeatureScores, SpiritMatchScores } from './faceFeatureAnalyzer'
+import {
+  extractFaceFeatures,
+  FaceFeatureAccumulator,
+  getDominantSpirit,
+  mapFeaturesToSpirits,
+  normalizeScores,
+} from './faceFeatureAnalyzer'
 
 export interface TrackedPerson {
   id: string
   // 脸部边界框（归一化坐标 0-1）
   center: { x: number, y: number }
   size: number // 脸部大小（用于匹配）
-  // 面部结构数据（静态特征，用于气质匹配）
-  accumulator: StructureAccumulator
-  currentStructure: FacialStructure | null
-  structureDescription: string
+  // 面部特征数据（静态）
+  accumulator: FaceFeatureAccumulator
+  currentFeatures: FaceFeatureScores | null
   // 守护灵亲和度（实时）
-  spiritScores: SpiritScores
+  spiritScores: SpiritMatchScores
   dominantSpirit: string
   // 追踪状态
   lastSeenFrame: number
@@ -34,7 +39,6 @@ function computeFaceMetrics(landmarks: NormalizedLandmark[]): { center: { x: num
 
   // 使用关键点计算边界框
   // 鼻尖(4), 左脸(234), 右脸(454), 额头(10), 下巴(152)
-  const noseTip = landmarks[4]!
   const leftCheek = landmarks[234]!
   const rightCheek = landmarks[454]!
   const forehead = landmarks[10]!
@@ -62,6 +66,15 @@ function positionDistance(a: { x: number, y: number }, b: { x: number, y: number
 // 生成唯一 ID
 function generateId(): string {
   return `person_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+// 默认分数
+const DEFAULT_SCORES: SpiritMatchScores = {
+  mom: 0.2,
+  naga: 0.2,
+  singha: 0.2,
+  makara: 0.2,
+  hadsadiling: 0.2,
 }
 
 export class PersonTracker {
@@ -121,18 +134,18 @@ export class PersonTracker {
         person.lastSeenFrame = this.currentFrame
         person.frameCount++
 
-        // 更新面部结构
-        const structure = extractFacialStructure(face.landmarks)
-        if (structure) {
-          person.accumulator.addSample(structure)
-          person.currentStructure = structure
+        // 更新面部特征（静态）
+        const features = extractFaceFeatures(face.landmarks)
+        if (features) {
+          person.accumulator.addSample(features)
+          person.currentFeatures = features
 
-          // 使用累积平均结构计算守护灵亲和度（更稳定）
-          const avgStructure = person.accumulator.getAverageStructure()
-          if (avgStructure) {
-            person.spiritScores = mapStructureToSpirits(avgStructure)
+          // 使用累积的平均特征计算守护灵亲和度
+          const avgFeatures = person.accumulator.getAverageFeatures()
+          if (avgFeatures) {
+            const rawScores = mapFeaturesToSpirits(avgFeatures)
+            person.spiritScores = normalizeScores(rawScores)
             person.dominantSpirit = getDominantSpirit(person.spiritScores)
-            person.structureDescription = person.dominantSpirit
           }
         }
 
@@ -147,16 +160,16 @@ export class PersonTracker {
         continue
 
       const face = detectedFaces[i]!
-      const structure = extractFacialStructure(face.landmarks)
-      const accumulator = new StructureAccumulator()
+      const features = extractFaceFeatures(face.landmarks)
+      const accumulator = new FaceFeatureAccumulator()
 
-      // 默认分数
-      let spiritScores: SpiritScores = { chang: 0.28, singha: 0.25, kinnari: 0.20, garuda: 0.17, mom: 0.10 }
-      let dominantSpirit = 'chang'
+      let spiritScores = DEFAULT_SCORES
+      let dominantSpirit = 'mom'
 
-      if (structure) {
-        accumulator.addSample(structure)
-        spiritScores = mapStructureToSpirits(structure)
+      if (features) {
+        accumulator.addSample(features)
+        const rawScores = mapFeaturesToSpirits(features)
+        spiritScores = normalizeScores(rawScores)
         dominantSpirit = getDominantSpirit(spiritScores)
       }
 
@@ -165,8 +178,7 @@ export class PersonTracker {
         center: face.center,
         size: face.size,
         accumulator,
-        currentStructure: structure,
-        structureDescription: dominantSpirit,
+        currentFeatures: features,
         spiritScores,
         dominantSpirit,
         lastSeenFrame: this.currentFrame,

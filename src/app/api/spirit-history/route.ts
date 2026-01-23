@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     const { data: records, error } = await supabaseServer
       .from('spirit_generations')
-      .select('id, spirit_id, spirit_name, user_photo, generated_image, spirit_scores, created_at, user_id')
+      .select('id, spirit_id, spirit_name, user_photo, generated_image, spirit_scores, created_at, user_id, order_id')
       .eq('disabled', false)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
@@ -33,6 +33,7 @@ export async function GET(request: Request) {
       spiritScores: r.spirit_scores,
       createdAt: r.created_at,
       userId: r.user_id,
+      orderId: r.order_id,
     })) || []
 
     const hasMore = offset + formattedRecords.length < (count || 0)

@@ -11,6 +11,7 @@ export type HistoryRecord = {
   spiritScores?: Record<string, number> | null
   createdAt: string
   userId: string | null
+  orderId: string | null
 }
 
 type HistoryResponse = {

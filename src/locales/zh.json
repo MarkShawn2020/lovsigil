@@ -59,7 +59,13 @@
     "generating_group": "生成中...",
     "group_portrait": "守护灵合像",
     "waiting": "等待中",
-    "composing_group_poster": "正在合成海报..."
+    "composing_group_poster": "正在合成海报...",
+    "qr_title": "扫码查看",
+    "qr_subtitle": "扫描二维码或点击链接查看你的守护灵画像",
+    "qr_generating": "正在生成你的画像...",
+    "qr_completed": "生成完成！",
+    "qr_or_link": "或点击打开",
+    "qr_close": "关闭"
   },
   "Counter": {
     "meta_title": "计数器",
@@ -421,6 +427,40 @@
         "content": "如果您对我们使用 Cookie 有任何疑问，请通过 mark@cs-magic.com 联系我们。"
       }
     }
+  },
+  "SpiritOrder": {
+    "loading": "加载中...",
+    "error": "错误",
+    "order_not_found": "未找到订单",
+    "fetch_error": "加载失败",
+    "spirit_portrait": "你的守护灵",
+    "group_portrait": "守护灵合像",
+    "status_pending": "正在准备你的画像...",
+    "status_generating": "正在生成你的守护灵画像...",
+    "status_failed": "生成失败",
+    "unknown_error": "发生未知错误",
+    "generation_time": "大约需要 10-30 秒",
+    "download": "下载",
+    "original_photo": "原始照片",
+    "spirit_result": "守护灵",
+    "show_image": "显示图片",
+    "show_poster": "显示海报",
+    "spirit_only": "仅守护灵",
+    "with_original": "+ 原图",
+    "share_title": "分享此页面",
+    "share_hint": "扫描二维码或分享链接给朋友",
+    "print_title": "让守护灵走进现实",
+    "print_subtitle": "将你的守护灵变成实体收藏品",
+    "print_tattoo": "纹身贴",
+    "print_tattoo_desc": "临时纹身贴纸",
+    "print_frame": "相框",
+    "print_frame_desc": "精美装裱相框",
+    "print_figurine": "3D 手办",
+    "print_figurine_desc": "定制 3D 打印",
+    "print_postcard": "明信片",
+    "print_postcard_desc": "高清印刷",
+    "coming_soon": "即将上线！此功能正在开发中。",
+    "powered_by": "兰纳灵魂之镜"
   },
   "Auth": {
     "loading": "加载中..."

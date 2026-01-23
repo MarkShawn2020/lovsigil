@@ -122,6 +122,17 @@ export function LannaMirror() {
   const [groupPersons, setGroupPersons] = useState<GroupGenerationPerson[]>([])
   const [groupPoster, setGroupPoster] = useState<string | null>(null)
 
+  // QR码弹窗状态
+  const [qrModal, setQrModal] = useState<{
+    show: boolean
+    orderId: string | null
+    orderUrl: string | null
+    spiritName: string | null
+    spiritEmoji: string | null
+    completed: boolean
+    resultImage: string | null
+  }>({ show: false, orderId: null, orderUrl: null, spiritName: null, spiritEmoji: null, completed: false, resultImage: null })
+
   // 预览时自动生成海报（根据模式生成不同版本）
   useEffect(() => {
     if (!previewRecord?.generatedImage) {
@@ -206,7 +217,7 @@ export function LannaMirror() {
       const { ImageSegmenter, FaceLandmarker, PoseLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision')
 
       const vision = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm',
       )
 
       // 初始化 Segmenter
@@ -300,7 +311,7 @@ export function LannaMirror() {
             const prevPerson = prev[i]
             const newPerson = persons[i]
             if (prevPerson && newPerson) {
-              prevPerson.currentStructure = newPerson.currentStructure
+              prevPerson.currentFeatures = newPerson.currentFeatures
               prevPerson.spiritScores = newPerson.spiritScores
               prevPerson.dominantSpirit = newPerson.dominantSpirit
             }
@@ -531,25 +542,87 @@ export function LannaMirror() {
       return
 
     const photo = headThumbnails[person.id] || null
-    setMatchedSpirit(spirit)
-    setCapturedPhoto(photo)
-    setState('generate')
-    setGenerateError(null)
+    const spiritInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
 
-    generateMutation.mutate(
-      { spirit, userPhoto: photo, spiritScores: person.spiritScores },
-      {
-        onSuccess: (data) => {
-          setGeneratedImage(data.image)
-          setState('result')
-        },
-        onError: (err) => {
-          console.error('Generation error:', err)
-          setGenerateError(err instanceof Error ? err.message : 'Generation failed')
-        },
-      },
-    )
-  }, [headThumbnails, generateMutation])
+    try {
+      // Step 1: Create order first and get orderId
+      const orderRes = await fetch('/api/spirit/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          spirit: {
+            id: spirit.id,
+            name: spirit.name,
+            nameEn: spirit.nameEn,
+            element: spirit.element,
+            traits: spirit.traits,
+          },
+          userPhoto: photo,
+          spiritScores: person.spiritScores,
+        }),
+      })
+
+      if (!orderRes.ok) {
+        throw new Error('Failed to create order')
+      }
+
+      const orderData = await orderRes.json()
+
+      // Step 2: Show QR code modal immediately
+      setQrModal({
+        show: true,
+        orderId: orderData.orderId,
+        orderUrl: orderData.orderUrl,
+        spiritName: spiritInfo?.name || spirit.name,
+        spiritEmoji: spiritInfo?.emoji || '🔮',
+        completed: false,
+        resultImage: null,
+      })
+
+      // Also update internal state for the old flow (preview at result page)
+      setMatchedSpirit(spirit)
+      setCapturedPhoto(photo)
+
+      // Step 3: Trigger generation in background (with orderId)
+      fetch('/api/generate-spirit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          spirit: {
+            id: spirit.id,
+            name: spirit.name,
+            nameEn: spirit.nameEn,
+            element: spirit.element,
+            traits: spirit.traits,
+            imagePrompt: spirit.imagePrompt,
+          },
+          userPhoto: photo,
+          spiritScores: person.spiritScores,
+          orderId: orderData.orderId,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setGeneratedImage(data.image)
+            // Update QR modal to show completion
+            setQrModal(prev => ({
+              ...prev,
+              completed: true,
+              resultImage: data.image,
+            }))
+          }
+        })
+        .catch(console.error)
+    } catch (err) {
+      console.error('Create order error:', err)
+      // Fallback to old flow without QR
+      setMatchedSpirit(spirit)
+      setCapturedPhoto(photo)
+      setState('generate')
+      setGenerateError(err instanceof Error ? err.message : 'Failed to start generation')
+    }
+  }, [headThumbnails])
 
   // 生成合像（单次 API 调用，多人一起生成）
   const handleGenerateGroupPortrait = useCallback(async () => {
@@ -562,34 +635,67 @@ export function LannaMirror() {
         personId: person.id,
         photo: headThumbnails[person.id] || null,
         spirit,
-        status: 'generating' as const, // 全部同时生成
+        status: 'generating' as const,
         generatedImage: null,
         error: null,
       }
     })
 
-    setGroupPersons(persons)
-    setGroupGenerating(true)
-    setGroupPoster(null)
+    const groupData = {
+      persons: persons.map(p => ({
+        photo: p.photo,
+        spirit: {
+          id: p.spirit.id,
+          name: p.spirit.name,
+          nameEn: p.spirit.nameEn,
+          element: p.spirit.element,
+          traits: p.spirit.traits,
+        },
+      })),
+    }
 
     try {
-      // 单次 API 调用，传入所有人的数据
+      // Step 1: Create order first
+      const orderRes = await fetch('/api/spirit/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ group: groupData }),
+      })
+
+      if (!orderRes.ok) {
+        throw new Error('Failed to create order')
+      }
+
+      const orderData = await orderRes.json()
+
+      // Step 2: Show QR code modal immediately
+      const spiritNames = persons.map(p => {
+        const info = SPIRIT_INFO[p.spirit.id as keyof typeof SPIRIT_INFO]
+        return info?.name || p.spirit.name
+      }).join(' + ')
+
+      setQrModal({
+        show: true,
+        orderId: orderData.orderId,
+        orderUrl: orderData.orderUrl,
+        spiritName: spiritNames,
+        spiritEmoji: '👥',
+        completed: false,
+        resultImage: null,
+      })
+
+      // Also start the group generation modal for those staying at the mirror
+      setGroupPersons(persons)
+      setGroupGenerating(true)
+      setGroupPoster(null)
+
+      // Step 3: Trigger generation in background (with orderId)
       const response = await fetch('/api/generate-spirit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          group: {
-            persons: persons.map(p => ({
-              photo: p.photo,
-              spirit: {
-                id: p.spirit.id,
-                name: p.spirit.name,
-                nameEn: p.spirit.nameEn,
-                element: p.spirit.element,
-                traits: p.spirit.traits,
-              },
-            })),
-          },
+          group: groupData,
+          orderId: orderData.orderId,
         }),
       })
 
@@ -607,8 +713,15 @@ export function LannaMirror() {
         generatedImage: data.image,
       })))
 
-      // 直接使用生成的合像作为海报（无需前端拼接）
+      // 直接使用生成的合像作为海报
       setGroupPoster(data.image)
+
+      // Update QR modal to show completion
+      setQrModal(prev => ({
+        ...prev,
+        completed: true,
+        resultImage: data.image,
+      }))
     } catch (err) {
       console.error('Group generation error:', err)
       // 全部标记为错误
@@ -1063,13 +1176,20 @@ export function LannaMirror() {
                   <div
                     key={record.id}
                     className="relative group cursor-pointer"
-                    onClick={() => setPreviewRecord({
-                      id: record.id,
-                      generatedImage: record.generatedImage,
-                      userPhoto: record.userPhoto,
-                      spiritId: record.spiritId,
-                      userId: record.userId,
-                    })}
+                    onClick={() => {
+                      // 如果有 orderId，在新标签打开独立详情页；否则使用旧的预览浮层
+                      if (record.orderId) {
+                        window.open(`/spirit/${record.orderId}`, '_blank')
+                      } else {
+                        setPreviewRecord({
+                          id: record.id,
+                          generatedImage: record.generatedImage,
+                          userPhoto: record.userPhoto,
+                          spiritId: record.spiritId,
+                          userId: record.userId,
+                        })
+                      }
+                    }}
                   >
                     <img
                       src={record.generatedImage}
@@ -1304,6 +1424,75 @@ export function LannaMirror() {
             <button
               className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
               onClick={closeGroupModal}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* QR 码弹窗 - 生成时显示 */}
+      {qrModal.show && qrModal.orderUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setQrModal(prev => ({ ...prev, show: false }))}
+        >
+          <div
+            className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl p-8 max-w-sm w-full"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 标题 */}
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-2">{qrModal.spiritEmoji}</div>
+              <h2 className="text-xl font-bold text-[#D4AF37] mb-1">
+                {t('qr_title')}
+              </h2>
+              <p className="text-white/60 text-sm">
+                {qrModal.spiritName}
+              </p>
+            </div>
+
+            {/* QR 码 */}
+            <div className="bg-white rounded-xl p-4 mb-6">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrModal.orderUrl)}`}
+                alt="QR Code"
+                className="w-full aspect-square"
+              />
+            </div>
+
+            {/* 提示文字 */}
+            <p className="text-center text-white/60 text-sm mb-4">
+              {t('qr_subtitle')}
+            </p>
+
+            {/* 生成状态指示 */}
+            {qrModal.completed ? (
+              <div className="flex items-center justify-center gap-2 text-green-400 mb-4">
+                <span className="text-lg">✓</span>
+                <span className="text-sm">{t('qr_completed')}</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2 text-[#D4AF37] mb-4">
+                <div className="w-4 h-4 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
+                <span className="text-sm">{t('qr_generating')}</span>
+              </div>
+            )}
+
+            {/* 链接按钮 */}
+            <a
+              href={qrModal.orderUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full py-3 bg-[#D4AF37] hover:bg-[#E5C04B] rounded-lg text-center text-white font-medium transition-colors"
+            >
+              {t('qr_or_link')}
+            </a>
+
+            {/* 关闭按钮 */}
+            <button
+              className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
+              onClick={() => setQrModal(prev => ({ ...prev, show: false }))}
             >
               ✕
             </button>
