@@ -154,7 +154,7 @@ export default function AdminPrintOrdersPage() {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => {
-              const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+              const statusConfig = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending!
               const ProductIcon = order.product_type === 'frame' ? Frame : Box
 
               return (
