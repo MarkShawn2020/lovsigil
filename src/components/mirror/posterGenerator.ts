@@ -676,10 +676,13 @@ export async function generateLannaPoster(options: PosterOptions): Promise<strin
     }
   }
 
-  // 7. 底部水印（双语）
+  // 7. 底部水印（双语 + URL）
   ctx.font = '18px sans-serif'
   ctx.fillStyle = COLORS.goldDark
-  ctx.fillText('Lanna Spirit Mirror · กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, POSTER_HEIGHT - 50)
+  ctx.fillText('Lanna Spirit Mirror · กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, POSTER_HEIGHT - 65)
+  ctx.font = '16px sans-serif'
+  ctx.fillStyle = COLORS.whiteTranslucent
+  ctx.fillText('https://lanna-mirror.lovstudio.ai', POSTER_WIDTH / 2, POSTER_HEIGHT - 40)
 
   return canvas.toDataURL('image/png', 1.0)
 }
@@ -832,10 +835,13 @@ export async function generateGroupPoster(options: GroupPosterOptions): Promise<
     }
   }
 
-  // 7. 底部水印
+  // 7. 底部水印（双语 + URL）
   ctx.font = '18px sans-serif'
   ctx.fillStyle = COLORS.goldDark
-  ctx.fillText('Lanna Spirit Mirror · กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, POSTER_HEIGHT - 50)
+  ctx.fillText('Lanna Spirit Mirror · กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, POSTER_HEIGHT - 65)
+  ctx.font = '16px sans-serif'
+  ctx.fillStyle = COLORS.whiteTranslucent
+  ctx.fillText('https://lanna-mirror.lovstudio.ai', POSTER_WIDTH / 2, POSTER_HEIGHT - 40)
 
   return canvas.toDataURL('image/png', 1.0)
 }
