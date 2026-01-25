@@ -4,6 +4,18 @@ import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import {
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  Download,
+  LogOut,
+  Palette,
+  Sparkles,
+  Users,
+  Video,
+  X,
+} from 'lucide-react'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -975,7 +987,9 @@ export function LannaMirror() {
             <>
               {!hasPersons ? (
                 <div className="text-center py-12">
-                  <div className="text-4xl mb-4">🪞</div>
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-lg border-2 border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37]/60">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
                   <p className="text-white/40 text-sm">{t('step_closer')}</p>
                   <p className="text-white/30 text-xs mt-3">{t('analyzing')}</p>
                 </div>
@@ -1017,7 +1031,8 @@ export function LannaMirror() {
                             size="sm"
                             className="shrink-0"
                           >
-                            ✨ Generate ฿20
+                            <Sparkles className="w-4 h-4 mr-1" />
+                            Generate ฿20
                           </Button>
                         </div>
                       )
@@ -1035,7 +1050,10 @@ export function LannaMirror() {
                           {t('generating_group')}
                         </>
                       ) : (
-                        <>👥 Group ฿{trackedPersons.length * 20}</>
+                        <>
+                          <Users className="w-4 h-4 mr-1" />
+                          Group ฿{trackedPersons.length * 20}
+                        </>
                       )}
                     </Button>
                   </div>
@@ -1104,7 +1122,9 @@ export function LannaMirror() {
                       </div>
                     )}
                     {/* 箭头 */}
-                    <div className="text-white/30 text-xl">→</div>
+                    <div className="text-white/30">
+                      <ArrowRight className="w-5 h-5" />
+                    </div>
                     {/* 生成结果缩略图 */}
                     <div className="text-center">
                       <p className="text-white/40 text-xs mb-1">{t('spirit')}</p>
@@ -1177,7 +1197,9 @@ export function LannaMirror() {
               )}
               {generateError ? (
                 <>
-                  <div className="text-4xl mb-4">⚠️</div>
+                  <div className="flex justify-center mb-4">
+                    <AlertTriangle className="w-10 h-10 text-yellow-500" />
+                  </div>
                   <p className="text-red-400 mb-2">{t('generation_failed')}</p>
                   <p className="text-xs text-white/50 mb-4">{generateError}</p>
                   <div className="space-y-2">
@@ -1231,9 +1253,7 @@ export function LannaMirror() {
                 onClick={() => signOut()}
                 className="text-white/40 hover:text-white/80 hover:bg-white/10 h-8 px-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+                <LogOut className="w-4 h-4" />
               </Button>
             </div>
           ) : (
@@ -1281,15 +1301,27 @@ export function LannaMirror() {
         {/* 切换原始/处理后画面按钮 */}
         <button
           onClick={() => setShowRawVideoInput(!showRawVideoInput)}
-          className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white/70 hover:text-white hover:bg-black/70 transition-colors text-xs border border-white/20"
+          className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white/70 hover:text-white hover:bg-black/70 transition-colors text-xs border border-white/20 flex items-center gap-1.5"
         >
-          {showRawVideoInput ? `🎨 ${t('ai_effect')}` : `📹 ${t('raw_input')}`}
+          {showRawVideoInput ? (
+            <>
+              <Palette className="w-3.5 h-3.5" />
+              {t('ai_effect')}
+            </>
+          ) : (
+            <>
+              <Video className="w-3.5 h-3.5" />
+              {t('raw_input')}
+            </>
+          )}
         </button>
 
         {/* 镜子加载占位 */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <div className="text-6xl animate-pulse">🪞</div>
+            <div className="w-16 h-16 rounded-xl border-2 border-[#D4AF37]/40 flex items-center justify-center animate-pulse">
+              <Sparkles className="w-8 h-8 text-[#D4AF37]/60" />
+            </div>
           </div>
         )}
       </ResizablePanel>
@@ -1306,8 +1338,9 @@ export function LannaMirror() {
             onClick={e => e.stopPropagation()}
           >
             {/* 标题 */}
-            <h2 className="text-2xl font-bold text-[#D4AF37]">
-              👥 {t('group_portrait')}
+            <h2 className="text-2xl font-bold text-[#D4AF37] flex items-center gap-2 justify-center">
+              <Users className="w-6 h-6" />
+              {t('group_portrait')}
             </h2>
 
             {/* 生成进度或海报结果 */}
@@ -1324,9 +1357,7 @@ export function LannaMirror() {
                     onClick={() => downloadImage(groupPoster, `lanna-group-portrait-${Date.now()}.png`)}
                     className="bg-[#D4AF37] hover:bg-[#E5C04B] text-white"
                   >
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
+                    <Download className="w-4 h-4 mr-1.5" />
                     {t('download')}
                   </Button>
                   <Button
@@ -1383,10 +1414,12 @@ export function LannaMirror() {
                           <div className="w-5 h-5 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
                         )}
                         {person.status === 'done' && (
-                          <span className="text-green-400 text-lg">✓</span>
+                          <Check className="w-5 h-5 text-green-400" />
                         )}
                         {person.status === 'error' && (
-                          <span className="text-red-400 text-lg" title={person.error || ''}>✗</span>
+                          <span title={person.error || ''}>
+                            <X className="w-5 h-5 text-red-400" />
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1408,7 +1441,7 @@ export function LannaMirror() {
               className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
               onClick={closeGroupModal}
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -1485,9 +1518,7 @@ export function LannaMirror() {
                     className="w-full text-white font-medium"
                     style={{ backgroundColor: qrModal.spiritId ? (SPIRIT_INFO[qrModal.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37') : '#D4AF37' }}
                   >
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
+                    <Download className="w-4 h-4 mr-1.5" />
                     {t('download')}
                   </Button>
                 )}
@@ -1499,7 +1530,7 @@ export function LannaMirror() {
               className="absolute top-3 right-3 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full text-white/60 hover:text-white flex items-center justify-center transition-colors"
               onClick={() => setQrModal(prev => ({ ...prev, show: false }))}
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -1547,9 +1578,7 @@ export function LannaMirror() {
                     backgroundColor: SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37',
                   }}
                 >
-                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
+                  <Download className="w-4 h-4 mr-1.5" />
                   {t('download')}
                 </Button>
                 {canDelete(previewRecord) && (
@@ -1558,9 +1587,7 @@ export function LannaMirror() {
                     disabled={isDeleting}
                     className="bg-red-600/80 text-white hover:bg-red-600"
                   >
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <X className="w-4 h-4 mr-1.5" />
                     {isDeleting ? t('deleting') : t('delete')}
                   </Button>
                 )}
@@ -1572,7 +1599,7 @@ export function LannaMirror() {
               className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
               onClick={() => setPreviewRecord(null)}
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

@@ -4,6 +4,18 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 
+import {
+  AlertTriangle,
+  ArrowRight,
+  Download,
+  Frame,
+  Image,
+  Mail,
+  Palette,
+  Sparkles,
+  User,
+  Waypoints,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { downloadImage, generateLannaPoster } from '@/components/mirror/posterGenerator'
@@ -27,15 +39,15 @@ type PrintOptionId = 'tattoo' | 'frame' | 'figurine' | 'postcard'
 
 interface PrintOption {
   id: PrintOptionId
-  emoji: string
+  icon: React.ReactNode
   price: string
 }
 
 const PRINT_OPTIONS: PrintOption[] = [
-  { id: 'tattoo', emoji: '🎨', price: '¥29' },
-  { id: 'frame', emoji: '🖼️', price: '¥79' },
-  { id: 'figurine', emoji: '🗿', price: '¥199' },
-  { id: 'postcard', emoji: '💌', price: '¥19' },
+  { id: 'tattoo', icon: <Palette className="w-8 h-8" />, price: '¥29' },
+  { id: 'frame', icon: <Frame className="w-8 h-8" />, price: '¥79' },
+  { id: 'figurine', icon: <Waypoints className="w-8 h-8" />, price: '¥199' },
+  { id: 'postcard', icon: <Mail className="w-8 h-8" />, price: '¥19' },
 ]
 
 export default function SpiritOrderPage() {
@@ -179,9 +191,13 @@ export default function SpiritOrderPage() {
             <CardContent className="py-12 text-center">
               {/* Animated Spirit Icon */}
               <div className="mb-6">
-                <span className="text-6xl animate-pulse">
-                  {spiritInfo?.emoji || '🔮'}
-                </span>
+                {spiritInfo?.emoji ? (
+                  <span className="text-6xl animate-pulse">{spiritInfo.emoji}</span>
+                ) : (
+                  <div className="w-16 h-16 mx-auto rounded-full border-2 border-[#D4AF37]/40 flex items-center justify-center animate-pulse">
+                    <Sparkles className="w-8 h-8 text-[#D4AF37]" />
+                  </div>
+                )}
               </div>
 
               {/* Loading Spinner */}
@@ -201,7 +217,9 @@ export default function SpiritOrderPage() {
         {order.status === 'failed' && (
           <Card className="mb-8 bg-black/50 border-red-500/20">
             <CardContent className="py-12 text-center">
-              <div className="text-6xl mb-4">⚠️</div>
+              <div className="flex justify-center mb-4">
+                <AlertTriangle className="w-16 h-16 text-yellow-500" />
+              </div>
               <p className="text-red-400 text-lg mb-2">{t('status_failed')}</p>
               <p className="text-white/40 text-sm">
                 {(order.metadata as Record<string, string>)?.error || t('unknown_error')}
@@ -230,7 +248,9 @@ export default function SpiritOrderPage() {
                   </div>
                 </div>
                 {/* 箭头 */}
-                <div className="text-white/30 text-2xl">→</div>
+                <div className="text-white/30">
+                  <ArrowRight className="w-6 h-6" />
+                </div>
                 {/* 生成结果缩略图 */}
                 <div className="text-center">
                   <p className="text-white/40 text-xs mb-2">{t('spirit_result')}</p>
@@ -292,7 +312,8 @@ export default function SpiritOrderPage() {
                 onClick={() => setShowPoster(!showPoster)}
                 className="bg-white/20 text-white border-2 border-white/50 hover:bg-white/30 hover:border-white/70 font-medium px-6"
               >
-                🖼️ {showPoster ? t('show_image') : t('show_poster')}
+                <Image className="w-4 h-4 mr-1.5" />
+                {showPoster ? t('show_image') : t('show_poster')}
               </Button>
 
               {/* 切换海报模式（仅在非海报模式且有原图时显示） */}
@@ -301,7 +322,17 @@ export default function SpiritOrderPage() {
                   onClick={() => setIncludeOriginal(!includeOriginal)}
                   className="bg-white/20 text-white border-2 border-white/50 hover:bg-white/30 hover:border-white/70 font-medium px-6"
                 >
-                  {includeOriginal ? `✨ ${t('spirit_only')}` : `👤 ${t('with_original')}`}
+                  {includeOriginal ? (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-1.5" />
+                      {t('spirit_only')}
+                    </>
+                  ) : (
+                    <>
+                      <User className="w-4 h-4 mr-1.5" />
+                      {t('with_original')}
+                    </>
+                  )}
                 </Button>
               )}
 
@@ -314,9 +345,7 @@ export default function SpiritOrderPage() {
                 className="text-white font-medium px-6 border-2 border-transparent hover:brightness-110"
                 style={{ backgroundColor: spiritInfo?.color || '#D4AF37' }}
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
+                <Download className="w-5 h-5 mr-2" />
                 {t('download')}
               </Button>
             </div>
@@ -371,8 +400,8 @@ export default function SpiritOrderPage() {
                       onClick={() => handlePrintOption(option.id)}
                     >
                       <CardContent className="p-4 text-center">
-                        <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">
-                          {option.emoji}
+                        <div className="text-[#D4AF37] mb-3 group-hover:scale-110 transition-transform flex justify-center">
+                          {option.icon}
                         </div>
                         <h3 className="text-white font-medium mb-1">
                           {names[option.id]}

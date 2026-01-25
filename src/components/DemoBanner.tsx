@@ -1,5 +1,6 @@
 'use client';
 
+import { Rocket } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 
@@ -9,7 +10,7 @@ export const DemoBanner = () => {
   return (
     <div className="sticky top-0 z-50 bg-background-dark p-4 text-center text-base font-medium text-white border-b border-border-default/20">
       <div className="flex items-center justify-center gap-2 text-sm">
-        <span>🚀</span>
+        <Rocket className="w-4 h-4" />
         <span>{t('demo_text')}</span>
         <span>-</span>
         <Link
