@@ -8,9 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev:spotlight": "npx @spotlightjs/sidecar",
-    "dev:next": "next dev -p 5253",
-    "dev": "run-p dev:*",
+    "dev": "next dev -p 5253",
     "build:next": "next build",
     "build": "run-p build:* --race",
     "start": "next start",
@@ -110,8 +108,6 @@
     "@next/bundle-analyzer": "^15.3.5",
     "@next/eslint-plugin-next": "^15.3.5",
     "@playwright/test": "^1.54.0",
-    "@spotlightjs/sidecar": "^1.11.4",
-    "@spotlightjs/spotlight": "^3.0.1",
     "@storybook/addon-a11y": "^9.0.16",
     "@storybook/addon-docs": "^9.0.16",
     "@storybook/addon-vitest": "^9.0.16",

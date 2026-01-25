@@ -4,9 +4,6 @@ const sentryOptions: Sentry.NodeOptions | Sentry.EdgeOptions = {
   // Sentry DSN
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Enable Spotlight in development
-  spotlight: process.env.NODE_ENV === 'development',
-
   integrations: [
     Sentry.consoleLoggingIntegration(),
   ],
