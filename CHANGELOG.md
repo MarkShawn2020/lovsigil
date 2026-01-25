@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.6.3
+
+### Patch Changes
+
+- 增大分享二维码尺寸（80px → 120px）
+
 ## 0.6.2
 
 ### Patch Changes
