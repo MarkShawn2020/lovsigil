@@ -14,6 +14,16 @@
   .animate-fade-in {
     animation: fade-in 0.3s ease-out;
   }
+
+  /* Marquee animation for history bar */
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+  }
 }
 
 @custom-variant dark (&:is(.dark *));

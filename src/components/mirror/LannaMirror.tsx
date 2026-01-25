@@ -101,7 +101,6 @@ export function LannaMirror() {
   const historyRecords = historyData?.records ?? []
   const hasMoreHistory = hasNextPage ?? false
   const isLoadingMoreHistory = isFetchingNextPage
-  const [showHistory, setShowHistory] = useState(false)
 
   // Mutations
   const generateMutation = useGenerateSpirit()
@@ -828,7 +827,7 @@ export function LannaMirror() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-black">
+    <div className="h-screen w-screen overflow-hidden bg-black flex flex-col">
       {/* 隐藏的视频元素 - 用于 AI 处理 */}
       <video
         ref={videoRef}
@@ -837,9 +836,73 @@ export function LannaMirror() {
         muted
       />
 
+      {/* 顶部历史记录横条 - 走马灯自动滚动 */}
+      <div className="shrink-0 border-b border-[#D4AF37]/20 bg-black/95">
+        <div className="h-16 px-4 flex items-center">
+          {historyRecords.length > 0 ? (
+            <div
+              className="flex-1 h-full overflow-hidden relative group flex items-center"
+              onMouseEnter={(e) => {
+                const inner = e.currentTarget.querySelector('[data-marquee]') as HTMLElement
+                if (inner) inner.style.animationPlayState = 'paused'
+              }}
+              onMouseLeave={(e) => {
+                const inner = e.currentTarget.querySelector('[data-marquee]') as HTMLElement
+                if (inner) inner.style.animationPlayState = 'running'
+              }}
+            >
+              <div
+                data-marquee
+                className="flex gap-3 animate-marquee"
+                style={{
+                  animationDuration: `${Math.max(20, historyRecords.length * 3)}s`,
+                }}
+              >
+                {/* 复制两份实现无缝滚动 */}
+                {[...historyRecords, ...historyRecords].map((record, idx) => {
+                  const info = SPIRIT_INFO[record.spiritId as keyof typeof SPIRIT_INFO]
+                  return (
+                    <div
+                      key={`${record.id}-${idx}`}
+                      className="relative group/item cursor-pointer shrink-0"
+                      onClick={() => {
+                        if (record.orderId) {
+                          window.open(`/spirit/${record.orderId}`, '_blank')
+                        } else {
+                          setPreviewRecord({
+                            id: record.id,
+                            generatedImage: record.generatedImage,
+                            userPhoto: record.userPhoto,
+                            spiritId: record.spiritId,
+                            userId: record.userId,
+                          })
+                        }
+                      }}
+                    >
+                      <img
+                        src={record.generatedImage}
+                        alt={record.spiritName || record.spiritId}
+                        className="w-12 h-12 object-cover rounded-lg border border-white/10 group-hover/item:border-[#D4AF37]/50 transition-colors"
+                      />
+                      <div
+                        className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-xs"
+                        style={{ color: info?.color || '#D4AF37' }}
+                      >
+                        {info?.emoji}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* 主体区域：左右分栏 */}
       <ResizablePanelGroup
         direction="horizontal"
-        className="h-full"
+        className="flex-1 min-h-0"
         autoSaveId="lanna-mirror-sidebar"
       >
         {/* 左侧面板 - 固定宽度320px */}
@@ -1147,73 +1210,6 @@ export function LannaMirror() {
                 </>
               )}
             </div>
-          )}
-        </div>
-
-        {/* 历史记录面板 */}
-        <div className="border-t border-[#D4AF37]/20">
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="w-full p-3 flex items-center justify-between text-white/60 hover:text-white/80 transition-colors"
-          >
-            <span className="text-sm">{t('history')} ({historyRecords.length})</span>
-            <span className="text-xs">{showHistory ? '▼' : '▶'}</span>
-          </button>
-          {showHistory && historyRecords.length > 0 && (
-            <div
-              className="px-3 pb-3 grid grid-cols-4 gap-2 max-h-48 overflow-y-auto"
-              onScroll={(e) => {
-                const el = e.currentTarget
-                const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10
-                if (atBottom && hasMoreHistory && !isLoadingMoreHistory) {
-                  fetchNextPage()
-                }
-              }}
-            >
-              {historyRecords.map((record) => {
-                const info = SPIRIT_INFO[record.spiritId as keyof typeof SPIRIT_INFO]
-                return (
-                  <div
-                    key={record.id}
-                    className="relative group cursor-pointer"
-                    onClick={() => {
-                      // 如果有 orderId，在新标签打开独立详情页；否则使用旧的预览浮层
-                      if (record.orderId) {
-                        window.open(`/spirit/${record.orderId}`, '_blank')
-                      } else {
-                        setPreviewRecord({
-                          id: record.id,
-                          generatedImage: record.generatedImage,
-                          userPhoto: record.userPhoto,
-                          spiritId: record.spiritId,
-                          userId: record.userId,
-                        })
-                      }
-                    }}
-                  >
-                    <img
-                      src={record.generatedImage}
-                      alt={record.spiritName || record.spiritId}
-                      className="w-full aspect-square object-cover rounded border border-white/10 group-hover:border-[#D4AF37]/50 transition-colors"
-                    />
-                    <div
-                      className="absolute bottom-0 left-0 right-0 text-center text-xs py-0.5 bg-black/60"
-                      style={{ color: info?.color || '#D4AF37' }}
-                    >
-                      {info?.emoji}
-                    </div>
-                  </div>
-                )
-              })}
-              {isLoadingMoreHistory && (
-                <div className="col-span-4 py-2 text-center">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent mx-auto" />
-                </div>
-              )}
-            </div>
-          )}
-          {showHistory && historyRecords.length === 0 && (
-            <p className="px-3 pb-3 text-white/30 text-xs text-center">{t('no_history')}</p>
           )}
         </div>
 
