@@ -430,8 +430,8 @@ export default function SpiritOrderPage() {
 
               {/* 分享二维码 */}
               <div className="flex items-center gap-3 p-4 bg-black/30 rounded-lg border border-white/10">
-                <div className="bg-white rounded-lg p-1 shrink-0">
-                  <QRCode size={80} />
+                <div className="bg-white rounded-lg p-2 shrink-0">
+                  <QRCode size={120} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
