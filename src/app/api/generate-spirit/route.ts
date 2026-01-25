@@ -63,11 +63,11 @@ async function uploadImageToStorage(base64Data: string, spiritId: string): Promi
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { spirit, userPhoto, spiritScores, group, orderId } = body
+    const { spirit, userPhoto, spiritScores, group, orderId, generationOptions } = body
 
     // 多人合像模式
     if (group && Array.isArray(group.persons) && group.persons.length >= 2) {
-      return handleGroupGeneration(group, orderId)
+      return handleGroupGeneration(group, orderId, generationOptions)
     }
 
     // 单人模式
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         .eq('order_id', orderId)
     }
 
-    // 构建生成 prompt
+    // 构建生成 prompt，带风格修饰符
     const prompt = buildLannaSpiritPrompt({
       spiritName: spirit.name,
       spiritNameEn: spirit.nameEn,
@@ -94,11 +94,14 @@ export async function POST(request: Request) {
       traits: spirit.traits,
       basePrompt: spirit.imagePrompt,
       hasReferenceImage: !!userPhoto,
+      styleModifier: generationOptions?.stylePromptModifier,
     })
 
     try {
-      // 调用 ZenMux 生成图像（传入用户头像作为参考）
-      const generatedImageBase64 = await generateImage(prompt, userPhoto || undefined)
+      // 调用 ZenMux 生成图像（传入用户头像作为参考，以及图片配置）
+      const generatedImageBase64 = await generateImage(prompt, userPhoto || undefined, {
+        aspectRatio: generationOptions?.aspectRatio,
+      })
 
       // 上传生成的图片到 Storage
       const imageUrl = await uploadImageToStorage(generatedImageBase64, spirit.id)
@@ -169,7 +172,7 @@ async function handleGroupGeneration(group: {
       traits: string[]
     }
   }>
-}, orderId?: string) {
+}, orderId?: string, generationOptions?: { stylePromptModifier?: string; aspectRatio?: string }) {
   const { persons } = group
 
   // If orderId provided, update existing order status to 'generating'
@@ -189,6 +192,7 @@ async function handleGroupGeneration(group: {
       traits: p.spirit.traits,
     })),
     hasReferenceImages: persons.some(p => !!p.photo),
+    styleModifier: generationOptions?.stylePromptModifier,
   })
 
   // 收集所有参考图片（过滤掉 null）
@@ -197,8 +201,10 @@ async function handleGroupGeneration(group: {
     .filter((photo): photo is string => !!photo)
 
   try {
-    // 调用多图生成
-    const generatedImageBase64 = await generateImageWithMultipleRefs(prompt, referenceImages)
+    // 调用多图生成（传入图片配置）
+    const generatedImageBase64 = await generateImageWithMultipleRefs(prompt, referenceImages, {
+      aspectRatio: generationOptions?.aspectRatio,
+    })
 
     // 上传到 Storage（使用 "group" 作为目录）
     const imageUrl = await uploadImageToStorage(generatedImageBase64, 'group')

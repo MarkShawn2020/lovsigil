@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="cuteBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFE4E1"/>
+      <stop offset="100%" style="stop-color:#FFF0DB"/>
+    </linearGradient>
+    <radialGradient id="blush" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#FFB6C1"/>
+      <stop offset="100%" style="stop-color:#FFB6C1;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="200" height="200" fill="url(#cuteBg)"/>
+  <!-- Sparkles -->
+  <circle cx="30" cy="40" r="3" fill="#D4AF37"/>
+  <circle cx="170" cy="50" r="4" fill="#D4AF37"/>
+  <circle cx="160" cy="150" r="3" fill="#D4AF37"/>
+  <circle cx="40" cy="160" r="4" fill="#D4AF37"/>
+  <!-- Chibi body -->
+  <ellipse cx="100" cy="140" rx="50" ry="40" fill="#F5DEB3"/>
+  <!-- Big round head -->
+  <circle cx="100" cy="90" r="55" fill="#F5DEB3"/>
+  <!-- Cute lion ears -->
+  <circle cx="55" cy="50" r="20" fill="#CC785C"/>
+  <circle cx="55" cy="50" r="12" fill="#FFE4C4"/>
+  <circle cx="145" cy="50" r="20" fill="#CC785C"/>
+  <circle cx="145" cy="50" r="12" fill="#FFE4C4"/>
+  <!-- Big sparkly eyes -->
+  <ellipse cx="75" cy="85" rx="15" ry="18" fill="#2C1810"/>
+  <ellipse cx="125" cy="85" rx="15" ry="18" fill="#2C1810"/>
+  <circle cx="70" cy="80" r="6" fill="white"/>
+  <circle cx="120" cy="80" r="6" fill="white"/>
+  <circle cx="78" cy="88" r="3" fill="white"/>
+  <circle cx="128" cy="88" r="3" fill="white"/>
+  <!-- Blush -->
+  <ellipse cx="55" cy="100" rx="12" ry="8" fill="url(#blush)"/>
+  <ellipse cx="145" cy="100" rx="12" ry="8" fill="url(#blush)"/>
+  <!-- Cute nose -->
+  <ellipse cx="100" cy="105" rx="8" ry="5" fill="#CC785C"/>
+  <!-- Smile -->
+  <path d="M85 115 Q100 130 115 115" stroke="#2C1810" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Crown -->
+  <path d="M70 40 L85 20 L100 35 L115 20 L130 40" fill="none" stroke="#D4AF37" stroke-width="4" stroke-linecap="round"/>
+</svg>

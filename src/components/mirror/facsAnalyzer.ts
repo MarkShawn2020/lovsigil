@@ -310,6 +310,15 @@ export const SPIRIT_INFO = {
     element: 'wind-air' as const,
     traits: ['สูงส่ง', 'หลากหลาย', 'บริสุทธิ์', 'มีชื่อเสียง'],
   },
+  group: {
+    name: 'ภาพรวม',
+    nameEn: 'Group Portrait',
+    nameCn: '合像',
+    emoji: '👥',
+    color: '#D4AF37',
+    element: 'earth-water' as const,
+    traits: [],
+  },
 } as const
 
 // 归一化守护灵分数（总和为 1）

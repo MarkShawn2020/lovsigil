@@ -30,6 +30,7 @@ interface PosterOptions {
   spiritNameEn?: string
   spiritTraits?: string[]
   includeOriginal?: boolean // 是否包含原始采集照片
+  blessing?: string // 兰纳风格祝福语
 }
 
 // 合像海报选项
@@ -55,6 +56,28 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = reject
     img.src = src
   })
+}
+
+/**
+ * 文本自动换行
+ */
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split('')
+  const lines: string[] = []
+  let currentLine = ''
+
+  for (const char of words) {
+    const testLine = currentLine + char
+    const metrics = ctx.measureText(testLine)
+    if (metrics.width > maxWidth && currentLine) {
+      lines.push(currentLine)
+      currentLine = char
+    } else {
+      currentLine = testLine
+    }
+  }
+  if (currentLine) lines.push(currentLine)
+  return lines
 }
 
 /**
@@ -415,6 +438,73 @@ function drawElementSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, 
 }
 
 /**
+ * 解析合像中的守护灵名称（如 "มอม + นาค" -> ['mom', 'naga']）
+ */
+function parseGroupSpirits(spiritName: string): string[] {
+  const thaiToId: Record<string, string> = {
+    'มอม': 'mom',
+    'นาค': 'naga',
+    'สิงห์': 'singha',
+    'มกร': 'makara',
+    'หัสดีลิงค์': 'hadsadiling',
+  }
+  // 分割 "มอม + นาค" 格式
+  const parts = spiritName.split(/\s*[+·]\s*/).map(s => s.trim()).filter(Boolean)
+  return parts.map(p => thaiToId[p] || p)
+}
+
+/**
+ * 绘制合像底部的守护灵信息区
+ */
+function drawGroupSpiritInfo(
+  ctx: CanvasRenderingContext2D,
+  spiritIds: string[],
+  centerX: number,
+  y: number,
+) {
+  const spirits = spiritIds.map(id => SPIRIT_INFO[id as keyof typeof SPIRIT_INFO]).filter(Boolean)
+  if (spirits.length === 0) return
+
+  // 绘制每个守护灵的 emoji + 名称，横向排列
+  const spacing = 280
+  const totalWidth = (spirits.length - 1) * spacing
+  const startX = centerX - totalWidth / 2
+
+  spirits.forEach((spirit, i) => {
+    const x = startX + i * spacing
+
+    // 守护灵颜色的发光圆环背景
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(x, y - 20, 45, 0, Math.PI * 2)
+    ctx.fillStyle = `${spirit.color}30`
+    ctx.fill()
+    ctx.strokeStyle = spirit.color
+    ctx.lineWidth = 2
+    ctx.stroke()
+    ctx.restore()
+
+    // Emoji
+    ctx.font = '42px serif'
+    ctx.fillStyle = spirit.color
+    ctx.shadowColor = spirit.color
+    ctx.shadowBlur = 10
+    ctx.fillText(spirit.emoji, x, y)
+    ctx.shadowBlur = 0
+
+    // 泰文名
+    ctx.font = 'bold 24px serif'
+    ctx.fillStyle = COLORS.goldLight
+    ctx.fillText(spirit.name, x, y + 40)
+
+    // 英文名
+    ctx.font = '16px sans-serif'
+    ctx.fillStyle = COLORS.goldDark
+    ctx.fillText(spirit.nameEn, x, y + 65)
+  })
+}
+
+/**
  * 生成兰纳风格海报
  */
 export async function generateLannaPoster(options: PosterOptions): Promise<string> {
@@ -423,8 +513,14 @@ export async function generateLannaPoster(options: PosterOptions): Promise<strin
   canvas.height = POSTER_HEIGHT
   const ctx = canvas.getContext('2d')!
 
+  const isGroup = options.spiritId === 'group'
   const spiritInfo = SPIRIT_INFO[options.spiritId as keyof typeof SPIRIT_INFO]
   const spiritColor = spiritInfo?.color || COLORS.gold
+
+  // 解析合像中的守护灵
+  const groupSpirits = isGroup && options.spiritName
+    ? parseGroupSpirits(options.spiritName)
+    : []
 
   // 1. 绘制背景渐变
   const gradient = ctx.createLinearGradient(0, 0, 0, POSTER_HEIGHT)
@@ -447,18 +543,18 @@ export async function generateLannaPoster(options: PosterOptions): Promise<strin
   // 2. 绘制装饰边框
   drawLannaBorder(ctx, POSTER_WIDTH, POSTER_HEIGHT, COLORS.gold)
 
-  // 3. 顶部标题区域（压缩，类似游戏王卡名区）
+  // 3. 顶部标题区域
   ctx.textAlign = 'center'
 
-  // 主标题（缩小）
+  // 主标题（合像用复数）
   ctx.font = 'bold 48px serif'
   ctx.fillStyle = COLORS.gold
   ctx.shadowColor = COLORS.gold
   ctx.shadowBlur = 15
-  ctx.fillText('LANNA SPIRIT', POSTER_WIDTH / 2, 100)
+  ctx.fillText(isGroup ? 'LANNA SPIRITS' : 'LANNA SPIRIT', POSTER_WIDTH / 2, 100)
   ctx.shadowBlur = 0
 
-  // 副标题（缩小）
+  // 副标题
   ctx.font = '22px serif'
   ctx.fillStyle = COLORS.whiteTranslucent
   ctx.fillText('กระจกวิญญาณล้านนา', POSTER_WIDTH / 2, 135)
@@ -467,7 +563,10 @@ export async function generateLannaPoster(options: PosterOptions): Promise<strin
   const generatedImg = await loadImage(options.generatedImage)
 
   // 5. 根据模式绘制图片
-  if (options.includeOriginal && options.originalImage) {
+  if (isGroup) {
+    // 合像模式：最大化显示合成图（通常是方形或接近方形）
+    drawMainImage(ctx, generatedImg, POSTER_WIDTH / 2, 720, 980, 1050, spiritColor)
+  } else if (options.includeOriginal && options.originalImage) {
     // 对比模式：上方大图展示 spirit，下方小对比区
     const originalImg = await loadImage(options.originalImage)
 
@@ -502,50 +601,79 @@ export async function generateLannaPoster(options: PosterOptions): Promise<strin
   }
 
   // 6. 底部信息区域
-  const infoY = options.includeOriginal ? 1540 : 1480
+  const infoY = isGroup ? 1420 : (options.includeOriginal ? 1540 : 1480)
 
-  // 守护灵 emoji + 泰文名
-  ctx.font = 'bold 52px serif'
-  ctx.fillStyle = spiritColor
-  ctx.shadowColor = spiritColor
-  ctx.shadowBlur = 12
-  const spiritThaiName = spiritInfo?.name || options.spiritName || options.spiritId
-  ctx.fillText(`${spiritInfo?.emoji || '✨'} ${spiritThaiName}`, POSTER_WIDTH / 2, infoY)
-  ctx.shadowBlur = 0
+  if (isGroup && groupSpirits.length > 0) {
+    // 合像：显示各守护灵信息
+    drawGroupSpiritInfo(ctx, groupSpirits, POSTER_WIDTH / 2, infoY)
 
-  // 英文名
-  ctx.font = '36px serif'
-  ctx.fillStyle = COLORS.goldLight
-  const spiritEnName = spiritInfo?.nameEn || options.spiritNameEn || ''
-  ctx.fillText(spiritEnName, POSTER_WIDTH / 2, infoY + 55)
+    // 祝福语（如果有）
+    if (options.blessing) {
+      const blessingY = infoY + 120
+      // 装饰线
+      ctx.strokeStyle = COLORS.gold
+      ctx.lineWidth = 1
+      ctx.globalAlpha = 0.5
+      ctx.beginPath()
+      ctx.moveTo(POSTER_WIDTH / 2 - 200, blessingY - 20)
+      ctx.lineTo(POSTER_WIDTH / 2 + 200, blessingY - 20)
+      ctx.stroke()
+      ctx.globalAlpha = 1
 
-  // 特质翻译映射（泰 -> 英）
-  const traitTranslations: Record<string, string> = {
-    // Mom
-    'ความอดทน': 'Resilience', 'ปรับตัว': 'Adaptive', 'ซื่อสัตย์': 'Loyalty', 'ทำงานหนัก': 'Hardworking',
-    // Naga
-    'ปัญญา': 'Wisdom', 'ปกป้อง': 'Protection', 'ลึกลับ': 'Mystery', 'ศิลปะ': 'Artistic',
-    // Singha
-    'ผู้นำ': 'Leader', 'ยุติธรรม': 'Justice', 'สง่างาม': 'Majestic', 'ตรงไปตรงมา': 'Direct',
-    // Makara
-    'ทะเยอทะยาน': 'Ambitious', 'พูดเก่ง': 'Eloquent', 'ปฏิบัติ': 'Practical', 'มองทะลุ': 'Perceptive',
-    // Hadsadiling
-    'สูงส่ง': 'Noble', 'หลากหลาย': 'Versatile', 'บริสุทธิ์': 'Purist', 'มีชื่อเสียง': 'Distinguished',
-  }
+      // 祝福语文字（自动换行）
+      ctx.font = 'italic 26px serif'
+      ctx.fillStyle = COLORS.goldLight
+      ctx.textAlign = 'center'
+      const maxWidth = POSTER_WIDTH - 160
+      const lines = wrapText(ctx, `"${options.blessing}"`, maxWidth)
+      lines.forEach((line, i) => {
+        ctx.fillText(line, POSTER_WIDTH / 2, blessingY + 10 + i * 36)
+      })
+    }
+  } else {
+    // 单人：显示守护灵 emoji + 泰文名
+    ctx.font = 'bold 52px serif'
+    ctx.fillStyle = spiritColor
+    ctx.shadowColor = spiritColor
+    ctx.shadowBlur = 12
+    const spiritThaiName = spiritInfo?.name || options.spiritName || options.spiritId
+    ctx.fillText(`${spiritInfo?.emoji || '✨'} ${spiritThaiName}`, POSTER_WIDTH / 2, infoY)
+    ctx.shadowBlur = 0
 
-  // 特质标签（双语）
-  const traits = spiritInfo?.traits || options.spiritTraits || []
-  if (traits.length > 0) {
-    const traitY = infoY + 115
-    // 泰文特质
-    ctx.font = '22px sans-serif'
-    ctx.fillStyle = COLORS.whiteTranslucent
-    ctx.fillText(traits.slice(0, 4).join(' · '), POSTER_WIDTH / 2, traitY)
-    // 英文特质
-    ctx.font = '18px sans-serif'
-    ctx.fillStyle = COLORS.goldDark
-    const engTraits = traits.slice(0, 4).map(t => traitTranslations[t] || t)
-    ctx.fillText(engTraits.join(' · '), POSTER_WIDTH / 2, traitY + 30)
+    // 英文名
+    ctx.font = '36px serif'
+    ctx.fillStyle = COLORS.goldLight
+    const spiritEnName = spiritInfo?.nameEn || options.spiritNameEn || ''
+    ctx.fillText(spiritEnName, POSTER_WIDTH / 2, infoY + 55)
+
+    // 特质翻译映射（泰 -> 英）
+    const traitTranslations: Record<string, string> = {
+      // Mom
+      'ความอดทน': 'Resilience', 'ปรับตัว': 'Adaptive', 'ซื่อสัตย์': 'Loyalty', 'ทำงานหนัก': 'Hardworking',
+      // Naga
+      'ปัญญา': 'Wisdom', 'ปกป้อง': 'Protection', 'ลึกลับ': 'Mystery', 'ศิลปะ': 'Artistic',
+      // Singha
+      'ผู้นำ': 'Leader', 'ยุติธรรม': 'Justice', 'สง่างาม': 'Majestic', 'ตรงไปตรงมา': 'Direct',
+      // Makara
+      'ทะเยอทะยาน': 'Ambitious', 'พูดเก่ง': 'Eloquent', 'ปฏิบัติ': 'Practical', 'มองทะลุ': 'Perceptive',
+      // Hadsadiling
+      'สูงส่ง': 'Noble', 'หลากหลาย': 'Versatile', 'บริสุทธิ์': 'Purist', 'มีชื่อเสียง': 'Distinguished',
+    }
+
+    // 特质标签（双语）
+    const traits = spiritInfo?.traits || options.spiritTraits || []
+    if (traits.length > 0) {
+      const traitY = infoY + 115
+      // 泰文特质
+      ctx.font = '22px sans-serif'
+      ctx.fillStyle = COLORS.whiteTranslucent
+      ctx.fillText(traits.slice(0, 4).join(' · '), POSTER_WIDTH / 2, traitY)
+      // 英文特质
+      ctx.font = '18px sans-serif'
+      ctx.fillStyle = COLORS.goldDark
+      const engTraits = traits.slice(0, 4).map(t => traitTranslations[t] || t)
+      ctx.fillText(engTraits.join(' · '), POSTER_WIDTH / 2, traitY + 30)
+    }
   }
 
   // 7. 底部水印（双语）

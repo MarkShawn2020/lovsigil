@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="modernBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667EEA"/>
+      <stop offset="100%" style="stop-color:#764BA2"/>
+    </linearGradient>
+    <linearGradient id="birdGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37"/>
+      <stop offset="100%" style="stop-color:#CC785C"/>
+    </linearGradient>
+  </defs>
+  <!-- Modern gradient background -->
+  <rect width="200" height="200" fill="url(#modernBg)"/>
+  <!-- Geometric patterns -->
+  <polygon points="0,0 60,0 0,60" fill="#D4AF37" opacity="0.2"/>
+  <polygon points="200,200 140,200 200,140" fill="#D4AF37" opacity="0.2"/>
+  <circle cx="170" cy="30" r="25" fill="none" stroke="#D4AF37" stroke-width="2" opacity="0.3"/>
+  <circle cx="30" cy="170" r="20" fill="none" stroke="#D4AF37" stroke-width="2" opacity="0.3"/>
+  <!-- Modern stylized Hadsadiling bird -->
+  <g transform="translate(100,100)">
+    <!-- Wing left -->
+    <polygon points="-60,0 -30,-30 -10,10" fill="url(#birdGrad)" opacity="0.8"/>
+    <!-- Wing right -->
+    <polygon points="60,0 30,-30 10,10" fill="url(#birdGrad)" opacity="0.8"/>
+    <!-- Body -->
+    <ellipse cx="0" cy="0" rx="25" ry="35" fill="url(#birdGrad)"/>
+    <!-- Head -->
+    <circle cx="0" cy="-35" r="18" fill="url(#birdGrad)"/>
+    <!-- Modern eye -->
+    <circle cx="-5" cy="-38" r="6" fill="white"/>
+    <circle cx="-5" cy="-38" r="3" fill="#1a1a1a"/>
+    <circle cx="5" cy="-38" r="6" fill="white"/>
+    <circle cx="5" cy="-38" r="3" fill="#1a1a1a"/>
+    <!-- Crown -->
+    <polygon points="-15,-50 0,-65 15,-50" fill="#D4AF37"/>
+    <!-- Tail feathers -->
+    <polygon points="-15,35 0,60 15,35" fill="url(#birdGrad)" opacity="0.9"/>
+    <polygon points="-25,30 -10,55 5,30" fill="url(#birdGrad)" opacity="0.7"/>
+    <polygon points="25,30 10,55 -5,30" fill="url(#birdGrad)" opacity="0.7"/>
+  </g>
+  <!-- Modern line accents -->
+  <line x1="10" y1="100" x2="40" y2="100" stroke="#D4AF37" stroke-width="2"/>
+  <line x1="160" y1="100" x2="190" y2="100" stroke="#D4AF37" stroke-width="2"/>
+</svg>

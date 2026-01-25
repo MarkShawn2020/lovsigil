@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="muralBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B4513"/>
+      <stop offset="100%" style="stop-color:#CD853F"/>
+    </linearGradient>
+    <pattern id="lannaPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect fill="#D4AF37" opacity="0.3" width="20" height="20"/>
+      <circle cx="10" cy="10" r="3" fill="#D4AF37" opacity="0.5"/>
+    </pattern>
+  </defs>
+  <!-- Background -->
+  <rect width="200" height="200" fill="url(#muralBg)"/>
+  <rect width="200" height="200" fill="url(#lannaPattern)"/>
+  <!-- Border decoration -->
+  <rect x="10" y="10" width="180" height="180" fill="none" stroke="#D4AF37" stroke-width="4"/>
+  <rect x="18" y="18" width="164" height="164" fill="none" stroke="#D4AF37" stroke-width="1"/>
+  <!-- Stylized Naga serpent -->
+  <path d="M100 40 C60 60 40 100 50 140 C60 160 80 170 100 160 C120 170 140 160 150 140 C160 100 140 60 100 40"
+        fill="#D4AF37" opacity="0.8"/>
+  <circle cx="85" cy="90" r="5" fill="#1a1a1a"/>
+  <circle cx="115" cy="90" r="5" fill="#1a1a1a"/>
+  <!-- Crown decoration -->
+  <path d="M70 50 L100 30 L130 50 L120 55 L100 40 L80 55 Z" fill="#D4AF37"/>
+</svg>

@@ -106,12 +106,17 @@ export async function analyzeVibeFromImage(imageBase64: string): Promise<VibeAna
   return result
 }
 
-export async function generateImage(prompt: string, referenceImage?: string): Promise<string> {
-  return generateImageWithMultipleRefs(prompt, referenceImage ? [referenceImage] : [])
+export interface ImageGenerationOptions {
+  aspectRatio?: string // "1:1", "3:4", "4:3", "9:16", "16:9", etc.
+  imageSize?: string   // "1K", "2K", "4K"
+}
+
+export async function generateImage(prompt: string, referenceImage?: string, options?: ImageGenerationOptions): Promise<string> {
+  return generateImageWithMultipleRefs(prompt, referenceImage ? [referenceImage] : [], options)
 }
 
 // 支持多张参考图片的生成函数
-export async function generateImageWithMultipleRefs(prompt: string, referenceImages: string[]): Promise<string> {
+export async function generateImageWithMultipleRefs(prompt: string, referenceImages: string[], options?: ImageGenerationOptions): Promise<string> {
   const client = getClient()
 
   // 构建多模态内容
@@ -135,12 +140,25 @@ export async function generateImageWithMultipleRefs(prompt: string, referenceIma
     ? [{ role: 'user', parts }]
     : prompt
 
+  // 构建 config，包含 imageConfig（如果有 aspectRatio/imageSize）
+  const config: any = {
+    responseModalities: ['TEXT', 'IMAGE'],
+  }
+
+  if (options?.aspectRatio || options?.imageSize) {
+    config.imageConfig = {}
+    if (options.aspectRatio) {
+      config.imageConfig.aspectRatio = options.aspectRatio
+    }
+    if (options.imageSize) {
+      config.imageConfig.imageSize = options.imageSize
+    }
+  }
+
   const response = await client.models.generateContent({
     model: 'google/gemini-3-pro-image-preview',
     contents,
-    config: {
-      responseModalities: ['TEXT', 'IMAGE'],
-    },
+    config,
   })
 
   // 从响应中提取图像
@@ -168,8 +186,9 @@ export function buildLannaSpiritPrompt(params: {
   traits: string[]
   basePrompt: string
   hasReferenceImage?: boolean
+  styleModifier?: string
 }): string {
-  const { spiritName, spiritNameEn, element, traits, basePrompt, hasReferenceImage } = params
+  const { spiritName, spiritNameEn, element, traits, basePrompt, hasReferenceImage, styleModifier } = params
 
   // 当有参考图像时，强调保持人物相似性和年龄
   const referenceInstruction = hasReferenceImage
@@ -192,7 +211,10 @@ FACE PRESERVATION:
 `
     : ''
 
-  const prompt = `${referenceInstruction}Create a mystical portrait artwork in traditional Lanna (Northern Thai) art style.
+  // 使用自定义风格或默认兰纳壁画风格
+  const artStyleDescription = styleModifier || 'traditional Lanna temple mural art style, rich gold leaf accents, Thai Buddhist artistic elements, warm earth tones'
+
+  const prompt = `${referenceInstruction}Create a mystical portrait artwork. Art style: ${artStyleDescription}.
 
 COMPOSITION (TWO SEPARATE ENTITIES):
 - The HUMAN: ${hasReferenceImage ? 'The person from the reference image' : 'A young person'}, depicted realistically with youthful features
@@ -205,10 +227,7 @@ IMPORTANT: The human and the spirit guardian must be SEPARATE entities in the im
 - The spirit watches over and protects the person
 
 Style Requirements:
-- Traditional Lanna temple mural art style
-- Rich gold leaf accents and ornate decorations
-- Thai Buddhist artistic elements
-- Warm earth tones (terracotta #CC785C, gold #D4AF37, deep brown)
+- ${artStyleDescription}
 - Intricate patterns inspired by Lanna textiles
 - Mystical aura emanating from the spirit
 
@@ -233,9 +252,13 @@ export interface GroupPersonInfo {
 export function buildLannaGroupSpiritPrompt(params: {
   persons: GroupPersonInfo[]
   hasReferenceImages: boolean
+  styleModifier?: string
 }): string {
-  const { persons, hasReferenceImages } = params
+  const { persons, hasReferenceImages, styleModifier } = params
   const count = persons.length
+
+  // 使用自定义风格或默认兰纳壁画风格
+  const artStyleDescription = styleModifier || 'traditional Lanna temple mural art style, rich gold leaf accents, Thai Buddhist artistic elements, warm earth tones'
 
   const referenceInstruction = hasReferenceImages
     ? `⚠️ ABSOLUTE CRITICAL - AGE PRESERVATION FOR ALL ${count} PERSONS ⚠️
@@ -261,7 +284,7 @@ FACE PRESERVATION FOR EACH PERSON:
    Traits: ${p.traits.slice(0, 3).join(', ')}`
   }).join('\n')
 
-  const prompt = `${referenceInstruction}Create a mystical GROUP PORTRAIT artwork in traditional Lanna (Northern Thai) art style featuring ${count} PEOPLE TOGETHER.
+  const prompt = `${referenceInstruction}Create a mystical GROUP PORTRAIT artwork. Art style: ${artStyleDescription}. Featuring ${count} PEOPLE TOGETHER.
 
 COMPOSITION (GROUP PORTRAIT with ${count} PERSONS):
 ${spiritDescriptions}
@@ -275,14 +298,63 @@ IMPORTANT GROUP PORTRAIT REQUIREMENTS:
 - Balance the composition so all persons are equally prominent
 
 Style Requirements:
-- Traditional Lanna temple mural art style
-- Rich gold leaf accents and ornate decorations
-- Thai Buddhist artistic elements
-- Warm earth tones (terracotta #CC785C, gold #D4AF37, deep brown)
+- ${artStyleDescription}
 - Intricate patterns inspired by Lanna textiles
 - Mystical auras emanating from each spirit guardian
 
 The artwork should feel sacred and mystical, showing a group blessed and protected by their guardian spirits from Lanna traditions. The composition should celebrate their connection and shared spiritual protection.`
 
   return prompt
+}
+
+// 守护灵信息（用于祝福语生成）
+const SPIRIT_BLESSING_INFO: Record<string, { name: string; element: string; traits: string[] }> = {
+  mom: { name: 'Mom (莫)', element: 'Earth-Water', traits: ['resilience', 'loyalty', 'hard work'] },
+  naga: { name: 'Naga (纳迦)', element: 'Water-Spirit', traits: ['wisdom', 'protection', 'artistry'] },
+  singha: { name: 'Singha (醒狮)', element: 'Fire-Gold', traits: ['leadership', 'justice', 'majesty'] },
+  makara: { name: 'Makara (摩羯)', element: 'Illusion', traits: ['ambition', 'eloquence', 'perception'] },
+  hadsadiling: { name: 'Hadsadiling (哈萨迪灵)', element: 'Wind-Air', traits: ['nobility', 'versatility', 'distinction'] },
+}
+
+/**
+ * 使用 LLM 生成兰纳风格祝福语
+ */
+export async function generateLannaBlessing(spiritIds: string[]): Promise<string> {
+  const client = getClient()
+
+  const spirits = spiritIds
+    .map(id => SPIRIT_BLESSING_INFO[id])
+    .filter((s): s is { name: string; element: string; traits: string[] } => !!s)
+
+  if (spirits.length === 0) {
+    return ''
+  }
+
+  const spiritDesc = spirits.map(s => `${s.name} (${s.element} element, traits: ${s.traits.join(', ')})`).join(' and ')
+
+  const prompt = `You are a wise monk from the ancient Lanna Kingdom of Northern Thailand. Generate a short, heartfelt blessing (1-2 sentences, max 80 characters) for people protected by ${spiritDesc}.
+
+Requirements:
+- Draw from Lanna Buddhist traditions and Thai Northern culture
+- Reference the spirits' elemental powers and traits
+- Focus on harmony, protection, prosperity, or spiritual growth
+- Keep it poetic but accessible
+- Output in English only
+- Do not use quotation marks
+
+Example blessings for reference (do not copy these exactly):
+- "May the steadfast earth guide your path and flowing waters cleanse your spirit"
+- "Under the dragon's wise gaze, may wisdom illuminate your journey"
+- "Let the lion's courage kindle the sacred fire within your heart"
+
+Generate a unique blessing for these guardians:`
+
+  const response = await client.models.generateContent({
+    model: 'gemini-2.0-flash',
+    contents: prompt,
+  })
+
+  const text = response.text?.trim() || ''
+  // 清理可能的引号
+  return text.replace(/^["']|["']$/g, '').trim()
 }

@@ -1,9 +1,5 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
-
 import {
   AlertTriangle,
   ArrowRight,
@@ -11,17 +7,22 @@ import {
   Download,
   Frame,
   Image,
+  Smartphone,
   Sparkles,
-  User,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useParams } from 'next/navigation'
+
+import { useEffect, useState } from 'react'
+import { SPIRIT_INFO } from '@/components/mirror/facsAnalyzer'
+import { downloadImage, generateLannaPoster } from '@/components/mirror/posterGenerator'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { QRCode } from '@/components/ui/qr-code'
 import { Textarea } from '@/components/ui/textarea'
-import { downloadImage, generateLannaPoster } from '@/components/mirror/posterGenerator'
-import { SPIRIT_INFO } from '@/components/mirror/facsAnalyzer'
 
 type OrderStatus = 'pending' | 'generating' | 'completed' | 'failed'
 
@@ -152,20 +153,33 @@ export default function SpiritOrderPage() {
     }
     setPrintSubmitting(true)
     try {
-      // TODO: 发送订单到后端
-      console.log('Print order:', { orderId, option: selectedPrintOption, ...printForm })
+      const res = await fetch('/api/spirit/print-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          productType: selectedPrintOption,
+          name: printForm.name,
+          phone: printForm.phone,
+          address: printForm.address,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to submit order')
+      }
+
       alert(t('print_order_success'))
       setPrintDialogOpen(false)
       setPrintForm({ name: '', phone: '', address: '' })
-    } catch {
+    } catch (err) {
+      console.error('Print order error:', err)
       alert(t('print_order_error'))
     } finally {
       setPrintSubmitting(false)
     }
   }
-
-  // 获取当前页面 URL 用于分享
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
 
   // Loading state
   if (loading) {
@@ -213,22 +227,40 @@ export default function SpiritOrderPage() {
 
         {/* Status Section - 非完成状态时保持居中 */}
         {(order.status === 'pending' || order.status === 'generating') && (
-          <Card className="mb-8 bg-black/50 border-[#D4AF37]/20 max-w-xl mx-auto">
-            <CardContent className="py-12 text-center">
-              <div className="mb-6">
-                {spiritInfo?.emoji ? (
-                  <span className="text-6xl animate-pulse">{spiritInfo.emoji}</span>
-                ) : (
-                  <div className="w-16 h-16 mx-auto rounded-full border-2 border-[#D4AF37]/40 flex items-center justify-center animate-pulse">
-                    <Sparkles className="w-8 h-8 text-[#D4AF37]" />
+          <Card className="mb-8 bg-black/50 border-[#D4AF37]/20 max-w-md mx-auto">
+            <CardContent className="py-12 px-8">
+              <div className="flex flex-col items-center">
+                <div className="mb-6">
+                  {spiritInfo?.emoji ? (
+                    <span className="text-6xl animate-pulse">{spiritInfo.emoji}</span>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full border-2 border-[#D4AF37]/40 flex items-center justify-center animate-pulse">
+                      <Sparkles className="w-8 h-8 text-[#D4AF37]" />
+                    </div>
+                  )}
+                </div>
+                <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent" />
+                <p className="text-white/80 text-lg mb-2 text-center">
+                  {order.status === 'pending' ? t('status_pending') : t('status_generating')}
+                </p>
+                <p className="text-white/40 text-sm text-center">{t('generation_time')}</p>
+
+                {/* QR Code for mobile viewing */}
+                <div className="mt-8 pt-6 border-t border-white/10 w-full">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="bg-white rounded-lg p-1.5">
+                      <QRCode size={100} />
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <Smartphone className="w-4 h-4 text-[#D4AF37]" />
+                        <p className="text-white/70 text-sm">{t('qr_scan_mobile')}</p>
+                      </div>
+                      <p className="text-white/40 text-xs">{t('qr_scan_wait')}</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
-              <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent mx-auto" />
-              <p className="text-white/80 text-lg mb-2">
-                {order.status === 'pending' ? t('status_pending') : t('status_generating')}
-              </p>
-              <p className="text-white/40 text-sm">{t('generation_time')}</p>
             </CardContent>
           </Card>
         )}
@@ -241,9 +273,22 @@ export default function SpiritOrderPage() {
                 <AlertTriangle className="w-16 h-16 text-yellow-500" />
               </div>
               <p className="text-red-400 text-lg mb-2">{t('status_failed')}</p>
-              <p className="text-white/40 text-sm">
+              <p className="text-white/40 text-sm mb-6">
                 {(order.metadata as Record<string, string>)?.error || t('unknown_error')}
               </p>
+
+              {/* QR Code for sharing/retry */}
+              <div className="pt-6 border-t border-white/10">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="bg-white rounded-lg p-1.5">
+                    <QRCode size={80} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-white/50" />
+                    <p className="text-white/50 text-xs">{t('qr_scan_share')}</p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -253,36 +298,6 @@ export default function SpiritOrderPage() {
           <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
             {/* 左侧：图片预览区 */}
             <div className="lg:w-1/2 lg:sticky lg:top-4">
-              {/* 原采集画像 + 生成结果对比 */}
-              {order.userPhoto && (
-                <div className="flex items-center justify-center gap-4 mb-4">
-                  <div className="text-center">
-                    <p className="text-white/40 text-xs mb-2">{t('original_photo')}</p>
-                    <div
-                      className="w-16 h-16 rounded-full overflow-hidden border-2"
-                      style={{
-                        borderColor: spiritInfo?.color || '#D4AF37',
-                        background: `radial-gradient(circle, ${spiritInfo?.color || '#D4AF37'}40 0%, ${spiritInfo?.color || '#D4AF37'}20 100%)`,
-                      }}
-                    >
-                      <img src={order.userPhoto} alt="Original" className="w-full h-full object-contain" />
-                    </div>
-                  </div>
-                  <div className="text-white/30">
-                    <ArrowRight className="w-5 h-5" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-white/40 text-xs mb-2">{t('spirit_result')}</p>
-                    <div
-                      className="w-16 h-16 rounded-full overflow-hidden border-2"
-                      style={{ borderColor: spiritInfo?.color || '#D4AF37' }}
-                    >
-                      <img src={order.generatedImage} alt="Spirit" className="w-full h-full object-cover" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Result Image Card / Poster */}
               <Card className="bg-black/50 border-[#D4AF37]/20 overflow-hidden">
                 <CardContent className="p-0">
@@ -326,25 +341,6 @@ export default function SpiritOrderPage() {
                   {showPoster ? t('show_image') : t('show_poster')}
                 </Button>
 
-                {order.userPhoto && !showPoster && (
-                  <Button
-                    onClick={() => setIncludeOriginal(!includeOriginal)}
-                    className="bg-white/20 text-white border-2 border-white/50 hover:bg-white/30 hover:border-white/70 font-medium"
-                  >
-                    {includeOriginal ? (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-1.5" />
-                        {t('spirit_only')}
-                      </>
-                    ) : (
-                      <>
-                        <User className="w-4 h-4 mr-1.5" />
-                        {t('with_original')}
-                      </>
-                    )}
-                  </Button>
-                )}
-
                 <Button
                   onClick={() => downloadImage(
                     showPoster && poster ? poster : order.generatedImage!,
@@ -361,47 +357,60 @@ export default function SpiritOrderPage() {
 
             {/* 右侧：信息区 */}
             <div className="lg:w-1/2 space-y-6">
-
-              {/* 分享二维码 */}
-              <Card className="bg-black/50 border-[#D4AF37]/20">
-                <CardContent className="py-6">
-                  <h3 className="text-white/80 font-medium mb-4">{t('share_title')}</h3>
-                  <div className="flex items-start gap-4">
-                    <div className="bg-white rounded-xl p-2 shrink-0">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(shareUrl)}`}
-                        alt="QR Code"
-                        className="w-[100px] h-[100px]"
-                      />
+              {/* 原采集画像 + 生成结果对比 */}
+              {order.userPhoto && (
+                <div className="flex items-center justify-center gap-4 p-4 bg-black/30 rounded-xl border border-white/10">
+                  <div className="text-center">
+                    <p className="text-white/40 text-xs mb-2">{t('original_photo')}</p>
+                    <div
+                      className="w-16 h-16 rounded-full overflow-hidden border-2"
+                      style={{
+                        borderColor: spiritInfo?.color || '#D4AF37',
+                        background: `radial-gradient(circle, ${spiritInfo?.color || '#D4AF37'}40 0%, ${spiritInfo?.color || '#D4AF37'}20 100%)`,
+                      }}
+                    >
+                      <img src={order.userPhoto} alt="Original" className="w-full h-full object-contain" />
                     </div>
-                    <p className="text-white/40 text-sm">{t('share_hint')}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="text-white/30">
+                    <ArrowRight className="w-5 h-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white/40 text-xs mb-2">{t('spirit_result')}</p>
+                    <div
+                      className="w-16 h-16 rounded-full overflow-hidden border-2"
+                      style={{ borderColor: spiritInfo?.color || '#D4AF37' }}
+                    >
+                      <img src={order.generatedImage} alt="Spirit" className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Print Options Section */}
-              <div>
-                <h2 className="text-xl font-semibold text-white mb-2">{t('print_title')}</h2>
-                <p className="text-white/60 text-sm mb-4">{t('print_subtitle')}</p>
+              <Card className="bg-black/50 border-[#D4AF37]/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg text-white">{t('print_title')}</CardTitle>
+                  <CardDescription className="text-white/60">{t('print_subtitle')}</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-3">
+                    {PRINT_OPTIONS.map((option) => {
+                      const names: Record<PrintOptionId, string> = {
+                        frame: t('print_frame'),
+                        figurine: t('print_figurine'),
+                      }
+                      const descs: Record<PrintOptionId, string> = {
+                        frame: t('print_frame_desc'),
+                        figurine: t('print_figurine_desc'),
+                      }
 
-                <div className="grid grid-cols-2 gap-3">
-                  {PRINT_OPTIONS.map((option) => {
-                    const names: Record<PrintOptionId, string> = {
-                      frame: t('print_frame'),
-                      figurine: t('print_figurine'),
-                    }
-                    const descs: Record<PrintOptionId, string> = {
-                      frame: t('print_frame_desc'),
-                      figurine: t('print_figurine_desc'),
-                    }
-
-                    return (
-                      <Card
-                        key={option.id}
-                        className="bg-black/30 border-white/10 hover:border-[#D4AF37]/50 transition-colors cursor-pointer group"
-                        onClick={() => handlePrintOption(option.id)}
-                      >
-                        <CardContent className="p-4">
+                      return (
+                        <div
+                          key={option.id}
+                          className="p-3 rounded-lg bg-black/30 border border-white/10 hover:border-[#D4AF37]/50 transition-colors cursor-pointer group"
+                          onClick={() => handlePrintOption(option.id)}
+                        >
                           <div className="flex items-center gap-3">
                             <div className="text-[#D4AF37] group-hover:scale-110 transition-transform">
                               {option.icon}
@@ -412,27 +421,34 @@ export default function SpiritOrderPage() {
                             </div>
                             <div className="text-[#D4AF37] font-semibold text-sm">{option.price}</div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
-              </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
 
-              {/* Footer */}
-              <div className="text-white/30 text-sm pt-4">
-                <p>{t('powered_by')}</p>
+              {/* 分享二维码 */}
+              <div className="flex items-center gap-3 p-4 bg-black/30 rounded-lg border border-white/10">
+                <div className="bg-white rounded-lg p-1 shrink-0">
+                  <QRCode size={80} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Smartphone className="w-4 h-4 text-[#D4AF37]" />
+                    <p className="text-white/80 text-sm font-medium">{t('qr_scan_title')}</p>
+                  </div>
+                  <p className="text-white/50 text-xs">{t('qr_scan_hint')}</p>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Footer for non-completed states */}
-        {order.status !== 'completed' && (
-          <div className="text-center text-white/30 text-sm">
-            <p>{t('powered_by')}</p>
-          </div>
-        )}
+        {/* Global Footer */}
+        <div className="text-center text-white/30 text-sm mt-8 pb-4">
+          <p>{t('powered_by')}</p>
+        </div>
       </div>
 
       {/* 打印订单弹窗 */}
@@ -483,7 +499,7 @@ export default function SpiritOrderPage() {
             <Button
               variant="outline"
               onClick={() => setPrintDialogOpen(false)}
-              className="border-white/20 text-white hover:bg-white/10"
+              className="border-white/40 text-white/80 bg-white/5 hover:bg-white/10 hover:text-white"
             >
               {t('cancel')}
             </Button>
