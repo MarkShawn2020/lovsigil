@@ -77,7 +77,7 @@ export function LannaMirror() {
   // 多人追踪状态
   const [trackedPersons, setTrackedPersons] = useState<TrackedPerson[]>([])
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
-  const prevPersonsRef = useRef<string>('')
+  const lastSpiritUpdateRef = useRef<number>(0)
   // 头部抠像缩略图 (personId -> dataURL)
   const [headThumbnails, setHeadThumbnails] = useState<Record<string, string>>({})
   const lastThumbnailUpdateRef = useRef<number>(0)
@@ -128,9 +128,11 @@ export function LannaMirror() {
     orderUrl: string | null
     spiritName: string | null
     spiritEmoji: string | null
+    spiritId: string | null
+    userPhoto: string | null
     completed: boolean
     resultImage: string | null
-  }>({ show: false, orderId: null, orderUrl: null, spiritName: null, spiritEmoji: null, completed: false, resultImage: null })
+  }>({ show: false, orderId: null, orderUrl: null, spiritName: null, spiritEmoji: null, spiritId: null, userPhoto: null, completed: false, resultImage: null })
 
   // 预览时自动生成海报（根据模式生成不同版本）
   useEffect(() => {
@@ -297,27 +299,49 @@ export function LannaMirror() {
       // 更新人员追踪器
       persons = personTrackerRef.current.update(faceLandmarksList)
 
-      // 只在人员数量或ID变化时更新状态，避免无限渲染循环
-      setTrackedPersons((prev) => {
-        const prevIds = prev.map(p => p.id).join(',')
-        const newIds = persons.map(p => p.id).join(',')
-        if (prevIds !== newIds) {
-          return persons
-        }
-        // 即使 ID 相同，也需要更新表情数据
-        if (prev.length === persons.length) {
-          for (let i = 0; i < prev.length; i++) {
-            const prevPerson = prev[i]
-            const newPerson = persons[i]
-            if (prevPerson && newPerson) {
-              prevPerson.currentFeatures = newPerson.currentFeatures
-              prevPerson.spiritScores = newPerson.spiritScores
-              prevPerson.dominantSpirit = newPerson.dominantSpirit
-            }
+      // 节流检查（在 setState 外部进行，避免闭包问题）
+      const shouldUpdate = now - lastSpiritUpdateRef.current >= 200
+
+      // 更新追踪人员状态
+      if (persons.length > 0) {
+        const currentPersons = persons // 捕获当前帧的 persons 引用
+        const currentTime = now // 捕获当前时间
+
+        setTrackedPersons((prev) => {
+          const prevIds = prev.map(p => p.id).join(',')
+          const newIds = currentPersons.map(p => p.id).join(',')
+
+          // ID 变化时立即更新（深拷贝 spiritScores 避免引用问题）
+          if (prevIds !== newIds) {
+            lastSpiritUpdateRef.current = currentTime
+            return currentPersons.map(p => ({
+              ...p,
+              spiritScores: { ...p.spiritScores },
+            }))
           }
-        }
-        return prev
-      })
+
+          // 节流：每 200ms 更新一次 spiritScores
+          if (!shouldUpdate) {
+            return prev
+          }
+
+          lastSpiritUpdateRef.current = currentTime
+          // 返回新数组以触发 React 重渲染（按 ID 匹配，而非索引）
+          const prevMap = new Map(prev.map(p => [p.id, p]))
+          return currentPersons.map((newPerson) => {
+            const prevPerson = prevMap.get(newPerson.id)
+            return prevPerson ? {
+              ...prevPerson,
+              currentFeatures: newPerson.currentFeatures,
+              spiritScores: { ...newPerson.spiritScores }, // 深拷贝 spiritScores
+              dominantSpirit: newPerson.dominantSpirit,
+            } : newPerson
+          })
+        })
+      } else {
+        // 没有检测到人脸时清空
+        setTrackedPersons((prev) => prev.length > 0 ? [] : prev)
+      }
 
       // 同步 overlay canvas 尺寸
       const overlayCanvas = overlayCanvasRef.current
@@ -574,6 +598,8 @@ export function LannaMirror() {
         orderUrl: orderData.orderUrl,
         spiritName: spiritInfo?.name || spirit.name,
         spiritEmoji: spiritInfo?.emoji || '🔮',
+        spiritId: spirit.id,
+        userPhoto: photo,
         completed: false,
         resultImage: null,
       })
@@ -679,6 +705,8 @@ export function LannaMirror() {
         orderUrl: orderData.orderUrl,
         spiritName: spiritNames,
         spiritEmoji: '👥',
+        spiritId: null,
+        userPhoto: persons[0]?.photo || null,
         completed: false,
         resultImage: null,
       })
@@ -1434,60 +1462,82 @@ export function LannaMirror() {
           onClick={() => setQrModal(prev => ({ ...prev, show: false }))}
         >
           <div
-            className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl p-8 max-w-sm w-full"
+            className="relative bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl p-5 max-w-4xl w-full"
             onClick={e => e.stopPropagation()}
           >
-            {/* 标题 */}
-            <div className="text-center mb-6">
-              <div className="text-4xl mb-2">{qrModal.spiritEmoji}</div>
-              <h2 className="text-xl font-bold text-[#D4AF37] mb-1">
-                {t('qr_title')}
-              </h2>
-              <p className="text-white/60 text-sm">
-                {qrModal.spiritName}
-              </p>
-            </div>
-
-            {/* QR 码 */}
-            <div className="bg-white rounded-xl p-4 mb-6">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrModal.orderUrl)}`}
-                alt="QR Code"
-                className="w-full aspect-square"
-              />
-            </div>
-
-            {/* 提示文字 */}
-            <p className="text-center text-white/60 text-sm mb-4">
-              {t('qr_subtitle')}
-            </p>
-
-            {/* 生成状态指示 */}
-            {qrModal.completed ? (
-              <div className="flex items-center justify-center gap-2 text-green-400 mb-4">
-                <span className="text-lg">✓</span>
-                <span className="text-sm">{t('qr_completed')}</span>
+            <div className="flex gap-5">
+              {/* 左侧：生成图片（主角） */}
+              <div className="flex-1 min-w-0">
+                {qrModal.completed && qrModal.resultImage ? (
+                  <img
+                    src={qrModal.resultImage}
+                    alt="Generated"
+                    className="w-full rounded-xl"
+                  />
+                ) : (
+                  <div className="w-full aspect-[3/4] bg-white/5 rounded-xl flex flex-col items-center justify-center gap-3 border border-white/10">
+                    <div className="w-12 h-12 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent" />
+                    <span className="text-white/50">{t('qr_generating')}</span>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2 text-[#D4AF37] mb-4">
-                <div className="w-4 h-4 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
-                <span className="text-sm">{t('qr_generating')}</span>
-              </div>
-            )}
 
-            {/* 链接按钮 */}
-            <a
-              href={qrModal.orderUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full py-3 bg-[#D4AF37] hover:bg-[#E5C04B] rounded-lg text-center text-white font-medium transition-colors"
-            >
-              {t('qr_or_link')}
-            </a>
+              {/* 右侧栏：原照片 + 信息 + QR码 + 操作 */}
+              <div className="w-48 shrink-0 flex flex-col gap-4">
+                {/* 守护神信息 */}
+                <div className="text-center">
+                  <span className="text-2xl">{qrModal.spiritEmoji}</span>
+                  <h2 className="text-lg font-bold text-[#D4AF37] mt-1">
+                    {qrModal.spiritName}
+                  </h2>
+                </div>
+
+                {/* 原摄像输入 */}
+                {qrModal.userPhoto && (
+                  <div className="bg-black/30 rounded-lg p-2">
+                    <p className="text-white/40 text-xs text-center mb-1">{t('original')}</p>
+                    <img
+                      src={qrModal.userPhoto}
+                      alt="Original"
+                      className="w-full aspect-square object-cover rounded"
+                    />
+                  </div>
+                )}
+
+                {/* QR 码 */}
+                <div className="bg-white rounded-lg p-2">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrModal.orderUrl)}`}
+                    alt="QR Code"
+                    className="w-full aspect-square"
+                  />
+                </div>
+                <p className="text-center text-white/40 text-xs -mt-2">
+                  {t('qr_subtitle')}
+                </p>
+
+                {/* 操作按钮 */}
+                {qrModal.completed && qrModal.resultImage && (
+                  <Button
+                    onClick={() => downloadImage(
+                      qrModal.resultImage!,
+                      `lanna-spirit-${qrModal.spiritId || 'group'}-${Date.now()}.png`
+                    )}
+                    className="w-full text-white font-medium"
+                    style={{ backgroundColor: qrModal.spiritId ? (SPIRIT_INFO[qrModal.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37') : '#D4AF37' }}
+                  >
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    {t('download')}
+                  </Button>
+                )}
+              </div>
+            </div>
 
             {/* 关闭按钮 */}
             <button
-              className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
+              className="absolute top-3 right-3 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full text-white/60 hover:text-white flex items-center justify-center transition-colors"
               onClick={() => setQrModal(prev => ({ ...prev, show: false }))}
             >
               ✕
