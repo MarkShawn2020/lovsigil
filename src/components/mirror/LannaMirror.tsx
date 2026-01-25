@@ -981,8 +981,8 @@ export function LannaMirror() {
                 </div>
               ) : (
                 <>
-                  {/* 守护灵面板 */}
-                  <div className="space-y-3">
+                  {/* 守护灵面板 - 单行精简显示 */}
+                  <div className="space-y-2">
                     {trackedPersons.map((person) => {
                       const thumbnail = headThumbnails[person.id]
                       const spiritInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
@@ -990,95 +990,54 @@ export function LannaMirror() {
                       return (
                         <div
                           key={person.id}
-                          className="bg-black/50 rounded-lg p-3 border border-[#D4AF37]/20"
+                          className="flex items-center gap-2 bg-black/50 rounded-lg px-3 py-2 border border-[#D4AF37]/20"
                         >
-                          {/* 头部：抠像头像 + 主导守护灵 */}
-                          <div className="flex items-center gap-3 mb-3">
-                            {/* 头部抠像缩略图 - 透明背景用守护灵颜色填充 */}
-                            <div
-                              className="w-14 h-14 rounded-full overflow-hidden border-2 shrink-0"
-                              style={{
-                                borderColor: spiritInfo?.color || '#D4AF37',
-                                background: `radial-gradient(circle, ${spiritInfo?.color}40 0%, ${spiritInfo?.color}20 100%)`,
-                              }}
-                            >
-                              {thumbnail ? (
-                                <img
-                                  src={thumbnail}
-                                  alt=""
-                                  className="w-full h-full object-contain"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <span className="text-white/30 text-xs">...</span>
-                                </div>
-                              )}
-                            </div>
-                            {/* 守护灵信息 */}
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xl">{spiritInfo?.emoji}</span>
-                              <span className="text-white/70 text-sm">{spiritInfo?.name}</span>
-                            </div>
+                          {/* 头像 */}
+                          <div
+                            className="w-10 h-10 rounded-full overflow-hidden border-2 shrink-0"
+                            style={{
+                              borderColor: spiritInfo?.color || '#D4AF37',
+                              background: `radial-gradient(circle, ${spiritInfo?.color}40 0%, ${spiritInfo?.color}20 100%)`,
+                            }}
+                          >
+                            {thumbnail ? (
+                              <img src={thumbnail} alt="" className="w-full h-full object-contain" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-white/30 text-xs">...</span>
+                              </div>
+                            )}
                           </div>
-
-                        {/* 守护灵亲和度条形图 - 按分数倒序 */}
-                        <div className="space-y-1.5">
-                          {Object.entries(person.spiritScores)
-                            .sort(([, a], [, b]) => b - a)
-                            .map(([spiritId, score]) => {
-                              const info = SPIRIT_INFO[spiritId as keyof typeof SPIRIT_INFO]
-                              const isDominant = spiritId === person.dominantSpirit
-
-                              return (
-                                <div key={spiritId} className="flex items-center gap-2">
-                                  <span className="w-5 text-center text-sm">{info.emoji}</span>
-                                  <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{
-                                        width: `${score * 100}%`,
-                                        backgroundColor: isDominant ? info.color : `${info.color}66`,
-                                      }}
-                                    />
-                                  </div>
-                                  <span
-                                    className={`w-9 text-right text-xs ${isDominant ? 'text-white font-bold' : 'text-white/40'}`}
-                                  >
-                                    {Math.round(score * 100)}%
-                                  </span>
-                                </div>
-                              )
-                            })}
+                          {/* 守护灵 */}
+                          <span className="text-lg">{spiritInfo?.emoji}</span>
+                          <span className="text-white/70 text-sm flex-1 truncate">{spiritInfo?.name}</span>
+                          {/* 生成按钮 */}
+                          <Button
+                            onClick={() => handleGenerateForPerson(person)}
+                            size="sm"
+                            className="shrink-0"
+                          >
+                            ✨ Generate ฿20
+                          </Button>
                         </div>
-
-                        {/* 生成守护灵画像按钮 */}
-                        <Button
-                          onClick={() => handleGenerateForPerson(person)}
-                          className="w-full mt-3"
-                        >
-                          ✨ {t('generate_portrait')}
-                        </Button>
-                      </div>
                       )
                     })}
 
-                    {/* 合像按钮（当检测到 2+ 人时显示） */}
-                    {trackedPersons.length >= 2 && (
-                      <Button
-                        onClick={handleGenerateGroupPortrait}
-                        disabled={groupGenerating}
-                        className="w-full mt-4 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D] text-white font-medium"
-                      >
-                        {groupGenerating ? (
-                          <>
-                            <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                            {t('generating_group')}
-                          </>
-                        ) : (
-                          <>👥 {t('generate_group_portrait')}</>
-                        )}
-                      </Button>
-                    )}
+                    {/* 合像按钮 - 常驻显示，非多人时 disabled */}
+                    <Button
+                      onClick={handleGenerateGroupPortrait}
+                      disabled={groupGenerating || trackedPersons.length < 2}
+                      className="w-full mt-2 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D] text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {groupGenerating ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          {t('generating_group')}
+                        </>
+                      ) : (
+                        <>👥 Group ฿{trackedPersons.length * 20}</>
+                      )}
+                    </Button>
                   </div>
                 </>
               )}
