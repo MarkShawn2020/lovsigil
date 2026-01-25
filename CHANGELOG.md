@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.6.0
+
+### Minor Changes
+
+- feba6bf: 优化合照场景人脸检测：支持最多 8 人同时检测，降低阈值支持远处小脸
+
 ## 0.5.0
 
 ### Minor Changes
