@@ -1,5 +1,17 @@
 # lanna-mirror-3
 
+## 0.4.0
+
+### Minor Changes
+
+- UI 改进和重构
+  - 将 UI emoji 替换为 lucide-react 图标
+  - 精简守护灵面板为单行显示
+  - 重构 QR 弹窗为左右布局
+  - 优化标题区域布局
+  - 重构历史记录为顶部走马灯横条
+  - 移除 spotlight 依赖
+
 ## 0.3.0
 
 ### Minor Changes
