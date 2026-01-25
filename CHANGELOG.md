@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.6.1
+
+### Patch Changes
+
+- fix(mirror): 在打开生成选项对话框时捕获静态截图，而非显示实时画面
+
 ## 0.6.0
 
 ### Minor Changes
