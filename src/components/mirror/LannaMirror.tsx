@@ -259,17 +259,18 @@ export function LannaMirror() {
       persistentSegmenter = segmenter
 
       // 初始化 Face Landmarker (FACS 基础) - 支持多人
+      // 大幅降低检测阈值以支持合照中远处的小脸
       const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task',
           delegate: 'GPU',
         },
         runningMode: 'VIDEO',
-        numFaces: 4, // 支持最多 4 人同时检测
+        numFaces: 8, // 支持最多 8 人同时检测（合照场景）
         outputFaceBlendshapes: true,
-        minFaceDetectionConfidence: 0.6, // 提高检测阈值，避免手臂等误识别
-        minFacePresenceConfidence: 0.5, // 适中的存在确认阈值
-        minTrackingConfidence: 0.4, // 追踪阈值稍低以保持稳定
+        minFaceDetectionConfidence: 0.4, // 降低检测阈值，支持远处小脸
+        minFacePresenceConfidence: 0.3, // 降低存在确认阈值
+        minTrackingConfidence: 0.3, // 降低追踪阈值以保持稳定
       })
       faceLandmarkerRef.current = faceLandmarker
       persistentFaceLandmarker = faceLandmarker

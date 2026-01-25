@@ -11,9 +11,12 @@ import {
 
 // 验证 blendshapes 是否来自真实人脸
 // 真实人脸的 blendshapes 会有合理的分布，误检测的值通常异常
+// 注意：合照中远处的小脸 blendshapes 数值可能很低，应放宽条件
 function isValidBlendshapes(blendshapes: Classifications | undefined): boolean {
+  // 没有 blendshapes 数据时，不直接拒绝（可能是远处小脸）
+  // 让几何验证来把关
   if (!blendshapes || !blendshapes.categories || blendshapes.categories.length === 0) {
-    return false // 没有 blendshapes 数据，可能是误检测
+    return true // 放宽：允许没有 blendshapes 的检测通过
   }
 
   const categories = blendshapes.categories
@@ -28,11 +31,10 @@ function isValidBlendshapes(blendshapes: Classifications | undefined): boolean {
     }
   }
 
-  // 真实人脸应该有一些面部活动（眨眼、嘴部运动等）
-  // 误检测通常 totalScore 非常小或 maxScore 异常
-  // 放宽条件：只要有最小程度的面部活动即可
-  if (totalScore < 0.05 && maxScore < 0.02) {
-    return false // 几乎没有任何面部活动，可能是误检测
+  // 极端放宽：只过滤完全没有任何面部特征的检测
+  // 远处的人脸、静止的人脸都可能有很低的 blendshapes
+  if (totalScore < 0.01 && maxScore < 0.005) {
+    return false // 几乎没有任何面部特征，可能是误检测
   }
 
   return true
@@ -92,8 +94,9 @@ function computeFaceMetrics(landmarks: NormalizedLandmark[]): FaceMetrics {
   const size = (width + height) / 2
   const aspectRatio = height > 0 ? width / height : 0
 
-  // 几何验证：真实人脸应满足以下条件
-  const MIN_FACE_SIZE = 0.06 // 至少占画面 6%
+  // 几何验证：大幅放宽以支持合照场景
+  // 2% 允许 6-8 人合照时远处的小脸也能被检测
+  const MIN_FACE_SIZE = 0.02 // 至少占画面 2%
 
   // 修复：使用 min/max 处理镜像和头部转向情况
   const minX = Math.min(leftCheek.x, rightCheek.x)
@@ -101,13 +104,18 @@ function computeFaceMetrics(landmarks: NormalizedLandmark[]): FaceMetrics {
   const minY = Math.min(forehead.y, chin.y)
   const maxY = Math.max(forehead.y, chin.y)
 
-  // 鼻尖应该在脸部边界框内
-  const noseInCenter = noseTip.x > minX && noseTip.x < maxX
-    && noseTip.y > minY && noseTip.y < maxY
+  // 鼻尖应该在脸部边界框内（放宽：允许边缘情况）
+  // 扩大边界框 20% 以容忍极端角度
+  const boxWidth = maxX - minX
+  const boxHeight = maxY - minY
+  const noseInCenter = noseTip.x > minX - boxWidth * 0.2 && noseTip.x < maxX + boxWidth * 0.2
+    && noseTip.y > minY - boxHeight * 0.2 && noseTip.y < maxY + boxHeight * 0.2
 
+  // 放宽宽高比限制：支持更多角度
+  // 0.3-1.8 覆盖侧脸、仰头、低头等极端姿态
   const isValid = size >= MIN_FACE_SIZE
-    && aspectRatio >= 0.5
-    && aspectRatio <= 1.3
+    && aspectRatio >= 0.3
+    && aspectRatio <= 1.8
     && noseInCenter
 
   return {
@@ -174,10 +182,8 @@ export class PersonTracker {
   private persons: Map<string, TrackedPerson> = new Map()
   private currentFrame = 0
 
-  // 匹配阈值（归一化坐标距离）
-  private readonly matchThreshold = 0.15
-  // 消失多少帧后移除
-  private readonly maxMissedFrames = 30
+  // 匹配阈值（归一化坐标距离）- 放宽到 0.2 以容忍更多移动
+  private readonly matchThreshold = 0.2
 
   // 处理新一帧的脸部检测结果
   update(faceLandmarksList: NormalizedLandmark[][], faceBlendshapesList: Classifications[] = []): TrackedPerson[] {
@@ -211,15 +217,18 @@ export class PersonTracker {
     const sortedRaw = [...rawFaces].sort((a, b) => b.size - a.size)
     const detectedFaces: DetectedFace[] = []
     for (const face of sortedRaw) {
-      // 检查是否与已保留的脸重叠（使用多重检测）
+      // 检查是否与已保留的脸重叠
+      // 大幅放宽：只有非常接近的脸才被视为重复
       const isDuplicate = detectedFaces.some((kept) => {
-        // 方法1：中心点距离（相对于脸部大小）
+        // 方法1：中心点距离（相对于较小脸的大小）
+        // 放宽到 30%：只有当两张脸中心距离 < 小脸直径的 30% 时才认为是重复
         const dist = positionDistance(face.center, kept.center)
-        const avgSize = (face.size + kept.size) / 2
-        if (dist < avgSize * 0.8) return true // 中心距离小于平均脸部大小的 80%
+        const smallerSize = Math.min(face.size, kept.size)
+        if (dist < smallerSize * 0.3) return true
 
-        // 方法2：边界框重叠
-        if (facesOverlap(face, kept, 0.3)) return true
+        // 方法2：边界框重叠（提高阈值到 70%）
+        // 只有当重叠面积超过小脸的 70% 时才认为是重复
+        if (facesOverlap(face, kept, 0.7)) return true
 
         return false
       })
@@ -317,13 +326,13 @@ export class PersonTracker {
     }
 
     // 4. 移除消失太久的人
-    // 对于检测帧数少的人（可能是误检测）使用更短的超时时间
+    // 放宽超时条件，避免多人场景下因短暂遮挡导致人员被移除
     const toRemove: string[] = []
     for (const [personId, person] of this.persons) {
       const missedFrames = this.currentFrame - person.lastSeenFrame
-      // 检测帧数少于 15 帧的人，只等 5 帧就移除（快速清理误检测）
-      // 检测帧数多的人，等 30 帧才移除（避免丢失真实用户）
-      const timeout = person.frameCount < 15 ? 5 : this.maxMissedFrames
+      // 检测帧数少于 10 帧的人（新出现），等 15 帧才移除（约 0.5 秒）
+      // 检测帧数多的人（已稳定），等 45 帧才移除（约 1.5 秒）
+      const timeout = person.frameCount < 10 ? 15 : 45
       if (missedFrames > timeout) {
         toRemove.push(personId)
       }
