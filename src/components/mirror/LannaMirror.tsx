@@ -914,7 +914,7 @@ export function LannaMirror() {
           style={{ flexBasis: 320, minWidth: 120, maxWidth: 480 }}
         >
         {/* 标题区域 */}
-        <div className="p-4 border-b border-[#D4AF37]/20">
+        <div className="px-4 py-3 border-b border-[#D4AF37]/20">
           <div className="flex items-center gap-2">
             <h1
               className="text-xl font-bold tracking-widest"
@@ -922,11 +922,11 @@ export function LannaMirror() {
             >
               {t('title')}
             </h1>
-            <Badge variant="outline" className="text-[10px] text-white/40 border-white/20">
+            <Badge variant="outline" className="text-[10px] text-white/40 border-white/20 self-center">
               v{version}
             </Badge>
           </div>
-          <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center justify-between">
             <p className="text-white/50 text-sm">{t('subtitle')}</p>
             <LocaleSwitcher className="text-white" />
           </div>
