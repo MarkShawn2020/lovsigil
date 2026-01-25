@@ -884,7 +884,7 @@ export function LannaMirror() {
 
       {/* 顶部历史记录横条 - 走马灯自动滚动 */}
       <div className="shrink-0 border-b border-[#D4AF37]/20 bg-black/95">
-        <div className="h-20 px-4 flex items-center">
+        <div className="h-32 px-4 flex items-center">
           {historyRecords.length > 0 ? (
             <div
               className="flex-1 h-full overflow-hidden relative group flex items-center"
@@ -928,7 +928,7 @@ export function LannaMirror() {
                       <img
                         src={record.generatedImage}
                         alt={record.spiritName || record.spiritId}
-                        className="w-14 h-14 object-cover rounded-lg border border-white/10 group-hover/item:border-[#D4AF37]/50 transition-colors"
+                        className="w-28 h-28 object-cover rounded-lg border border-white/10 group-hover/item:border-[#D4AF37]/50 transition-colors"
                       />
                       <div
                         className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-xs"
@@ -1038,7 +1038,7 @@ export function LannaMirror() {
                             className="shrink-0"
                           >
                             <Sparkles className="w-4 h-4 mr-1" />
-                            Generate ฿20
+                            Generate
                           </Button>
                         </div>
                       )
@@ -1058,7 +1058,7 @@ export function LannaMirror() {
                       ) : (
                         <>
                           <Users className="w-4 h-4 mr-1" />
-                          Group ฿{trackedPersons.length * 20}
+                          Group
                         </>
                       )}
                     </Button>
