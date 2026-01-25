@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.6.4
+
+### Patch Changes
+
+- 增大守护灵头像尺寸
+
 ## 0.6.3
 
 ### Patch Changes
