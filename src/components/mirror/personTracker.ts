@@ -1,4 +1,4 @@
-import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
+import type { Classifications, NormalizedLandmark } from '@mediapipe/tasks-vision'
 
 import type { FaceFeatureScores, SpiritMatchScores } from './faceFeatureAnalyzer'
 import {
@@ -8,6 +8,35 @@ import {
   mapFeaturesToSpirits,
   normalizeScores,
 } from './faceFeatureAnalyzer'
+
+// 验证 blendshapes 是否来自真实人脸
+// 真实人脸的 blendshapes 会有合理的分布，误检测的值通常异常
+function isValidBlendshapes(blendshapes: Classifications | undefined): boolean {
+  if (!blendshapes || !blendshapes.categories || blendshapes.categories.length === 0) {
+    return false // 没有 blendshapes 数据，可能是误检测
+  }
+
+  const categories = blendshapes.categories
+
+  // 计算所有 blendshapes 的总分（排除 _neutral）
+  let totalScore = 0
+  let maxScore = 0
+  for (const cat of categories) {
+    if (cat.categoryName !== '_neutral') {
+      totalScore += cat.score
+      if (cat.score > maxScore) maxScore = cat.score
+    }
+  }
+
+  // 真实人脸应该有一些面部活动（眨眼、嘴部运动等）
+  // 误检测通常 totalScore 非常小或 maxScore 异常
+  // 放宽条件：只要有最小程度的面部活动即可
+  if (totalScore < 0.05 && maxScore < 0.02) {
+    return false // 几乎没有任何面部活动，可能是误检测
+  }
+
+  return true
+}
 
 export interface TrackedPerson {
   id: string
@@ -29,12 +58,22 @@ interface DetectedFace {
   landmarks: NormalizedLandmark[]
   center: { x: number, y: number }
   size: number
+  aspectRatio: number // 宽高比，用于验证
 }
 
-// 从 landmarks 计算脸部中心和大小
-function computeFaceMetrics(landmarks: NormalizedLandmark[]): { center: { x: number, y: number }, size: number } {
+interface FaceMetrics {
+  center: { x: number, y: number }
+  size: number
+  aspectRatio: number
+  isValid: boolean // 是否通过几何验证
+}
+
+// 从 landmarks 计算脸部中心、大小和几何验证
+function computeFaceMetrics(landmarks: NormalizedLandmark[]): FaceMetrics {
+  const invalid: FaceMetrics = { center: { x: 0.5, y: 0.5 }, size: 0, aspectRatio: 0, isValid: false }
+
   if (landmarks.length < 468) {
-    return { center: { x: 0.5, y: 0.5 }, size: 0 }
+    return invalid
   }
 
   // 使用关键点计算边界框
@@ -43,18 +82,39 @@ function computeFaceMetrics(landmarks: NormalizedLandmark[]): { center: { x: num
   const rightCheek = landmarks[454]!
   const forehead = landmarks[10]!
   const chin = landmarks[152]!
+  const noseTip = landmarks[4]!
 
   const centerX = (leftCheek.x + rightCheek.x) / 2
   const centerY = (forehead.y + chin.y) / 2
 
-  // 脸部大小 = 宽度和高度的平均
   const width = Math.abs(rightCheek.x - leftCheek.x)
   const height = Math.abs(chin.y - forehead.y)
   const size = (width + height) / 2
+  const aspectRatio = height > 0 ? width / height : 0
+
+  // 几何验证：真实人脸应满足以下条件
+  const MIN_FACE_SIZE = 0.06 // 至少占画面 6%
+
+  // 修复：使用 min/max 处理镜像和头部转向情况
+  const minX = Math.min(leftCheek.x, rightCheek.x)
+  const maxX = Math.max(leftCheek.x, rightCheek.x)
+  const minY = Math.min(forehead.y, chin.y)
+  const maxY = Math.max(forehead.y, chin.y)
+
+  // 鼻尖应该在脸部边界框内
+  const noseInCenter = noseTip.x > minX && noseTip.x < maxX
+    && noseTip.y > minY && noseTip.y < maxY
+
+  const isValid = size >= MIN_FACE_SIZE
+    && aspectRatio >= 0.5
+    && aspectRatio <= 1.3
+    && noseInCenter
 
   return {
     center: { x: centerX, y: centerY },
     size,
+    aspectRatio,
+    isValid,
   }
 }
 
@@ -77,6 +137,39 @@ const DEFAULT_SCORES: SpiritMatchScores = {
   hadsadiling: 0.2,
 }
 
+// 检测两个脸是否重叠（边界框重叠超过阈值）
+function facesOverlap(a: DetectedFace, b: DetectedFace, overlapThreshold = 0.3): boolean {
+  // 计算两个脸的边界框（假设脸是正方形，以 center 为中心，size 为边长）
+  const aHalf = a.size / 2
+  const bHalf = b.size / 2
+
+  const aLeft = a.center.x - aHalf
+  const aRight = a.center.x + aHalf
+  const aTop = a.center.y - aHalf
+  const aBottom = a.center.y + aHalf
+
+  const bLeft = b.center.x - bHalf
+  const bRight = b.center.x + bHalf
+  const bTop = b.center.y - bHalf
+  const bBottom = b.center.y + bHalf
+
+  // 计算重叠区域
+  const overlapLeft = Math.max(aLeft, bLeft)
+  const overlapRight = Math.min(aRight, bRight)
+  const overlapTop = Math.max(aTop, bTop)
+  const overlapBottom = Math.min(aBottom, bBottom)
+
+  if (overlapRight <= overlapLeft || overlapBottom <= overlapTop) {
+    return false // 没有重叠
+  }
+
+  const overlapArea = (overlapRight - overlapLeft) * (overlapBottom - overlapTop)
+  const smallerArea = Math.min(a.size * a.size, b.size * b.size)
+
+  // 如果重叠面积超过较小脸面积的阈值，认为是重复
+  return overlapArea / smallerArea > overlapThreshold
+}
+
 export class PersonTracker {
   private persons: Map<string, TrackedPerson> = new Map()
   private currentFrame = 0
@@ -87,18 +180,53 @@ export class PersonTracker {
   private readonly maxMissedFrames = 30
 
   // 处理新一帧的脸部检测结果
-  update(faceLandmarksList: NormalizedLandmark[][]): TrackedPerson[] {
+  update(faceLandmarksList: NormalizedLandmark[][], faceBlendshapesList: Classifications[] = []): TrackedPerson[] {
     this.currentFrame++
 
-    // 1. 将检测到的脸转换为 DetectedFace
-    const detectedFaces: DetectedFace[] = faceLandmarksList.map((landmarks) => {
+    // 1. 将检测到的脸转换为 DetectedFace，同时进行几何验证 + blendshapes 验证
+    const rawFaces: DetectedFace[] = []
+    for (let i = 0; i < faceLandmarksList.length; i++) {
+      const landmarks = faceLandmarksList[i]!
+      const blendshapes = faceBlendshapesList[i]
+
+      // 几何验证
       const metrics = computeFaceMetrics(landmarks)
-      return {
+      if (!metrics.isValid) continue
+
+      // Blendshapes 验证（如果有数据）- 过滤手臂等误检测
+      if (faceBlendshapesList.length > 0 && !isValidBlendshapes(blendshapes)) {
+        continue
+      }
+
+      rawFaces.push({
         landmarks,
         center: metrics.center,
         size: metrics.size,
+        aspectRatio: metrics.aspectRatio,
+      })
+    }
+
+    // 1.5 去重：过滤 MediaPipe 对同一张脸的重复检测
+    // 按脸部大小降序排序，优先保留大脸
+    const sortedRaw = [...rawFaces].sort((a, b) => b.size - a.size)
+    const detectedFaces: DetectedFace[] = []
+    for (const face of sortedRaw) {
+      // 检查是否与已保留的脸重叠（使用多重检测）
+      const isDuplicate = detectedFaces.some((kept) => {
+        // 方法1：中心点距离（相对于脸部大小）
+        const dist = positionDistance(face.center, kept.center)
+        const avgSize = (face.size + kept.size) / 2
+        if (dist < avgSize * 0.8) return true // 中心距离小于平均脸部大小的 80%
+
+        // 方法2：边界框重叠
+        if (facesOverlap(face, kept, 0.3)) return true
+
+        return false
+      })
+      if (!isDuplicate) {
+        detectedFaces.push(face)
       }
-    })
+    }
 
     // 2. 贪婪匹配：为每个检测到的脸找最近的已追踪人
     const matched = new Set<string>()
@@ -189,9 +317,14 @@ export class PersonTracker {
     }
 
     // 4. 移除消失太久的人
+    // 对于检测帧数少的人（可能是误检测）使用更短的超时时间
     const toRemove: string[] = []
     for (const [personId, person] of this.persons) {
-      if (this.currentFrame - person.lastSeenFrame > this.maxMissedFrames) {
+      const missedFrames = this.currentFrame - person.lastSeenFrame
+      // 检测帧数少于 15 帧的人，只等 5 帧就移除（快速清理误检测）
+      // 检测帧数多的人，等 30 帧才移除（避免丢失真实用户）
+      const timeout = person.frameCount < 15 ? 5 : this.maxMissedFrames
+      if (missedFrames > timeout) {
         toRemove.push(personId)
       }
     }

@@ -1,9 +1,6 @@
 'use client'
 
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
-import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef, useState } from 'react'
-
 import {
   AlertTriangle,
   ArrowRight,
@@ -16,6 +13,9 @@ import {
   Video,
   X,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,7 @@ if (typeof window !== 'undefined') {
     originalError.apply(console, args)
   }
 }
+import type {GenerationOptions} from './GenerationOptionsDialog';
 import type { TrackedPerson } from './personTracker'
 import type { LannaSpirit } from './types'
 import { useDeleteRecord } from '@/hooks/useDeleteRecord'
@@ -44,6 +45,11 @@ import { useGenerateSpirit } from '@/hooks/useGenerateSpirit'
 import { useSpiritHistory } from '@/hooks/useSpiritHistory'
 import { useAuth } from '@/providers/AuthProvider'
 import { SPIRIT_INFO } from './facsAnalyzer'
+import {
+  GENERATION_STYLES,
+  
+  GenerationOptionsDialog
+} from './GenerationOptionsDialog'
 import { PersonTracker } from './personTracker'
 import { downloadImage, generateLannaPoster } from './posterGenerator'
 import { LANNA_SPIRITS } from './spiritData'
@@ -132,6 +138,13 @@ export function LannaMirror() {
   const [groupGenerating, setGroupGenerating] = useState(false)
   const [groupPersons, setGroupPersons] = useState<GroupGenerationPerson[]>([])
   const [groupPoster, setGroupPoster] = useState<string | null>(null)
+
+  // 生成选项对话框状态
+  const [optionsDialog, setOptionsDialog] = useState<{
+    open: boolean
+    person: TrackedPerson | null
+    isGroup: boolean
+  }>({ open: false, person: null, isGroup: false })
 
   // QR码弹窗状态
   const [qrModal, setQrModal] = useState<{
@@ -254,9 +267,9 @@ export function LannaMirror() {
         runningMode: 'VIDEO',
         numFaces: 4, // 支持最多 4 人同时检测
         outputFaceBlendshapes: true,
-        minFaceDetectionConfidence: 0.3, // 降低检测阈值，提高对遮挡情况的容忍度
-        minFacePresenceConfidence: 0.3, // 降低存在确认阈值
-        minTrackingConfidence: 0.3, // 降低追踪阈值，减少丢失
+        minFaceDetectionConfidence: 0.6, // 提高检测阈值，避免手臂等误识别
+        minFacePresenceConfidence: 0.5, // 适中的存在确认阈值
+        minTrackingConfidence: 0.4, // 追踪阈值稍低以保持稳定
       })
       faceLandmarkerRef.current = faceLandmarker
       persistentFaceLandmarker = faceLandmarker
@@ -307,9 +320,10 @@ export function LannaMirror() {
     if (faceLandmarker) {
       const faceResult = faceLandmarker.detectForVideo(video, now)
       faceLandmarksList = faceResult.faceLandmarks || []
+      const faceBlendshapesList = faceResult.faceBlendshapes || []
 
-      // 更新人员追踪器
-      persons = personTrackerRef.current.update(faceLandmarksList)
+      // 更新人员追踪器（传入 blendshapes 用于验证真实人脸）
+      persons = personTrackerRef.current.update(faceLandmarksList, faceBlendshapesList)
 
       // 节流检查（在 setState 外部进行，避免闭包问题）
       const shouldUpdate = now - lastSpiritUpdateRef.current >= 200
@@ -570,14 +584,39 @@ export function LannaMirror() {
   }, [matchedSpirit, capturedPhoto])
 
 
-  // 从 attract 状态直接生成某人的守护灵画像
-  const handleGenerateForPerson = useCallback(async (person: TrackedPerson) => {
+  // 打开生成选项对话框
+  const handleOpenOptionsDialog = useCallback((person: TrackedPerson) => {
+    setOptionsDialog({ open: true, person, isGroup: false })
+  }, [])
+
+  // 打开合像生成选项对话框
+  const handleOpenGroupOptionsDialog = useCallback(() => {
+    if (trackedPersons.length < 2) return
+    setOptionsDialog({ open: true, person: null, isGroup: true })
+  }, [trackedPersons.length])
+
+  // 确认生成选项后开始生成
+  const handleConfirmGeneration = useCallback(async (options: GenerationOptions) => {
+    setOptionsDialog({ open: false, person: null, isGroup: false })
+
+    if (optionsDialog.isGroup) {
+      // 合像生成
+      handleGenerateGroupPortraitWithOptions(options)
+    } else if (optionsDialog.person) {
+      // 单人生成
+      handleGenerateForPersonWithOptions(optionsDialog.person, options)
+    }
+  }, [optionsDialog])
+
+  // 从 attract 状态直接生成某人的守护灵画像（带选项）
+  const handleGenerateForPersonWithOptions = useCallback(async (person: TrackedPerson, options: GenerationOptions) => {
     const spirit = LANNA_SPIRITS.find(s => s.id === person.dominantSpirit)
     if (!spirit)
       return
 
     const photo = headThumbnails[person.id] || null
     const spiritInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
+    const styleConfig = GENERATION_STYLES.find(s => s.id === options.style)
 
     try {
       // Step 1: Create order first and get orderId
@@ -594,6 +633,7 @@ export function LannaMirror() {
           },
           userPhoto: photo,
           spiritScores: person.spiritScores,
+          generationOptions: options,
         }),
       })
 
@@ -603,24 +643,10 @@ export function LannaMirror() {
 
       const orderData = await orderRes.json()
 
-      // Step 2: Show QR code modal immediately
-      setQrModal({
-        show: true,
-        orderId: orderData.orderId,
-        orderUrl: orderData.orderUrl,
-        spiritName: spiritInfo?.name || spirit.name,
-        spiritEmoji: spiritInfo?.emoji || '🔮',
-        spiritId: spirit.id,
-        userPhoto: photo,
-        completed: false,
-        resultImage: null,
-      })
+      // Step 2: Open detail page in new tab immediately
+      window.open(`/spirit/${orderData.orderId}`, '_blank')
 
-      // Also update internal state for the old flow (preview at result page)
-      setMatchedSpirit(spirit)
-      setCapturedPhoto(photo)
-
-      // Step 3: Trigger generation in background (with orderId)
+      // Step 3: Trigger generation in background (with orderId and options)
       fetch('/api/generate-spirit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -636,33 +662,28 @@ export function LannaMirror() {
           userPhoto: photo,
           spiritScores: person.spiritScores,
           orderId: orderData.orderId,
+          generationOptions: {
+            style: options.style,
+            stylePromptModifier: styleConfig?.promptModifier,
+            aspectRatio: options.aspectRatio,
+          },
         }),
       })
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
             setGeneratedImage(data.image)
-            // Update QR modal to show completion
-            setQrModal(prev => ({
-              ...prev,
-              completed: true,
-              resultImage: data.image,
-            }))
           }
         })
         .catch(console.error)
     } catch (err) {
       console.error('Create order error:', err)
-      // Fallback to old flow without QR
-      setMatchedSpirit(spirit)
-      setCapturedPhoto(photo)
-      setState('generate')
-      setGenerateError(err instanceof Error ? err.message : 'Failed to start generation')
+      alert(err instanceof Error ? err.message : 'Failed to create order')
     }
   }, [headThumbnails])
 
-  // 生成合像（单次 API 调用，多人一起生成）
-  const handleGenerateGroupPortrait = useCallback(async () => {
+  // 生成合像（单次 API 调用，多人一起生成）- 带选项
+  const handleGenerateGroupPortraitWithOptions = useCallback(async (options: GenerationOptions) => {
     if (trackedPersons.length < 2) return
 
     // 准备所有人的数据
@@ -677,6 +698,8 @@ export function LannaMirror() {
         error: null,
       }
     })
+
+    const styleConfig = GENERATION_STYLES.find(s => s.id === options.style)
 
     const groupData = {
       persons: persons.map(p => ({
@@ -696,7 +719,7 @@ export function LannaMirror() {
       const orderRes = await fetch('/api/spirit/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ group: groupData }),
+        body: JSON.stringify({ group: groupData, generationOptions: options }),
       })
 
       if (!orderRes.ok) {
@@ -705,36 +728,26 @@ export function LannaMirror() {
 
       const orderData = await orderRes.json()
 
-      // Step 2: Show QR code modal immediately
-      const spiritNames = persons.map(p => {
-        const info = SPIRIT_INFO[p.spirit.id as keyof typeof SPIRIT_INFO]
-        return info?.name || p.spirit.name
-      }).join(' + ')
-
-      setQrModal({
-        show: true,
-        orderId: orderData.orderId,
-        orderUrl: orderData.orderUrl,
-        spiritName: spiritNames,
-        spiritEmoji: '👥',
-        spiritId: null,
-        userPhoto: persons[0]?.photo || null,
-        completed: false,
-        resultImage: null,
-      })
+      // Step 2: Open detail page in new tab immediately
+      window.open(`/spirit/${orderData.orderId}`, '_blank')
 
       // Also start the group generation modal for those staying at the mirror
       setGroupPersons(persons)
       setGroupGenerating(true)
       setGroupPoster(null)
 
-      // Step 3: Trigger generation in background (with orderId)
+      // Step 3: Trigger generation in background (with orderId and options)
       const response = await fetch('/api/generate-spirit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           group: groupData,
           orderId: orderData.orderId,
+          generationOptions: {
+            style: options.style,
+            stylePromptModifier: styleConfig?.promptModifier,
+            aspectRatio: options.aspectRatio,
+          },
         }),
       })
 
@@ -754,13 +767,6 @@ export function LannaMirror() {
 
       // 直接使用生成的合像作为海报
       setGroupPoster(data.image)
-
-      // Update QR modal to show completion
-      setQrModal(prev => ({
-        ...prev,
-        completed: true,
-        resultImage: data.image,
-      }))
     } catch (err) {
       console.error('Group generation error:', err)
       // 全部标记为错误
@@ -878,7 +884,7 @@ export function LannaMirror() {
 
       {/* 顶部历史记录横条 - 走马灯自动滚动 */}
       <div className="shrink-0 border-b border-[#D4AF37]/20 bg-black/95">
-        <div className="h-16 px-4 flex items-center">
+        <div className="h-20 px-4 flex items-center">
           {historyRecords.length > 0 ? (
             <div
               className="flex-1 h-full overflow-hidden relative group flex items-center"
@@ -922,7 +928,7 @@ export function LannaMirror() {
                       <img
                         src={record.generatedImage}
                         alt={record.spiritName || record.spiritId}
-                        className="w-12 h-12 object-cover rounded-lg border border-white/10 group-hover/item:border-[#D4AF37]/50 transition-colors"
+                        className="w-14 h-14 object-cover rounded-lg border border-white/10 group-hover/item:border-[#D4AF37]/50 transition-colors"
                       />
                       <div
                         className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-xs"
@@ -1027,7 +1033,7 @@ export function LannaMirror() {
                           <span className="text-white/70 text-sm flex-1 truncate">{spiritInfo?.name}</span>
                           {/* 生成按钮 */}
                           <Button
-                            onClick={() => handleGenerateForPerson(person)}
+                            onClick={() => handleOpenOptionsDialog(person)}
                             size="sm"
                             className="shrink-0"
                           >
@@ -1040,7 +1046,7 @@ export function LannaMirror() {
 
                     {/* 合像按钮 - 常驻显示，非多人时 disabled */}
                     <Button
-                      onClick={handleGenerateGroupPortrait}
+                      onClick={handleOpenGroupOptionsDialog}
                       disabled={groupGenerating || trackedPersons.length < 2}
                       className="w-full mt-2 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D] text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                     >
@@ -1604,6 +1610,17 @@ export function LannaMirror() {
           </div>
         </div>
       )}
+
+      {/* 生成选项对话框 */}
+      <GenerationOptionsDialog
+        open={optionsDialog.open}
+        onOpenChange={(open) => setOptionsDialog(prev => ({ ...prev, open }))}
+        onConfirm={handleConfirmGeneration}
+        personName={optionsDialog.person ? SPIRIT_INFO[optionsDialog.person.dominantSpirit as keyof typeof SPIRIT_INFO]?.name : undefined}
+        price={optionsDialog.isGroup ? trackedPersons.length * 20 : 20}
+        userPhoto={optionsDialog.person ? headThumbnails[optionsDialog.person.id] : undefined}
+        userPhotos={optionsDialog.isGroup ? trackedPersons.map(p => headThumbnails[p.id]).filter((p): p is string => !!p) : undefined}
+      />
     </div>
   )
 }
