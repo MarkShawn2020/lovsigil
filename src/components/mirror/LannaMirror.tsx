@@ -139,11 +139,13 @@ export function LannaMirror() {
   const [groupPersons, setGroupPersons] = useState<GroupGenerationPerson[]>([])
   const [groupPoster, setGroupPoster] = useState<string | null>(null)
 
-  // 生成选项对话框状态
+  // 生成选项对话框状态（包含捕获时刻的截图）
   const [optionsDialog, setOptionsDialog] = useState<{
     open: boolean
     person: TrackedPerson | null
     isGroup: boolean
+    capturedPhoto?: string  // 单人时捕获的截图
+    capturedPhotos?: string[]  // 合照时捕获的截图列表
   }>({ open: false, person: null, isGroup: false })
 
   // QR码弹窗状态
@@ -585,16 +587,20 @@ export function LannaMirror() {
   }, [matchedSpirit, capturedPhoto])
 
 
-  // 打开生成选项对话框
+  // 打开生成选项对话框（在此时捕获截图）
   const handleOpenOptionsDialog = useCallback((person: TrackedPerson) => {
-    setOptionsDialog({ open: true, person, isGroup: false })
-  }, [])
+    const capturedPhoto = headThumbnails[person.id]
+    setOptionsDialog({ open: true, person, isGroup: false, capturedPhoto })
+  }, [headThumbnails])
 
-  // 打开合像生成选项对话框
+  // 打开合像生成选项对话框（在此时捕获所有人的截图）
   const handleOpenGroupOptionsDialog = useCallback(() => {
     if (trackedPersons.length < 2) return
-    setOptionsDialog({ open: true, person: null, isGroup: true })
-  }, [trackedPersons.length])
+    const capturedPhotos = trackedPersons
+      .map(p => headThumbnails[p.id])
+      .filter((p): p is string => !!p)
+    setOptionsDialog({ open: true, person: null, isGroup: true, capturedPhotos })
+  }, [trackedPersons, headThumbnails])
 
   // 确认生成选项后开始生成
   const handleConfirmGeneration = useCallback(async (options: GenerationOptions) => {
@@ -1619,8 +1625,8 @@ export function LannaMirror() {
         onConfirm={handleConfirmGeneration}
         personName={optionsDialog.person ? SPIRIT_INFO[optionsDialog.person.dominantSpirit as keyof typeof SPIRIT_INFO]?.name : undefined}
         price={optionsDialog.isGroup ? trackedPersons.length * 20 : 20}
-        userPhoto={optionsDialog.person ? headThumbnails[optionsDialog.person.id] : undefined}
-        userPhotos={optionsDialog.isGroup ? trackedPersons.map(p => headThumbnails[p.id]).filter((p): p is string => !!p) : undefined}
+        userPhoto={optionsDialog.capturedPhoto}
+        userPhotos={optionsDialog.capturedPhotos}
       />
     </div>
   )
