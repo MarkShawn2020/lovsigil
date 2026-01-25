@@ -1,5 +1,13 @@
 # lanna-mirror-3
 
+## 0.6.2
+
+### Patch Changes
+
+- fix(mirror): 调整视口高度和历史记录栏尺寸
+  - h-screen → h-dvh 解决跨浏览器视口高度不一致
+  - 历史记录栏和缩略图尺寸增大
+
 ## 0.6.1
 
 ### Patch Changes
