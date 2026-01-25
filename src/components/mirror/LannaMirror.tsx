@@ -1021,7 +1021,7 @@ export function LannaMirror() {
                         >
                           {/* 头像 */}
                           <div
-                            className="w-10 h-10 rounded-full overflow-hidden border-2 shrink-0"
+                            className="w-20 h-20 rounded-full overflow-hidden border-2 shrink-0"
                             style={{
                               borderColor: spiritInfo?.color || '#D4AF37',
                               background: `radial-gradient(circle, ${spiritInfo?.color}40 0%, ${spiritInfo?.color}20 100%)`,
