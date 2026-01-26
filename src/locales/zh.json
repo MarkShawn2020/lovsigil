@@ -725,6 +725,15 @@
       }
     ]
   },
+  "Gallery": {
+    "title": "守护灵画廊",
+    "back": "返回",
+    "images": "张图片",
+    "loading": "加载画廊中...",
+    "loading_more": "加载更多...",
+    "empty": "暂无图片",
+    "end": "已加载全部图片"
+  },
   "Credits": {
     "meta_title": "积分 - 兰纳照妖镜",
     "meta_description": "管理您的积分余额、充值和交易记录",

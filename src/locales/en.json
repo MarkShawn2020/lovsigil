@@ -725,6 +725,15 @@
       }
     ]
   },
+  "Gallery": {
+    "title": "Spirit Gallery",
+    "back": "Back",
+    "images": "images",
+    "loading": "Loading gallery...",
+    "loading_more": "Loading more...",
+    "empty": "No images yet",
+    "end": "You've seen all images"
+  },
   "Credits": {
     "meta_title": "Credits - Lanna Spirit Mirror",
     "meta_description": "Manage your credits balance, recharge and transaction history",
