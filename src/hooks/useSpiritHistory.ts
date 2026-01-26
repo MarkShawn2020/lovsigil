@@ -2,7 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { spiritKeys } from '@/libs/queryKeys'
 
-export type HistoryRecord = {
+export type SpiritHistoryRecord = {
   id: number
   spiritId: string
   spiritName: string | null
@@ -12,10 +12,14 @@ export type HistoryRecord = {
   createdAt: string
   userId: string | null
   orderId: string | null
+  aspectRatio?: number // width/height, defaults to 0.75 (3:4)
 }
 
+/** @deprecated Use SpiritHistoryRecord instead */
+export type HistoryRecord = SpiritHistoryRecord
+
 type HistoryResponse = {
-  records: HistoryRecord[]
+  records: SpiritHistoryRecord[]
   hasMore: boolean
   total: number
 }

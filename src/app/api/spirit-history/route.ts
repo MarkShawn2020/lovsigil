@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     const { data: records, error } = await supabaseServer
       .from('spirit_generations')
-      .select('id, spirit_id, spirit_name, user_photo, generated_image, spirit_scores, created_at, user_id, order_id')
+      .select('id, spirit_id, spirit_name, user_photo, generated_image, spirit_scores, created_at, user_id, order_id, aspect_ratio')
       .eq('disabled', false)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
@@ -34,6 +34,7 @@ export async function GET(request: Request) {
       createdAt: r.created_at,
       userId: r.user_id,
       orderId: r.order_id,
+      aspectRatio: r.aspect_ratio ?? 0.75, // 默认 3:4 比例
     })) || []
 
     const hasMore = offset + formattedRecords.length < (count || 0)

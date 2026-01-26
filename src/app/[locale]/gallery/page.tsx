@@ -1,14 +1,129 @@
 'use client'
 
+import type { RenderComponentProps } from 'masonic'
 import { ArrowLeft, Grid, Loader2 } from 'lucide-react'
+import { Masonry } from 'masonic'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { SPIRIT_INFO } from '@/components/mirror/facsAnalyzer'
 import { Button } from '@/components/ui/button'
 import { useIsMobile } from '@/hooks/use-mobile'
+import type { SpiritHistoryRecord } from '@/hooks/useSpiritHistory'
 import { useSpiritHistory } from '@/hooks/useSpiritHistory'
+
+// Supabase Storage 图片变换
+function getOptimizedImageUrl(url: string, width: number): string {
+  if (!url || !url.includes('supabase.co/storage')) return url
+  const base = url.replace('/object/public/', '/render/image/public/')
+  // resize=contain 保持原始比例缩放
+  return `${base}?width=${width}&resize=contain`
+}
+
+// 全局缓存：使用 record.id 作为 key（绝对稳定）
+const loadedImagesCache = new Set<number>()
+
+function GalleryCard({ data: record, index }: RenderComponentProps<SpiritHistoryRecord>) {
+  const imgRef = useRef<HTMLImageElement>(null)
+  const isMobile = useIsMobile()
+  const info = SPIRIT_INFO[record.spiritId as keyof typeof SPIRIT_INFO]
+
+  // 图片 URL - 使用统一宽度避免 SSR/Hydration 不一致
+  const displayUrl = getOptimizedImageUrl(record.generatedImage, 280)
+
+  // 使用真实比例或默认 3:4
+  const aspectRatio = record.aspectRatio ?? 0.75
+
+  // 使用 record.id 作为缓存 key（绝对稳定）
+  const isFromCache = loadedImagesCache.has(record.id)
+  const [loaded, setLoaded] = useState(isFromCache)
+
+  // 双重保险：在 DOM 更新后立即检查浏览器图片缓存
+  useLayoutEffect(() => {
+    const img = imgRef.current
+    if (!loaded && img?.complete && img.naturalWidth > 0) {
+      loadedImagesCache.add(record.id)
+      setLoaded(true)
+    }
+  }, [loaded, record.id])
+
+  const handleImageLoad = useCallback(() => {
+    loadedImagesCache.add(record.id)
+    setLoaded(true)
+  }, [record.id])
+
+  const handleClick = useCallback(() => {
+    if (record.orderId) {
+      window.open(`/spirit/${record.orderId}`, '_blank')
+    }
+  }, [record.orderId])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if ((e.key === 'Enter' || e.key === ' ') && record.orderId) {
+      e.preventDefault()
+      window.open(`/spirit/${record.orderId}`, '_blank')
+    }
+  }, [record.orderId])
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      className="group cursor-pointer touch-manipulation"
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      {/* 固定比例容器 */}
+      <div
+        className="relative rounded-lg overflow-hidden bg-white/5 border border-white/10 active:border-[#D4AF37]/50 sm:hover:border-[#D4AF37]/50 transition-all duration-200"
+        style={{ aspectRatio }}
+      >
+        {/* 骨架屏 shimmer */}
+        {!loaded && (
+          <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/15 to-white/5 bg-[length:200%_100%] animate-shimmer" />
+        )}
+
+        {/* 图片 - 缓存的直接显示，新加载的用过渡动画 */}
+        <img
+          ref={imgRef}
+          src={displayUrl}
+          alt={record.spiritName || 'Generated'}
+          className={`absolute inset-0 w-full h-full object-cover sm:group-hover:scale-105 ${
+            loaded
+              ? 'opacity-100'
+              : 'opacity-0 transition-opacity duration-300'
+          }`}
+          loading={index < 10 ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchPriority={index < 4 ? 'high' : 'auto'}
+          onLoad={handleImageLoad}
+        />
+
+        {/* 信息覆盖层 */}
+        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200`}>
+          <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
+            {info && (
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span
+                  className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs text-white font-medium"
+                  style={{ backgroundColor: info.color }}
+                >
+                  {info.emoji} {isMobile ? '' : info.nameEn}
+                </span>
+              </div>
+            )}
+            {!isMobile && (
+              <p className="text-white/50 text-xs mt-1">
+                {new Date(record.createdAt).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function GalleryPage() {
   const t = useTranslations('Gallery')
@@ -21,33 +136,39 @@ export default function GalleryPage() {
     isLoading,
   } = useSpiritHistory()
 
-  const records = historyData?.records ?? []
+  const records = useMemo(() => historyData?.records ?? [], [historyData?.records])
   const loaderRef = useRef<HTMLDivElement>(null)
 
-  // Infinite scroll with IntersectionObserver
-  const handleObserver = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      const [entry] = entries
-      if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-        fetchNextPage()
-      }
-    },
-    [fetchNextPage, hasNextPage, isFetchingNextPage]
-  )
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(handleObserver, {
-      root: null,
-      rootMargin: '200px',
-      threshold: 0,
-    })
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current)
+  // 稳定的布局参数（首次确定后不变，避免 hydration 导致重新布局）
+  const layoutRef = useRef<{ columnWidth: number; columnGutter: number } | null>(null)
+  if (layoutRef.current === null && typeof window !== 'undefined') {
+    const mobile = window.innerWidth < 768
+    layoutRef.current = {
+      columnWidth: mobile ? 150 : 220,
+      columnGutter: mobile ? 8 : 12,
     }
+  }
+  const columnWidth = layoutRef.current?.columnWidth ?? 220
+  const columnGutter = layoutRef.current?.columnGutter ?? 12
 
+  // 无限滚动：IntersectionObserver
+  useEffect(() => {
+    const loader = loaderRef.current
+    if (!loader) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: '200px' }
+    )
+
+    observer.observe(loader)
     return () => observer.disconnect()
-  }, [handleObserver])
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   if (isLoading) {
     return (
@@ -62,7 +183,7 @@ export default function GalleryPage() {
 
   return (
     <div className="min-h-screen min-h-dvh bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
-      {/* Header - 移动端优化：更紧凑的布局 */}
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-sm border-b border-[#D4AF37]/20 safe-area-top">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <Link href="/" className="touch-manipulation">
@@ -76,83 +197,29 @@ export default function GalleryPage() {
             <h1 className="text-base sm:text-lg font-semibold">{t('title')}</h1>
           </div>
           <div className="text-white/40 text-xs sm:text-sm">
-            {historyData?.records.length ?? 0} {t('images')}
+            {records.length} {t('images')}
           </div>
         </div>
       </header>
 
-      {/* Masonry Grid - 移动端优化 */}
+      {/* Masonry Grid */}
       <main className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {records.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-white/40">{t('empty')}</p>
           </div>
         ) : (
-          <div
-            className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2 sm:gap-3"
-            style={{ columnFill: 'balance' }}
-          >
-            {records.map((record, index) => {
-              const info = SPIRIT_INFO[record.spiritId as keyof typeof SPIRIT_INFO]
-              return (
-                <div
-                  key={record.id}
-                  role="button"
-                  tabIndex={0}
-                  className="break-inside-avoid mb-2 sm:mb-3 group cursor-pointer touch-manipulation"
-                  style={{
-                    // 使用 content-visibility 优化长列表性能
-                    contentVisibility: index > 20 ? 'auto' : 'visible',
-                    containIntrinsicSize: index > 20 ? '0 200px' : undefined,
-                  }}
-                  onClick={() => {
-                    if (record.orderId) {
-                      window.open(`/spirit/${record.orderId}`, '_blank')
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if ((e.key === 'Enter' || e.key === ' ') && record.orderId) {
-                      e.preventDefault()
-                      window.open(`/spirit/${record.orderId}`, '_blank')
-                    }
-                  }}
-                >
-                  <div className="relative rounded-lg overflow-hidden bg-black/30 border border-white/10 active:border-[#D4AF37]/50 sm:hover:border-[#D4AF37]/50 transition-all duration-200">
-                    <img
-                      src={record.generatedImage}
-                      alt={record.spiritName || 'Generated'}
-                      className="w-full object-cover sm:group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    {/* 移动端：始终显示标签；桌面端：hover 显示 */}
-                    <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200`}>
-                      <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
-                        {info && (
-                          <div className="flex items-center gap-1.5 sm:gap-2">
-                            <span
-                              className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs text-white font-medium"
-                              style={{ backgroundColor: info.color }}
-                            >
-                              {info.emoji} {isMobile ? '' : info.nameEn}
-                            </span>
-                          </div>
-                        )}
-                        {!isMobile && (
-                          <p className="text-white/50 text-xs mt-1">
-                            {new Date(record.createdAt).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          <Masonry
+            items={records}
+            columnGutter={columnGutter}
+            columnWidth={columnWidth}
+            overscanBy={5}
+            itemKey={(item) => item.id}
+            render={GalleryCard}
+          />
         )}
 
-        {/* Infinite scroll trigger */}
+        {/* Loading indicator + infinite scroll trigger */}
         <div ref={loaderRef} className="py-6 sm:py-8 flex justify-center">
           {isFetchingNextPage && (
             <div className="flex items-center gap-2 text-white/60">
