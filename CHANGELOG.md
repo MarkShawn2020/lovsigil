@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.9.1
+
+### Patch Changes
+
+- 优化画廊页面显示与移动端体验
+
 ## 0.9.0
 
 ### Minor Changes
