@@ -11,14 +11,8 @@ const isDev = process.env.NODE_ENV === 'development';
 const baseConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  // Enable Lovinsp for Turbopack (Next.js >= 15.3.x) - dev only
-  ...(isDev && {
-    turbopack: {
-      rules: lovinspPlugin({ bundler: 'turbopack' }),
-    },
-  }),
   webpack: (config, { dev }) => {
-    // Add lovinsp only in development
+    // Add lovinsp only in development (for non-turbopack builds)
     if (dev) {
       config.plugins.push(lovinspPlugin({ bundler: 'webpack' }));
     }
@@ -28,6 +22,20 @@ const baseConfig: NextConfig = {
 
 // Initialize the Next-Intl plugin
 let configWithPlugins = createNextIntlPlugin('./src/libs/I18n.ts')(baseConfig);
+
+// Apply Lovinsp for Turbopack AFTER other plugins to prevent override
+if (isDev) {
+  configWithPlugins = {
+    ...configWithPlugins,
+    turbopack: {
+      ...configWithPlugins.turbopack,
+      rules: {
+        ...configWithPlugins.turbopack?.rules,
+        ...lovinspPlugin({ bundler: 'turbopack' }),
+      },
+    },
+  };
+}
 
 // Conditionally enable bundle analysis
 if (process.env.ANALYZE === 'true') {

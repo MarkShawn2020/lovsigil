@@ -2,6 +2,7 @@
 
 import type { ResetPasswordFormData } from '@/validations/AuthValidation';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -124,10 +125,9 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
           <button
             type="button"
             onClick={onBack}
-            className="text-sm text-gray-600 hover:text-gray-500 dark:text-gray-400"
+            className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-500 dark:text-gray-400"
           >
-            ←
-            {' '}
+            <ArrowLeft className="w-4 h-4" />
             {t('back_to_sign_in')}
           </button>
         </div>

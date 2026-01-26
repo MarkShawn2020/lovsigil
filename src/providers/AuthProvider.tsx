@@ -3,6 +3,7 @@
 import type { User } from '@supabase/supabase-js';
 import React, { createContext, use, useEffect, useReducer, useRef } from 'react';
 import { AuthClientService } from '@/libs/AuthClient';
+import { CreditsService, type UserCredits } from '@/libs/CreditsService';
 import { supabase } from '@/libs/Supabase';
 import { UserDataService } from '@/libs/UserDataService';
 
@@ -20,6 +21,7 @@ export type AppRole = 'admin' | 'user';
 
 export type AuthUser = {
   profile?: UserProfile;
+  credits?: UserCredits;
   isAdmin: boolean;
 } & User;
 
@@ -37,7 +39,10 @@ export type AuthContextType = {
   resetPassword: (email: string) => Promise<{ error?: string }>;
   updateProfile: (profile: Partial<UserProfile>) => Promise<{ error?: string }>;
   refreshUser: () => Promise<void>;
+  refreshCredits: () => Promise<void>;
+  spendCredits: (amount: number, description: string, referenceId?: string) => Promise<{ success: boolean; balance?: number; error?: string }>;
   isAdmin: boolean;
+  credits: number;
 } & AuthState;
 
 type AuthAction
@@ -170,11 +175,14 @@ async function fetchUserData(user: User): Promise<AuthUser> {
   // 即使 profile 获取失败，也返回基本用户信息
   // 这样用户至少能登录，只是没有完整 profile
   try {
-    const { profile, isAdmin } = await UserDataService.getUserData(user.id);
-    return { ...user, profile: profile || undefined, isAdmin };
+    const [{ profile, isAdmin }, credits] = await Promise.all([
+      UserDataService.getUserData(user.id),
+      CreditsService.getUserCredits(user.id),
+    ]);
+    return { ...user, profile: profile || undefined, credits: credits || undefined, isAdmin };
   } catch (error) {
     console.error('Error fetching user data:', error);
-    return { ...user, profile: undefined, isAdmin: false };
+    return { ...user, profile: undefined, credits: undefined, isAdmin: false };
   }
 }
 
@@ -383,6 +391,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'UPDATE_USER', payload: completeUser });
   };
 
+  const refreshCredits = async () => {
+    if (!state.user) return;
+    const credits = await CreditsService.getUserCredits(state.user.id);
+    if (credits) {
+      const updatedUser: AuthUser = { ...state.user, credits };
+      dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+    }
+  };
+
+  const spendCredits = async (amount: number, description: string, referenceId?: string) => {
+    if (!state.user) {
+      return { success: false, error: 'Not logged in' };
+    }
+    const result = await CreditsService.spendCredits(state.user.id, amount, description, referenceId);
+    if (result.success && result.balance !== undefined) {
+      // Update local state
+      const updatedCredits: UserCredits = {
+        ...state.user.credits!,
+        balance: result.balance,
+        totalSpent: (state.user.credits?.totalSpent || 0) + amount,
+        updatedAt: new Date(),
+      };
+      const updatedUser: AuthUser = { ...state.user, credits: updatedCredits };
+      dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+    }
+    return result;
+  };
+
   const value: AuthContextType = {
     ...state,
     signIn,
@@ -392,7 +428,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updateProfile,
     refreshUser,
+    refreshCredits,
+    spendCredits,
     isAdmin: state.user?.isAdmin ?? false,
+    credits: state.user?.credits?.balance ?? 0,
   };
 
   return (

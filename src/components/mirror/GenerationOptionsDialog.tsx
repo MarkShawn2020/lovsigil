@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Image as ImageIcon, Sparkles } from 'lucide-react'
+import { Check, Coins, Image as ImageIcon, LogIn, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/providers/AuthProvider'
 
 // Style definitions with preview images
 export const GENERATION_STYLES = [
@@ -70,9 +71,15 @@ interface GenerationOptionsDialogProps {
   onOpenChange: (open: boolean) => void
   onConfirm: (options: GenerationOptions) => void
   personName?: string
-  price?: number
+  personCount?: number
   userPhoto?: string
   userPhotos?: string[]
+}
+
+// 计算生成所需积分
+function calculateCredits(personCount: number): number {
+  // 单人 2 credits，合照 2 * n credits
+  return personCount <= 1 ? 2 : 2 * personCount
 }
 
 export function GenerationOptionsDialog({
@@ -80,13 +87,18 @@ export function GenerationOptionsDialog({
   onOpenChange,
   onConfirm,
   personName,
-  price = 20,
+  personCount = 1,
   userPhoto,
   userPhotos,
 }: GenerationOptionsDialogProps) {
   const t = useTranslations('LannaMirror')
+  const { user, credits, signInWithGoogle, loading: authLoading } = useAuth()
   const [selectedStyle, setSelectedStyle] = useState<GenerationStyle>('mural')
   const [selectedRatio, setSelectedRatio] = useState<AspectRatio>('1:1')
+
+  const requiredCredits = calculateCredits(personCount)
+  const hasEnoughCredits = credits >= requiredCredits
+  const isLoggedIn = !!user
 
   const handleConfirm = () => {
     onConfirm({
@@ -205,6 +217,41 @@ export function GenerationOptionsDialog({
           </div>
         </div>
 
+        {/* Credits Info / Login Prompt */}
+        <div className="border-t border-white/10 pt-3 mt-2">
+          {authLoading ? (
+            <div className="flex items-center justify-center py-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
+            </div>
+          ) : !isLoggedIn ? (
+            <div className="text-center space-y-2">
+              <p className="text-white/60 text-xs">{t('login_required')}</p>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => signInWithGoogle()}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+              >
+                <LogIn className="w-4 h-4 mr-1.5" />
+                {t('sign_in_to_generate')}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-1.5 text-white/60">
+                <Coins className="w-4 h-4 text-[#D4AF37]" />
+                <span>{t('your_credits')}: <span className="text-[#D4AF37] font-medium">{credits}</span></span>
+              </div>
+              <div className={cn(
+                'text-xs px-2 py-0.5 rounded',
+                hasEnoughCredits ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+              )}>
+                {t('cost')}: {requiredCredits}
+              </div>
+            </div>
+          )}
+        </div>
+
         <DialogFooter className="flex-row justify-end gap-2 pt-2">
           <Button
             type="button"
@@ -219,10 +266,20 @@ export function GenerationOptionsDialog({
             type="button"
             size="sm"
             onClick={handleConfirm}
-            className="bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D] text-white"
+            disabled={!isLoggedIn || !hasEnoughCredits}
+            className={cn(
+              "text-white",
+              isLoggedIn && hasEnoughCredits
+                ? "bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D]"
+                : "bg-white/20 cursor-not-allowed"
+            )}
           >
             <Sparkles className="w-4 h-4 mr-1" />
-            {t('generate_with_price', { price })}
+            {!isLoggedIn
+              ? t('login_first')
+              : !hasEnoughCredits
+                ? t('insufficient_credits')
+                : t('generate_with_credits', { credits: requiredCredits })}
           </Button>
         </DialogFooter>
       </DialogContent>

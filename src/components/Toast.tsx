@@ -1,5 +1,6 @@
 'use client';
 
+import { AlertTriangle, Check, Info, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 
@@ -49,16 +50,17 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
   };
 
   const getIcon = () => {
+    const iconClass = 'w-4 h-4';
     switch (toast.type) {
       case 'success':
-        return '✓';
+        return <Check className={iconClass} />;
       case 'error':
-        return '✕';
+        return <X className={iconClass} />;
       case 'warning':
-        return '⚠';
+        return <AlertTriangle className={iconClass} />;
       case 'info':
       default:
-        return 'ℹ';
+        return <Info className={iconClass} />;
     }
   };
 
@@ -94,10 +96,10 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
 
       <button
         onClick={() => onClose(toast.id)}
-        className="flex-shrink-0 ml-4 text-lg leading-none hover:opacity-70 transition-opacity"
+        className="flex-shrink-0 ml-4 hover:opacity-70 transition-opacity"
         aria-label={t('close')}
       >
-        ×
+        <X className="w-4 h-4" />
       </button>
     </div>
   );
