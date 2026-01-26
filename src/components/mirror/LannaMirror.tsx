@@ -1013,45 +1013,6 @@ export function LannaMirror() {
               </div>
             </div>
           ) : null}
-          {/* Gallery link - 始终显示，点击时释放 GPU 资源 */}
-          <Link
-            href="/gallery"
-            className="shrink-0 ml-3 px-3 py-2 rounded-lg bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 border border-[#D4AF37]/40 text-[#D4AF37] text-sm font-medium transition-colors flex items-center gap-1.5"
-            onClick={() => {
-              // 停止渲染循环
-              cancelAnimationFrame(animationRef.current)
-              // 释放 MediaPipe 模型以释放 GPU 资源
-              if (persistentSegmenter) {
-                persistentSegmenter.close?.()
-                persistentSegmenter = null
-                segmenterRef.current = null
-              }
-              if (persistentFaceLandmarker) {
-                persistentFaceLandmarker.close?.()
-                persistentFaceLandmarker = null
-                faceLandmarkerRef.current = null
-              }
-              if (persistentPoseLandmarker) {
-                persistentPoseLandmarker.close?.()
-                persistentPoseLandmarker = null
-                poseLandmarkerRef.current = null
-              }
-              // 停止摄像头
-              if (persistentStream) {
-                persistentStream.getTracks().forEach(track => track.stop())
-                persistentStream = null
-              }
-              // 释放 WebGL
-              if (persistentWebGLRenderer) {
-                persistentWebGLRenderer.dispose?.()
-                persistentWebGLRenderer = null
-                webglRendererRef.current = null
-              }
-            }}
-          >
-            <Palette className="w-4 h-4" />
-            Gallery
-          </Link>
         </div>
       </div>
 
@@ -1197,7 +1158,47 @@ export function LannaMirror() {
           </div>
           <div className="flex items-center justify-between">
             <p className="text-white/50 text-sm">{t('subtitle')}</p>
-            <LocaleSwitcher className="text-white" />
+            <div className="flex items-center gap-2">
+              <Link
+                href="/gallery"
+                className="flex items-center justify-center p-1.5 rounded-md hover:bg-[#D4AF37]/20 border border-transparent hover:border-[#D4AF37]/40 text-[#D4AF37] transition-colors"
+                onClick={() => {
+                  // 停止渲染循环
+                  cancelAnimationFrame(animationRef.current)
+                  // 释放 MediaPipe 模型以释放 GPU 资源
+                  if (persistentSegmenter) {
+                    persistentSegmenter.close?.()
+                    persistentSegmenter = null
+                    segmenterRef.current = null
+                  }
+                  if (persistentFaceLandmarker) {
+                    persistentFaceLandmarker.close?.()
+                    persistentFaceLandmarker = null
+                    faceLandmarkerRef.current = null
+                  }
+                  if (persistentPoseLandmarker) {
+                    persistentPoseLandmarker.close?.()
+                    persistentPoseLandmarker = null
+                    poseLandmarkerRef.current = null
+                  }
+                  // 停止摄像头
+                  if (persistentStream) {
+                    persistentStream.getTracks().forEach(track => track.stop())
+                    persistentStream = null
+                  }
+                  // 释放 WebGL
+                  if (persistentWebGLRenderer) {
+                    persistentWebGLRenderer.dispose?.()
+                    persistentWebGLRenderer = null
+                    webglRendererRef.current = null
+                  }
+                }}
+                title="Gallery"
+              >
+                <Palette className="w-4 h-4" />
+              </Link>
+              <LocaleSwitcher className="text-white" />
+            </div>
           </div>
         </div>
 
