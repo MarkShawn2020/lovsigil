@@ -1,5 +1,17 @@
 # lanna-mirror-3
 
+## 0.9.0
+
+### Minor Changes
+
+- 大幅优化移动端显示与性能
+  - 添加 viewport 配置和 iOS PWA 支持
+  - 移动端专属布局：全屏镜像 + 底部工具栏
+  - 降低移动端视频分辨率减少 GPU 负载
+  - Gallery 页面添加 content-visibility 优化
+  - 添加 safe-area 安全区域支持
+  - 优化移动端顶部状态栏视觉效果
+
 ## 0.8.0
 
 ### Minor Changes
