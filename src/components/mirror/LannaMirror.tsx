@@ -1005,9 +1005,7 @@ export function LannaMirror() {
                 }}
               >
                 {/* 复制两份实现无缝滚动 */}
-                {[...historyRecords, ...historyRecords].map((record, idx) => {
-                  const info = SPIRIT_INFO[record.spiritId as keyof typeof SPIRIT_INFO]
-                  return (
+                {[...historyRecords, ...historyRecords].map((record, idx) => (
                     <div
                       key={`${record.id}-${idx}`}
                       className="relative group/item cursor-pointer shrink-0"
@@ -1031,15 +1029,8 @@ export function LannaMirror() {
                         alt={record.spiritName || record.spiritId}
                         className="w-36 h-36 object-cover rounded-lg border border-white/10 group-hover/item:border-[#D4AF37]/50 transition-colors"
                       />
-                      <div
-                        className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-xs"
-                        style={{ color: info?.color || '#D4AF37' }}
-                      >
-                        {record.spiritId === 'group' ? <Users className="w-4 h-4" /> : info?.emoji}
-                      </div>
                     </div>
-                  )
-                })}
+                ))}
               </div>
             </div>
           ) : null}

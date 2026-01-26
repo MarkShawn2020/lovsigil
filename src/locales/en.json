@@ -87,7 +87,9 @@
     "cost": "Cost",
     "login_first": "Login first",
     "insufficient_credits": "Insufficient credits",
-    "generate_with_credits": "Generate ({credits} credits)"
+    "generate_with_credits": "Generate ({credits} credits)",
+    "view_detail": "View Details",
+    "make_same": "Make Same Style"
   },
   "Counter": {
     "meta_title": "Counter",
@@ -732,7 +734,10 @@
     "loading": "Loading gallery...",
     "loading_more": "Loading more...",
     "empty": "No images yet",
-    "end": "You've seen all images"
+    "end": "You've seen all images",
+    "view_detail": "View details",
+    "download": "Download",
+    "make_same": "Make same style"
   },
   "Credits": {
     "meta_title": "Credits - Lanna Spirit Mirror",

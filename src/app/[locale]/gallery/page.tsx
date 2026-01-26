@@ -1,14 +1,17 @@
 'use client'
 
 import type { RenderComponentProps } from 'masonic'
-import { ArrowLeft, Grid, Loader2 } from 'lucide-react'
+import { ArrowLeft, Download, Grid, Loader2, Sparkles } from 'lucide-react'
 import { Masonry } from 'masonic'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { SPIRIT_INFO } from '@/components/mirror/facsAnalyzer'
+import { downloadImage } from '@/components/mirror/posterGenerator'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useIsMobile } from '@/hooks/use-mobile'
 import type { SpiritHistoryRecord } from '@/hooks/useSpiritHistory'
 import { useSpiritHistory } from '@/hooks/useSpiritHistory'
@@ -24,7 +27,12 @@ function getOptimizedImageUrl(url: string, width: number): string {
 // 全局缓存：使用 record.id 作为 key（绝对稳定）
 const loadedImagesCache = new Set<number>()
 
-function GalleryCard({ data: record, index }: RenderComponentProps<SpiritHistoryRecord>) {
+// 扩展 props 类型以支持 onSelect 回调
+interface GalleryCardProps extends RenderComponentProps<SpiritHistoryRecord> {
+  onSelect?: (record: SpiritHistoryRecord) => void
+}
+
+function GalleryCard({ data: record, index, onSelect }: GalleryCardProps) {
   const imgRef = useRef<HTMLImageElement>(null)
   const isMobile = useIsMobile()
   const info = SPIRIT_INFO[record.spiritId as keyof typeof SPIRIT_INFO]
@@ -54,17 +62,15 @@ function GalleryCard({ data: record, index }: RenderComponentProps<SpiritHistory
   }, [record.id])
 
   const handleClick = useCallback(() => {
-    if (record.orderId) {
-      window.open(`/spirit/${record.orderId}`, '_blank')
-    }
-  }, [record.orderId])
+    onSelect?.(record)
+  }, [record, onSelect])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if ((e.key === 'Enter' || e.key === ' ') && record.orderId) {
+    if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      window.open(`/spirit/${record.orderId}`, '_blank')
+      onSelect?.(record)
     }
-  }, [record.orderId])
+  }, [record, onSelect])
 
   return (
     <div
@@ -128,6 +134,7 @@ function GalleryCard({ data: record, index }: RenderComponentProps<SpiritHistory
 export default function GalleryPage() {
   const t = useTranslations('Gallery')
   const isMobile = useIsMobile()
+  const router = useRouter()
   const {
     data: historyData,
     fetchNextPage,
@@ -138,6 +145,15 @@ export default function GalleryPage() {
 
   const records = useMemo(() => historyData?.records ?? [], [historyData?.records])
   const loaderRef = useRef<HTMLDivElement>(null)
+
+  // 悬浮窗状态
+  const [selectedRecord, setSelectedRecord] = useState<SpiritHistoryRecord | null>(null)
+
+  // 处理"我要做同款"
+  const handleMakeSame = useCallback((spiritId: string) => {
+    // 跳转到主页并传递 spiritId 参数
+    router.push(`/?spirit=${spiritId}`)
+  }, [router])
 
   // 稳定的布局参数（首次确定后不变，避免 hydration 导致重新布局）
   const layoutRef = useRef<{ columnWidth: number; columnGutter: number } | null>(null)
@@ -215,7 +231,7 @@ export default function GalleryPage() {
             columnWidth={columnWidth}
             overscanBy={5}
             itemKey={(item) => item.id}
-            render={GalleryCard}
+            render={(props) => <GalleryCard {...props} onSelect={setSelectedRecord} />}
           />
         )}
 
@@ -232,6 +248,90 @@ export default function GalleryPage() {
           )}
         </div>
       </main>
+
+      {/* 图片详情悬浮窗 */}
+      <Dialog open={!!selectedRecord} onOpenChange={(open) => !open && setSelectedRecord(null)}>
+        <DialogContent className="bg-[#1a1a2e] border-[#D4AF37]/30 p-0 max-w-lg sm:max-w-2xl overflow-hidden" showCloseButton={false}>
+          {selectedRecord && (() => {
+            const info = SPIRIT_INFO[selectedRecord.spiritId as keyof typeof SPIRIT_INFO]
+            return (
+              <div className="flex flex-col">
+                {/* 大图 */}
+                <div className="relative">
+                  <img
+                    src={selectedRecord.generatedImage}
+                    alt={selectedRecord.spiritName || 'Generated'}
+                    className="w-full max-h-[60vh] object-contain bg-black"
+                  />
+                  {/* 关闭按钮 */}
+                  <button
+                    onClick={() => setSelectedRecord(null)}
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-white/80 hover:text-white transition-colors"
+                  >
+                    <span className="text-xl leading-none">&times;</span>
+                  </button>
+                  {/* 守护灵标签 */}
+                  {info && (
+                    <div
+                      className="absolute bottom-3 left-3 px-3 py-1.5 rounded-full backdrop-blur-sm"
+                      style={{ backgroundColor: `${info.color}CC` }}
+                    >
+                      <span className="text-white font-medium text-sm">
+                        {info.emoji} {info.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 信息和操作 */}
+                <div className="p-4 space-y-4">
+                  {/* 日期和详情链接 */}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/50">
+                      {new Date(selectedRecord.createdAt).toLocaleString()}
+                    </span>
+                    {selectedRecord.orderId && (
+                      <Link
+                        href={`/spirit/${selectedRecord.orderId}`}
+                        className="text-[#D4AF37] hover:underline"
+                        target="_blank"
+                      >
+                        {t('view_detail')}
+                      </Link>
+                    )}
+                  </div>
+
+                  {/* 操作按钮 */}
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => downloadImage(
+                        selectedRecord.generatedImage,
+                        `lanna-spirit-${selectedRecord.spiritId}-${Date.now()}.png`
+                      )}
+                      variant="outline"
+                      className="flex-1 border-white/30 text-white hover:bg-white/10"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      {t('download')}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setSelectedRecord(null)
+                        handleMakeSame(selectedRecord.spiritId)
+                      }}
+                      className="flex-1 text-white font-medium"
+                      style={{ backgroundColor: info?.color || '#D4AF37' }}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {t('make_same')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

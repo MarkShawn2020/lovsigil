@@ -106,6 +106,12 @@ export async function POST(request: Request) {
       // 上传生成的图片到 Storage
       const imageUrl = await uploadImageToStorage(generatedImageBase64, spirit.id)
 
+      // 构建 metadata 存储生成选项
+      const metadata = {
+        style: generationOptions?.style,
+        aspectRatio: generationOptions?.aspectRatio,
+      }
+
       if (orderId) {
         // Update existing order with result
         await supabaseServer
@@ -114,6 +120,7 @@ export async function POST(request: Request) {
             generated_image: imageUrl,
             prompt,
             status: 'completed',
+            metadata,
           })
           .eq('order_id', orderId)
       } else {
@@ -128,6 +135,7 @@ export async function POST(request: Request) {
           spirit_scores: spiritScores || null,
           user_id: user?.id || null,
           status: 'completed',
+          metadata,
         })
       }
 
@@ -172,7 +180,7 @@ async function handleGroupGeneration(group: {
       traits: string[]
     }
   }>
-}, orderId?: string, generationOptions?: { stylePromptModifier?: string; aspectRatio?: string }) {
+}, orderId?: string, generationOptions?: { style?: string; stylePromptModifier?: string; aspectRatio?: string }) {
   const { persons } = group
 
   // If orderId provided, update existing order status to 'generating'
@@ -209,6 +217,12 @@ async function handleGroupGeneration(group: {
     // 上传到 Storage（使用 "group" 作为目录）
     const imageUrl = await uploadImageToStorage(generatedImageBase64, 'group')
 
+    // 构建 metadata 存储生成选项
+    const metadata = {
+      style: generationOptions?.style,
+      aspectRatio: generationOptions?.aspectRatio,
+    }
+
     if (orderId) {
       // Update existing order with result
       await supabaseServer
@@ -217,6 +231,7 @@ async function handleGroupGeneration(group: {
           generated_image: imageUrl,
           prompt,
           status: 'completed',
+          metadata,
         })
         .eq('order_id', orderId)
     } else {
@@ -231,6 +246,7 @@ async function handleGroupGeneration(group: {
         spirit_scores: null,
         user_id: user?.id || null,
         status: 'completed',
+        metadata,
       })
     }
 

@@ -2,7 +2,7 @@
 
 import { Check, Coins, Image as ImageIcon, LogIn, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -74,6 +74,8 @@ interface GenerationOptionsDialogProps {
   personCount?: number
   userPhoto?: string
   userPhotos?: string[]
+  defaultStyle?: GenerationStyle
+  defaultRatio?: AspectRatio
 }
 
 // 计算生成所需积分
@@ -90,11 +92,21 @@ export function GenerationOptionsDialog({
   personCount = 1,
   userPhoto,
   userPhotos,
+  defaultStyle = 'mural',
+  defaultRatio = '1:1',
 }: GenerationOptionsDialogProps) {
   const t = useTranslations('LannaMirror')
   const { user, credits, signInWithGoogle, loading: authLoading } = useAuth()
-  const [selectedStyle, setSelectedStyle] = useState<GenerationStyle>('mural')
-  const [selectedRatio, setSelectedRatio] = useState<AspectRatio>('1:1')
+  const [selectedStyle, setSelectedStyle] = useState<GenerationStyle>(defaultStyle)
+  const [selectedRatio, setSelectedRatio] = useState<AspectRatio>(defaultRatio)
+
+  // 当对话框打开或默认值变化时，重置为默认值
+  useEffect(() => {
+    if (open) {
+      setSelectedStyle(defaultStyle)
+      setSelectedRatio(defaultRatio)
+    }
+  }, [open, defaultStyle, defaultRatio])
 
   const requiredCredits = calculateCredits(personCount)
   const hasEnoughCredits = credits >= requiredCredits

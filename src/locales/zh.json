@@ -87,7 +87,9 @@
     "cost": "消耗",
     "login_first": "请先登录",
     "insufficient_credits": "积分不足",
-    "generate_with_credits": "生成 ({credits} 积分)"
+    "generate_with_credits": "生成 ({credits} 积分)",
+    "view_detail": "查看详情",
+    "make_same": "我要做同款"
   },
   "Counter": {
     "meta_title": "计数器",
@@ -732,7 +734,10 @@
     "loading": "加载画廊中...",
     "loading_more": "加载更多...",
     "empty": "暂无图片",
-    "end": "已加载全部图片"
+    "end": "已加载全部图片",
+    "view_detail": "查看详情",
+    "download": "下载",
+    "make_same": "我要做同款"
   },
   "Credits": {
     "meta_title": "积分 - 兰纳照妖镜",
