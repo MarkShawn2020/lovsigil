@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.9.2
+
+### Patch Changes
+
+- feat: enhance gallery page and UI improvements
+
 ## 0.9.1
 
 ### Patch Changes
