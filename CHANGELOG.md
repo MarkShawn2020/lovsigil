@@ -1,5 +1,11 @@
 # lanna-mirror-3
 
+## 0.7.1
+
+### Patch Changes
+
+- 修复 TypeScript 数组索引类型检查错误
+
 ## 0.7.0
 
 ### Minor Changes
