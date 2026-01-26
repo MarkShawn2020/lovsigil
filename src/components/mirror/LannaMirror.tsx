@@ -20,7 +20,7 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { Badge } from '@/components/ui/badge'
@@ -132,25 +132,18 @@ export function LannaMirror() {
   // Mutations
   const generateMutation = useGenerateSpirit()
   const queryClient = useQueryClient()
-  const voteMutation = useMutation({
-    mutationFn: async ({ id, vote }: { id: number; vote: 'like' | 'dislike' }) => {
-      const res = await fetch('/api/spirit-vote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, vote }),
-      })
-      if (!res.ok) throw new Error('Vote failed')
-      return { id, vote }
-    },
-    onSuccess: ({ vote }) => {
-      setPreviewRecord(prev => prev ? {
-        ...prev,
-        likes: (prev.likes ?? 0) + (vote === 'like' ? 1 : 0),
-        dislikes: (prev.dislikes ?? 0) + (vote === 'dislike' ? 1 : 0),
-      } : null)
-      queryClient.invalidateQueries({ queryKey: spiritKeys.history() })
-    },
-  })
+
+  // Get or create visitor ID for voting
+  const getVisitorId = useCallback(() => {
+    if (typeof window === 'undefined') return ''
+    let id = localStorage.getItem('lanna-visitor-id')
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem('lanna-visitor-id', id)
+    }
+    return id
+  }, [])
+
   const [previewRecord, setPreviewRecord] = useState<{
     id: number
     generatedImage: string
@@ -160,10 +153,57 @@ export function LannaMirror() {
     orderId?: string | null
     style?: string
     ratio?: string
-    likes?: number
-    dislikes?: number
+    votes?: number
+    userVote?: number | null // 1 = liked, -1 = disliked, null = no vote
   } | null>(null)
   const [showRawVideoInput, setShowRawVideoInput] = useState(false)
+
+  // Fetch user's vote status when preview record changes
+  useEffect(() => {
+    if (!previewRecord || previewRecord.id <= 0) return
+    const visitorId = getVisitorId()
+    if (!visitorId) return
+
+    fetch(`/api/spirit-vote?id=${previewRecord.id}&visitorId=${visitorId}`)
+      .then(res => res.json())
+      .then(data => {
+        setPreviewRecord(prev => prev?.id === previewRecord.id ? { ...prev, userVote: data.userVote } : prev)
+      })
+      .catch(console.error)
+  }, [previewRecord?.id, getVisitorId])
+
+  // Vote handler with instant optimistic update
+  const handleVote = useCallback((vote: 'like' | 'dislike') => {
+    const id = previewRecord?.id
+    if (!id) return
+
+    setPreviewRecord(prev => {
+      if (!prev) return prev
+      const voteValue = vote === 'like' ? 1 : -1
+      let newVotes = prev.votes ?? 0
+      let newUserVote: number | null = voteValue
+
+      if (prev.userVote === voteValue) {
+        newVotes -= voteValue
+        newUserVote = null
+      } else if (prev.userVote !== null) {
+        newVotes += voteValue * 2
+      } else {
+        newVotes += voteValue
+      }
+      return { ...prev, votes: newVotes, userVote: newUserVote }
+    })
+
+    // Fire and forget API call
+    const visitorId = getVisitorId()
+    fetch('/api/spirit-vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, vote, visitorId }),
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: spiritKeys.history() })
+    }).catch(console.error)
+  }, [getVisitorId, previewRecord?.id, queryClient])
 
   // 合像相关状态
   const [groupGenerating, setGroupGenerating] = useState(false)
@@ -981,8 +1021,8 @@ export function LannaMirror() {
                           orderId: record.orderId,
                           style: record.style,
                           ratio: record.ratio,
-                          likes: record.likes,
-                          dislikes: record.dislikes,
+                          votes: record.votes,
+                          userVote: null, // Will be fetched when needed
                         })
                       }}
                     >
@@ -1776,23 +1816,33 @@ export function LannaMirror() {
               onClick={e => e.stopPropagation()}
             />
 
-            {/* 点赞/点踩按钮 */}
-            <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
+            {/* 投票按钮 */}
+            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
               <button
-                onClick={() => voteMutation.mutate({ id: previewRecord.id, vote: 'like' })}
-                disabled={voteMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-green-500/30 text-white transition-colors disabled:opacity-50"
+                onClick={() => handleVote('like')}
+                className={`p-2 rounded-full transition-colors ${
+                  previewRecord.userVote === 1
+                    ? 'bg-green-500/50 text-green-300'
+                    : 'bg-white/10 hover:bg-green-500/30 text-white'
+                }`}
               >
                 <ThumbsUp className="w-5 h-5" />
-                <span className="text-sm font-medium">{previewRecord.likes ?? 0}</span>
               </button>
+              <span className={`min-w-[3rem] text-center text-lg font-bold ${
+                (previewRecord.votes ?? 0) > 0 ? 'text-green-400' :
+                (previewRecord.votes ?? 0) < 0 ? 'text-red-400' : 'text-white/60'
+              }`}>
+                {(previewRecord.votes ?? 0) > 0 ? '+' : ''}{previewRecord.votes ?? 0}
+              </span>
               <button
-                onClick={() => voteMutation.mutate({ id: previewRecord.id, vote: 'dislike' })}
-                disabled={voteMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-red-500/30 text-white transition-colors disabled:opacity-50"
+                onClick={() => handleVote('dislike')}
+                className={`p-2 rounded-full transition-colors ${
+                  previewRecord.userVote === -1
+                    ? 'bg-red-500/50 text-red-300'
+                    : 'bg-white/10 hover:bg-red-500/30 text-white'
+                }`}
               >
                 <ThumbsDown className="w-5 h-5" />
-                <span className="text-sm font-medium">{previewRecord.dislikes ?? 0}</span>
               </button>
             </div>
 
@@ -1846,6 +1896,13 @@ export function LannaMirror() {
               </div>
             )}
 
+            {/* 关闭按钮 */}
+            <button
+              className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
+              onClick={() => setPreviewRecord(null)}
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}

@@ -13,6 +13,9 @@ export type SpiritHistoryRecord = {
   userId: string | null
   orderId: string | null
   aspectRatio?: number // width/height, defaults to 0.75 (3:4)
+  style?: string // 生成时的风格 (mural, cute, mysterious, modern)
+  ratio?: string // 生成时的比例 (1:1, 3:4, 4:3, 9:16, 16:9)
+  votes: number // 净票数 (likes - dislikes)
 }
 
 /** @deprecated Use SpiritHistoryRecord instead */
