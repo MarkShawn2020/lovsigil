@@ -10,6 +10,8 @@ import {
   LogOut,
   Palette,
   Sparkles,
+  ThumbsDown,
+  ThumbsUp,
   Users,
   Video,
   X,
@@ -18,6 +20,7 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { Badge } from '@/components/ui/badge'
@@ -43,18 +46,19 @@ if (typeof window !== 'undefined') {
 import type {GenerationOptions} from './GenerationOptionsDialog';
 import type { TrackedPerson } from './personTracker'
 import type { LannaSpirit } from './types'
-import { useDeleteRecord } from '@/hooks/useDeleteRecord'
 import { useGenerateSpirit } from '@/hooks/useGenerateSpirit'
 import { useSpiritHistory } from '@/hooks/useSpiritHistory'
+import { spiritKeys } from '@/libs/queryKeys'
 import { useAuth } from '@/providers/AuthProvider'
 import { SPIRIT_INFO } from './facsAnalyzer'
 import {
   GENERATION_STYLES,
-  
-  GenerationOptionsDialog
+  GenerationOptionsDialog,
+  type GenerationStyle,
+  type AspectRatio,
 } from './GenerationOptionsDialog'
 import { PersonTracker } from './personTracker'
-import { downloadImage, generateLannaPoster } from './posterGenerator'
+import { downloadImage } from './posterGenerator'
 import { LANNA_SPIRITS } from './spiritData'
 import { hexToNormalizedRgb, WebGLRenderer } from './webglRenderer'
 
@@ -127,16 +131,38 @@ export function LannaMirror() {
 
   // Mutations
   const generateMutation = useGenerateSpirit()
-  const deleteMutation = useDeleteRecord()
+  const queryClient = useQueryClient()
+  const voteMutation = useMutation({
+    mutationFn: async ({ id, vote }: { id: number; vote: 'like' | 'dislike' }) => {
+      const res = await fetch('/api/spirit-vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, vote }),
+      })
+      if (!res.ok) throw new Error('Vote failed')
+      return { id, vote }
+    },
+    onSuccess: ({ vote }) => {
+      setPreviewRecord(prev => prev ? {
+        ...prev,
+        likes: (prev.likes ?? 0) + (vote === 'like' ? 1 : 0),
+        dislikes: (prev.dislikes ?? 0) + (vote === 'dislike' ? 1 : 0),
+      } : null)
+      queryClient.invalidateQueries({ queryKey: spiritKeys.history() })
+    },
+  })
   const [previewRecord, setPreviewRecord] = useState<{
     id: number
     generatedImage: string
     userPhoto: string | null
     spiritId: string
     userId: string | null
+    orderId?: string | null
+    style?: string
+    ratio?: string
+    likes?: number
+    dislikes?: number
   } | null>(null)
-  const [previewPoster, setPreviewPoster] = useState<string | null>(null)
-  const [includeOriginalInPoster, setIncludeOriginalInPoster] = useState(false)
   const [showRawVideoInput, setShowRawVideoInput] = useState(false)
 
   // 合像相关状态
@@ -151,6 +177,8 @@ export function LannaMirror() {
     isGroup: boolean
     capturedPhoto?: string  // 单人时捕获的截图
     capturedPhotos?: string[]  // 合照时捕获的截图列表
+    defaultStyle?: string  // 默认风格（制作同款时使用）
+    defaultRatio?: string  // 默认比例（制作同款时使用）
   }>({ open: false, person: null, isGroup: false })
 
   // QR码弹窗状态
@@ -165,22 +193,6 @@ export function LannaMirror() {
     completed: boolean
     resultImage: string | null
   }>({ show: false, orderId: null, orderUrl: null, spiritName: null, spiritEmoji: null, spiritId: null, userPhoto: null, completed: false, resultImage: null })
-
-  // 预览时自动生成海报（根据模式生成不同版本）
-  useEffect(() => {
-    if (!previewRecord?.generatedImage) {
-      setPreviewPoster(null)
-      return
-    }
-    generateLannaPoster({
-      originalImage: previewRecord.userPhoto || '',
-      generatedImage: previewRecord.generatedImage,
-      spiritId: previewRecord.spiritId,
-      includeOriginal: includeOriginalInPoster && !!previewRecord.userPhoto,
-    })
-      .then(setPreviewPoster)
-      .catch(console.error)
-  }, [previewRecord, includeOriginalInPoster])
 
   // 初始化摄像头 - 移动端使用较低分辨率以提升性能
   const initCamera = useCallback(async () => {
@@ -871,29 +883,6 @@ export function LannaMirror() {
     document.body.removeChild(link)
   }, [generatedImage, matchedSpirit])
 
-  // 删除历史记录
-  const handleDeleteRecord = useCallback((recordId: number) => {
-    deleteMutation.mutate(recordId, {
-      onSuccess: () => {
-        setPreviewRecord(null)
-      },
-      onError: (err) => {
-        console.error('Delete error:', err)
-        alert(err instanceof Error ? err.message : '删除失败')
-      },
-    })
-  }, [deleteMutation])
-
-  const isDeleting = deleteMutation.isPending
-
-  // 检查是否可以删除（管理员或所有者，且是已保存的记录）
-  const canDelete = useCallback((record: { id: number; userId: string | null }) => {
-    if (record.id <= 0) return false // 新生成的未保存记录不可删除
-    if (isAdmin) return true
-    if (user && record.userId === user.id) return true
-    return false
-  }, [isAdmin, user])
-
   // 标记组件已挂载（避免 ResizablePanel 宽度闪烁）
   useEffect(() => {
     setMounted(true)
@@ -983,17 +972,18 @@ export function LannaMirror() {
                       key={`${record.id}-${idx}`}
                       className="relative group/item cursor-pointer shrink-0"
                       onClick={() => {
-                        if (record.orderId) {
-                          window.open(`/spirit/${record.orderId}`, '_blank')
-                        } else {
-                          setPreviewRecord({
-                            id: record.id,
-                            generatedImage: record.generatedImage,
-                            userPhoto: record.userPhoto,
-                            spiritId: record.spiritId,
-                            userId: record.userId,
-                          })
-                        }
+                        setPreviewRecord({
+                          id: record.id,
+                          generatedImage: record.generatedImage,
+                          userPhoto: record.userPhoto,
+                          spiritId: record.spiritId,
+                          userId: record.userId,
+                          orderId: record.orderId,
+                          style: record.style,
+                          ratio: record.ratio,
+                          likes: record.likes,
+                          dislikes: record.dislikes,
+                        })
                       }}
                     >
                       <img
@@ -1777,65 +1767,85 @@ export function LannaMirror() {
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setPreviewRecord(null)}
         >
-          <div className="relative flex flex-col items-center gap-4" onClick={e => e.stopPropagation()}>
-            {/* 海报展示 */}
-            {previewPoster ? (
-              <img
-                src={previewPoster}
-                alt="Lanna Spirit Poster"
-                className="max-h-[80vh] object-contain rounded-lg shadow-2xl"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent" />
-                <p className="text-white/60 text-sm">{t('generating_poster')}</p>
-              </div>
-            )}
+          <div className="relative flex flex-col items-center gap-4">
+            {/* 生成效果图 */}
+            <img
+              src={previewRecord.generatedImage}
+              alt="Generated Spirit"
+              className="max-h-[70vh] object-contain rounded-lg shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            />
+
+            {/* 点赞/点踩按钮 */}
+            <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => voteMutation.mutate({ id: previewRecord.id, vote: 'like' })}
+                disabled={voteMutation.isPending}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-green-500/30 text-white transition-colors disabled:opacity-50"
+              >
+                <ThumbsUp className="w-5 h-5" />
+                <span className="text-sm font-medium">{previewRecord.likes ?? 0}</span>
+              </button>
+              <button
+                onClick={() => voteMutation.mutate({ id: previewRecord.id, vote: 'dislike' })}
+                disabled={voteMutation.isPending}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-red-500/30 text-white transition-colors disabled:opacity-50"
+              >
+                <ThumbsDown className="w-5 h-5" />
+                <span className="text-sm font-medium">{previewRecord.dislikes ?? 0}</span>
+              </button>
+            </div>
 
             {/* 操作按钮 */}
-            {previewPoster && (
-              <div className="flex gap-3 p-3 bg-black/50 rounded-xl backdrop-blur-sm">
-                {previewRecord.userPhoto && (
+            {previewRecord.generatedImage && (
+              <div className="flex flex-wrap justify-center gap-3 p-3 bg-black/50 rounded-xl backdrop-blur-sm">
+                <Button
+                  onClick={() => {
+                    const defaultStyle = previewRecord.style
+                    const defaultRatio = previewRecord.ratio
+                    setPreviewRecord(null)
+                    // 如果有检测到人，直接打开生成选项对话框（带默认值）
+                    if (trackedPersons.length === 1) {
+                      const capturedPhoto = headThumbnails[trackedPersons[0]!.id]
+                      setOptionsDialog({
+                        open: true,
+                        person: trackedPersons[0]!,
+                        isGroup: false,
+                        capturedPhoto,
+                        defaultStyle,
+                        defaultRatio,
+                      })
+                    } else if (trackedPersons.length > 1) {
+                      const capturedPhotos = trackedPersons
+                        .map(p => headThumbnails[p.id])
+                        .filter((p): p is string => !!p)
+                      setOptionsDialog({
+                        open: true,
+                        person: null,
+                        isGroup: true,
+                        capturedPhotos,
+                        defaultStyle,
+                        defaultRatio,
+                      })
+                    }
+                    // 如果没有人，关闭悬浮窗后用户会看到"Step closer..."提示
+                  }}
+                  className="bg-gradient-to-r from-[#D4AF37] to-[#CC785C] text-white font-medium hover:brightness-110"
+                >
+                  <Sparkles className="w-4 h-4 mr-1.5" />
+                  {t('make_same')}
+                </Button>
+                {previewRecord.orderId && (
                   <Button
-                    onClick={() => setIncludeOriginalInPoster(!includeOriginalInPoster)}
+                    onClick={() => window.open(`/spirit/${previewRecord.orderId}`, '_blank')}
                     className="bg-white/20 text-white border border-white/30 hover:bg-white/30"
                   >
-                    {includeOriginalInPoster ? t('spirit_only') : t('with_original')}
-                  </Button>
-                )}
-                <Button
-                  onClick={() => downloadImage(
-                    previewPoster,
-                    `lanna-spirit-poster-${includeOriginalInPoster ? 'compare' : 'spirit'}-${previewRecord.spiritId}-${Date.now()}.png`
-                  )}
-                  className="text-white font-medium"
-                  style={{
-                    backgroundColor: SPIRIT_INFO[previewRecord.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37',
-                  }}
-                >
-                  <Download className="w-4 h-4 mr-1.5" />
-                  {t('download')}
-                </Button>
-                {canDelete(previewRecord) && (
-                  <Button
-                    onClick={() => handleDeleteRecord(previewRecord.id)}
-                    disabled={isDeleting}
-                    className="bg-red-600/80 text-white hover:bg-red-600"
-                  >
-                    <X className="w-4 h-4 mr-1.5" />
-                    {isDeleting ? t('deleting') : t('delete')}
+                    {t('view_detail')}
                   </Button>
                 )}
               </div>
             )}
 
-            {/* 关闭按钮 */}
-            <button
-              className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
-              onClick={() => setPreviewRecord(null)}
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
         </div>
       )}
@@ -1849,6 +1859,8 @@ export function LannaMirror() {
         personCount={optionsDialog.isGroup ? trackedPersons.length : 1}
         userPhoto={optionsDialog.capturedPhoto}
         userPhotos={optionsDialog.capturedPhotos}
+        defaultStyle={optionsDialog.defaultStyle as GenerationStyle | undefined}
+        defaultRatio={optionsDialog.defaultRatio as AspectRatio | undefined}
       />
     </div>
   )
