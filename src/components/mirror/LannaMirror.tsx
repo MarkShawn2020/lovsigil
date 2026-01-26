@@ -449,7 +449,7 @@ export function LannaMirror() {
             for (let y = morphRadius; y < height - morphRadius; y++) {
               for (let x = morphRadius; x < width - morphRadius; x++) {
                 const idx = y * width + x
-                if (tempMask[idx] > 0) {
+                if (tempMask[idx]! > 0) {
                   for (let dy = -morphRadius; dy <= morphRadius; dy++) {
                     for (let dx = -morphRadius; dx <= morphRadius; dx++) {
                       cleanMask[(y + dy) * width + (x + dx)] = 1
@@ -467,7 +467,7 @@ export function LannaMirror() {
             for (let y = lineWidth; y < height - lineWidth; y++) {
               for (let x = lineWidth; x < width - lineWidth; x++) {
                 const idx = y * width + x
-                const current = cleanMask[idx]
+                const current = cleanMask[idx]!
 
                 // 检测边缘：当前是人物，检查更大范围的邻居
                 if (current > 0) {
