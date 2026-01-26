@@ -80,7 +80,14 @@
     "style_modern": "现代数字",
     "style_modern_desc": "当代艺术风格",
     "cancel": "取消",
-    "generate_with_price": "生成 ฿{price}"
+    "generate_with_price": "生成 ฿{price}",
+    "login_required": "需要登录才能使用 AI 服务",
+    "sign_in_to_generate": "登录以生成",
+    "your_credits": "积分",
+    "cost": "消耗",
+    "login_first": "请先登录",
+    "insufficient_credits": "积分不足",
+    "generate_with_credits": "生成 ({credits} 积分)"
   },
   "Counter": {
     "meta_title": "计数器",
@@ -717,5 +724,37 @@
         "answer": "绝对安全。我们采用企业级安全措施，包括静态和传输加密、定期安全审计，并遵守 GDPR 等隐私法规。"
       }
     ]
+  },
+  "Credits": {
+    "meta_title": "积分 - 兰纳照妖镜",
+    "meta_description": "管理您的积分余额、充值和交易记录",
+    "title": "我的积分",
+    "login_required": "请先登录",
+    "back_home": "返回首页",
+    "tab_overview": "总览",
+    "tab_recharge": "充值",
+    "tab_history": "记录",
+    "current_balance": "当前余额",
+    "credits_unit": "积分",
+    "total_purchased": "累计购买",
+    "total_bonus": "累计赠送",
+    "total_spent": "累计消耗",
+    "need_more": "需要更多积分?",
+    "need_more_desc": "购买积分包，解锁更多生成次数",
+    "recharge_now": "立即充值",
+    "no_packages": "暂无可用套餐",
+    "no_transactions": "暂无交易记录",
+    "popular": "热门",
+    "bonus": "赠送",
+    "processing": "处理中...",
+    "purchase": "购买",
+    "type_purchase": "充值",
+    "type_bonus": "赠送",
+    "type_spend": "消耗",
+    "type_refund": "退款",
+    "type_adjust": "调整",
+    "balance_after": "余额",
+    "currency_symbol": "¥",
+    "price_format": "¥{price}"
   }
 }

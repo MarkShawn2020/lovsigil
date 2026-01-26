@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Check,
+  Coins,
   Download,
   LogOut,
   Palette,
@@ -13,6 +14,7 @@ import {
   Video,
   X,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -76,7 +78,7 @@ let persistentWebGLRenderer: WebGLRenderer | null = null
 
 export function LannaMirror() {
   const t = useTranslations('LannaMirror')
-  const { user, isAdmin, loading: authLoading, signInWithGoogle, signOut } = useAuth()
+  const { user, isAdmin, credits, loading: authLoading, signInWithGoogle, signOut, spendCredits } = useAuth()
   const videoRef = useRef<HTMLVideoElement>(null)
   const rawVideoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -625,6 +627,13 @@ export function LannaMirror() {
     const spiritInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
     const styleConfig = GENERATION_STYLES.find(s => s.id === options.style)
 
+    // 先扣除积分（单人 2 credits）
+    const creditResult = await spendCredits(2, `Spirit generation: ${spirit.name}`)
+    if (!creditResult.success) {
+      alert(creditResult.error || 'Failed to spend credits')
+      return
+    }
+
     try {
       // Step 1: Create order first and get orderId
       const orderRes = await fetch('/api/spirit/order', {
@@ -687,11 +696,19 @@ export function LannaMirror() {
       console.error('Create order error:', err)
       alert(err instanceof Error ? err.message : 'Failed to create order')
     }
-  }, [headThumbnails])
+  }, [headThumbnails, spendCredits])
 
   // 生成合像（单次 API 调用，多人一起生成）- 带选项
   const handleGenerateGroupPortraitWithOptions = useCallback(async (options: GenerationOptions) => {
     if (trackedPersons.length < 2) return
+
+    // 先扣除积分（合照 2 * n credits）
+    const creditCost = 2 * trackedPersons.length
+    const creditResult = await spendCredits(creditCost, `Group spirit generation: ${trackedPersons.length} people`)
+    if (!creditResult.success) {
+      alert(creditResult.error || 'Failed to spend credits')
+      return
+    }
 
     // 准备所有人的数据
     const persons: GroupGenerationPerson[] = trackedPersons.map((person) => {
@@ -785,7 +802,7 @@ export function LannaMirror() {
     }
 
     setGroupGenerating(false)
-  }, [trackedPersons, headThumbnails])
+  }, [trackedPersons, headThumbnails, spendCredits])
 
   // 关闭合像弹窗
   const closeGroupModal = useCallback(() => {
@@ -941,7 +958,7 @@ export function LannaMirror() {
                         className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-xs"
                         style={{ color: info?.color || '#D4AF37' }}
                       >
-                        {info?.emoji}
+                        {record.spiritId === 'group' ? <Users className="w-4 h-4" /> : info?.emoji}
                       </div>
                     </div>
                   )
@@ -1256,9 +1273,18 @@ export function LannaMirror() {
                 <p className="text-white/80 text-sm truncate">
                   {user.profile?.displayName || user.email?.split('@')[0]}
                 </p>
-                {isAdmin && (
-                  <span className="text-[10px] text-[#D4AF37]/80">Admin</span>
-                )}
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <span className="text-[10px] text-[#D4AF37]/80">Admin</span>
+                  )}
+                  <Link
+                    href="/credits"
+                    className="text-[10px] text-white/50 flex items-center gap-0.5 hover:text-[#D4AF37] transition-colors"
+                  >
+                    <Coins className="w-3 h-3 text-[#D4AF37]" />
+                    <span className="text-[#D4AF37]">{credits}</span>
+                  </Link>
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -1624,7 +1650,7 @@ export function LannaMirror() {
         onOpenChange={(open) => setOptionsDialog(prev => ({ ...prev, open }))}
         onConfirm={handleConfirmGeneration}
         personName={optionsDialog.person ? SPIRIT_INFO[optionsDialog.person.dominantSpirit as keyof typeof SPIRIT_INFO]?.name : undefined}
-        price={optionsDialog.isGroup ? trackedPersons.length * 20 : 20}
+        personCount={optionsDialog.isGroup ? trackedPersons.length : 1}
         userPhoto={optionsDialog.capturedPhoto}
         userPhotos={optionsDialog.capturedPhotos}
       />

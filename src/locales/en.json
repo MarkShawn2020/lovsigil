@@ -80,7 +80,14 @@
     "style_modern": "Modern Digital",
     "style_modern_desc": "Contemporary art",
     "cancel": "Cancel",
-    "generate_with_price": "Generate ฿{price}"
+    "generate_with_price": "Generate ฿{price}",
+    "login_required": "Login required to use AI services",
+    "sign_in_to_generate": "Sign in to generate",
+    "your_credits": "Credits",
+    "cost": "Cost",
+    "login_first": "Login first",
+    "insufficient_credits": "Insufficient credits",
+    "generate_with_credits": "Generate ({credits} credits)"
   },
   "Counter": {
     "meta_title": "Counter",
@@ -717,5 +724,37 @@
         "answer": "Absolutely. We use enterprise-grade security measures including encryption at rest and in transit, regular security audits, and comply with GDPR and other privacy regulations."
       }
     ]
+  },
+  "Credits": {
+    "meta_title": "Credits - Lanna Spirit Mirror",
+    "meta_description": "Manage your credits balance, recharge and transaction history",
+    "title": "My Credits",
+    "login_required": "Please sign in first",
+    "back_home": "Back to Home",
+    "tab_overview": "Overview",
+    "tab_recharge": "Recharge",
+    "tab_history": "History",
+    "current_balance": "Current Balance",
+    "credits_unit": "credits",
+    "total_purchased": "Total Purchased",
+    "total_bonus": "Total Bonus",
+    "total_spent": "Total Spent",
+    "need_more": "Need more credits?",
+    "need_more_desc": "Purchase a credit pack to unlock more generations",
+    "recharge_now": "Recharge Now",
+    "no_packages": "No packages available",
+    "no_transactions": "No transactions yet",
+    "popular": "Popular",
+    "bonus": "bonus",
+    "processing": "Processing...",
+    "purchase": "Purchase",
+    "type_purchase": "Purchase",
+    "type_bonus": "Bonus",
+    "type_spend": "Spend",
+    "type_refund": "Refund",
+    "type_adjust": "Adjustment",
+    "balance_after": "Balance",
+    "currency_symbol": "$",
+    "price_format": "${price}"
   }
 }
