@@ -421,7 +421,45 @@ export function LannaMirror() {
             overlayCtx.clearRect(0, 0, width, height)
             webglRenderer.drawBorder(overlayCtx, width, height, '#CC785C')
 
-            // 绘制人体轮廓（基于分割 mask 边缘检测，加粗版）
+            // 对 mask 做形态学开运算（腐蚀+膨胀）去除小碎片
+            const cleanMask = new Uint8Array(mask.length)
+            const tempMask = new Uint8Array(mask.length)
+            const morphRadius = 3 // 形态学半径
+
+            // 腐蚀：只保留周围全是人物的像素
+            for (let y = morphRadius; y < height - morphRadius; y++) {
+              for (let x = morphRadius; x < width - morphRadius; x++) {
+                const idx = y * width + x
+                if (mask[idx] === 0) continue
+
+                let allForeground = true
+                outer: for (let dy = -morphRadius; dy <= morphRadius; dy++) {
+                  for (let dx = -morphRadius; dx <= morphRadius; dx++) {
+                    if (mask[(y + dy) * width + (x + dx)] === 0) {
+                      allForeground = false
+                      break outer
+                    }
+                  }
+                }
+                if (allForeground) tempMask[idx] = 1
+              }
+            }
+
+            // 膨胀：恢复边缘
+            for (let y = morphRadius; y < height - morphRadius; y++) {
+              for (let x = morphRadius; x < width - morphRadius; x++) {
+                const idx = y * width + x
+                if (tempMask[idx] > 0) {
+                  for (let dy = -morphRadius; dy <= morphRadius; dy++) {
+                    for (let dx = -morphRadius; dx <= morphRadius; dx++) {
+                      cleanMask[(y + dy) * width + (x + dx)] = 1
+                    }
+                  }
+                }
+              }
+            }
+
+            // 绘制人体轮廓（基于清洗后的 mask 边缘检测）
             const edgeData = overlayCtx.createImageData(width, height)
             const edgePixels = edgeData.data
             const lineWidth = 4 // 轮廓线宽度
@@ -429,14 +467,14 @@ export function LannaMirror() {
             for (let y = lineWidth; y < height - lineWidth; y++) {
               for (let x = lineWidth; x < width - lineWidth; x++) {
                 const idx = y * width + x
-                const current = mask[idx]
+                const current = cleanMask[idx]
 
                 // 检测边缘：当前是人物，检查更大范围的邻居
                 if (current > 0) {
                   let isEdge = false
                   for (let dy = -lineWidth; dy <= lineWidth && !isEdge; dy++) {
                     for (let dx = -lineWidth; dx <= lineWidth && !isEdge; dx++) {
-                      if (mask[(y + dy) * width + (x + dx)] === 0) {
+                      if (cleanMask[(y + dy) * width + (x + dx)] === 0) {
                         isEdge = true
                       }
                     }

@@ -284,6 +284,11 @@ export class PersonTracker {
             person.spiritScores = normalizeScores(rawScores)
             person.dominantSpirit = getDominantSpirit(person.spiritScores)
           }
+
+          // 调试：每 60 帧打印一次特征稳定性报告
+          if (this.currentFrame % 60 === 0) {
+            person.accumulator.debugPrint()
+          }
         }
 
         matched.add(bestMatch)

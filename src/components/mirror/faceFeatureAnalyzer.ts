@@ -227,20 +227,20 @@ export function mapFeaturesToSpirits(features: FaceFeatureScores): SpiritMatchSc
     foreheadWidthRatio,
   } = features
 
-  // Mom (莫): 眼圆、嘴宽、脸敦实
+  // Mom (莫): 嘴宽、脸敦实、唇厚（降低眼睛权重，眼镜干扰大）
   const momScore
-    = eyeRoundness * 0.3
-    + mouthWidthRatio * 0.25
-    + faceWidthRatio * 0.25
-    + lipFullness * 0.1
+    = eyeRoundness * 0.15 // 降低：眼镜干扰
+    + mouthWidthRatio * 0.3 // 提高
+    + faceWidthRatio * 0.3 // 提高
+    + lipFullness * 0.15 // 提高
     + (1 - jawSharpness) * 0.1
 
-  // Naga (纳迦): 凤眼、颧骨高、轮廓利
+  // Naga (纳迦): 颧骨高、轮廓利、眼角上扬（降低眼睛圆度权重）
   const nagaScore
-    = (1 - eyeRoundness) * 0.25 // 细长眼
-    + eyeSlant * 0.2 // 眼角上扬
-    + cheekboneProminence * 0.25
-    + jawSharpness * 0.2
+    = (1 - eyeRoundness) * 0.1 // 降低：眼镜干扰
+    + eyeSlant * 0.25 // 提高：眼角倾斜更稳定
+    + cheekboneProminence * 0.3 // 提高
+    + jawSharpness * 0.25 // 提高
     + noseBridgeHeight * 0.1
 
   // Singha (醒狮): 额宽、鼻挺、气场强
@@ -251,11 +251,11 @@ export function mapFeaturesToSpirits(features: FaceFeatureScores): SpiritMatchSc
     + (1 - eyeSlant) * 0.15 // 眼睛平直有威严
     + (1 - jawSharpness) * 0.1 // 下颌有力
 
-  // Makara (摩羯): 嘴大、混血感（五官分散）、眼深
+  // Makara (摩羯): 嘴大、混血感（五官分散）（降低眼睛权重）
   const makaraScore
-    = mouthWidthRatio * 0.35
-    + (1 - eyeRoundness) * 0.2 // 深邃眼
-    + (1 - faceWidthRatio) * 0.15 // 脸型偏长
+    = mouthWidthRatio * 0.4 // 提高
+    + (1 - eyeRoundness) * 0.1 // 降低：眼镜干扰
+    + (1 - faceWidthRatio) * 0.2 // 提高
     + cheekboneProminence * 0.15
     + lipFullness * 0.15
 
@@ -307,7 +307,7 @@ export function getDominantSpirit(scores: SpiritMatchScores): string {
 // 面部特征累积器（用于稳定结果）
 export class FaceFeatureAccumulator {
   private samples: FaceFeatureScores[] = []
-  private readonly maxSamples = 30 // 约 1 秒数据
+  private readonly maxSamples = 60 // 约 2 秒数据（增加稳定性）
 
   addSample(features: FaceFeatureScores) {
     this.samples.push(features)
@@ -334,6 +334,42 @@ export class FaceFeatureAccumulator {
       lipFullness: this.samples.reduce((sum, s) => sum + s.lipFullness, 0) / count,
       foreheadWidthRatio: this.samples.reduce((sum, s) => sum + s.foreheadWidthRatio, 0) / count,
     }
+  }
+
+  // 调试：获取特征方差，用于识别不稳定的特征
+  getFeatureVariance(): Record<string, number> | null {
+    if (this.samples.length < 10) return null
+
+    const avg = this.getAverageFeatures()
+    if (!avg) return null
+
+    const count = this.samples.length
+    const keys = Object.keys(avg) as (keyof FaceFeatureScores)[]
+    const variance: Record<string, number> = {}
+
+    for (const key of keys) {
+      const mean = avg[key]
+      const sumSqDiff = this.samples.reduce((sum, s) => {
+        const diff = s[key] - mean
+        return sum + diff * diff
+      }, 0)
+      variance[key] = sumSqDiff / count
+    }
+
+    return variance
+  }
+
+  // 调试：打印特征稳定性报告
+  debugPrint() {
+    const variance = this.getFeatureVariance()
+    if (!variance) return
+
+    const sorted = Object.entries(variance)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => `${k}: ${(v * 100).toFixed(2)}%`)
+      .slice(0, 5) // 只显示波动最大的 5 个
+
+    console.log('[FaceFeature] Variance (top 5):', sorted.join(', '))
   }
 
   getSampleCount(): number {
