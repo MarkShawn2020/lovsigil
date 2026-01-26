@@ -1,5 +1,16 @@
 # lanna-mirror-3
 
+## 0.8.0
+
+### Minor Changes
+
+- 新增历史生成瀑布流画廊页面
+  - 创建独立画廊页面，CSS columns 实现瀑布流布局
+  - IntersectionObserver 实现无限滚动加载
+  - 添加 en/zh/th/ko 四语言翻译
+  - LannaMirror 顶栏添加 Gallery 入口按钮
+  - 点击 Gallery 时释放 GPU 资源避免性能问题
+
 ## 0.7.1
 
 ### Patch Changes
