@@ -293,9 +293,9 @@ export default function SpiritOrderPage() {
           </Card>
         )}
 
-        {/* Completed State - 左右布局 */}
+        {/* Completed State - 移动端优化的响应式布局 */}
         {order.status === 'completed' && order.generatedImage && (
-          <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 lg:items-start">
             {/* 左侧：图片预览区 */}
             <div className="lg:w-1/2 lg:sticky lg:top-4">
               {/* Result Image Card / Poster */}
@@ -331,11 +331,11 @@ export default function SpiritOrderPage() {
                 </CardContent>
               </Card>
 
-              {/* 操作按钮组 - 在图片下方 */}
-              <div className="flex flex-wrap justify-center gap-3 mt-4">
+              {/* 操作按钮组 - 在图片下方，移动端优化 */}
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-3 sm:mt-4 px-2 sm:px-0">
                 <Button
                   onClick={() => setShowPoster(!showPoster)}
-                  className="bg-white/20 text-white border-2 border-white/50 hover:bg-white/30 hover:border-white/70 font-medium"
+                  className="bg-white/20 text-white border-2 border-white/50 hover:bg-white/30 hover:border-white/70 font-medium h-11 touch-manipulation"
                 >
                   <Image className="w-4 h-4 mr-1.5" />
                   {showPoster ? t('show_image') : t('show_poster')}
@@ -346,7 +346,7 @@ export default function SpiritOrderPage() {
                     showPoster && poster ? poster : order.generatedImage!,
                     `lanna-spirit-${showPoster ? 'poster' : 'image'}-${order.spiritId}-${Date.now()}.png`
                   )}
-                  className="text-white font-medium border-2 border-transparent hover:brightness-110"
+                  className="text-white font-medium border-2 border-transparent hover:brightness-110 h-11 touch-manipulation"
                   style={{ backgroundColor: spiritInfo?.color || '#D4AF37' }}
                 >
                   <Download className="w-5 h-5 mr-2" />

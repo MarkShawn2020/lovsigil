@@ -17,7 +17,8 @@ import {
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -78,6 +79,7 @@ let persistentWebGLRenderer: WebGLRenderer | null = null
 
 export function LannaMirror() {
   const t = useTranslations('LannaMirror')
+  const isMobile = useIsMobile()
   const { user, isAdmin, credits, loading: authLoading, signInWithGoogle, signOut, spendCredits } = useAuth()
   const videoRef = useRef<HTMLVideoElement>(null)
   const rawVideoRef = useRef<HTMLVideoElement>(null)
@@ -86,6 +88,7 @@ export function LannaMirror() {
   const [state, setState] = useState<MirrorState>('attract')
   const [isLoading, setIsLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const animationRef = useRef<number>(0)
   const segmenterRef = useRef<any>(null)
@@ -179,14 +182,18 @@ export function LannaMirror() {
       .catch(console.error)
   }, [previewRecord, includeOriginalInPoster])
 
-  // 初始化摄像头
+  // 初始化摄像头 - 移动端使用较低分辨率以提升性能
   const initCamera = useCallback(async () => {
     try {
       // 复用持久化的 stream（语言切换时不重新获取摄像头）
       let stream = persistentStream
       if (!stream || !stream.active) {
+        // 移动端使用 640x480，桌面端使用 1280x720
+        const videoConstraints = isMobile
+          ? { width: 640, height: 480, facingMode: 'user' }
+          : { width: 1280, height: 720, facingMode: 'user' }
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 1280, height: 720, facingMode: 'user' },
+          video: videoConstraints,
           audio: false,
         })
         persistentStream = stream
@@ -209,7 +216,7 @@ export function LannaMirror() {
       setError(t('camera_error'))
       console.error('Camera error:', err)
     }
-  }, [])
+  }, [isMobile])
 
   // 初始化 WebGL 渲染器
   const initWebGL = useCallback(() => {
@@ -331,7 +338,9 @@ export function LannaMirror() {
       persons = personTrackerRef.current.update(faceLandmarksList, faceBlendshapesList)
 
       // 节流检查（在 setState 外部进行，避免闭包问题）
-      const shouldUpdate = now - lastSpiritUpdateRef.current >= 200
+      // 移动端使用更长的节流间隔以降低 CPU 负载 (400ms vs 200ms)
+      const throttleInterval = isMobile ? 400 : 200
+      const shouldUpdate = now - lastSpiritUpdateRef.current >= throttleInterval
 
       // 更新追踪人员状态
       if (persons.length > 0) {
@@ -579,7 +588,7 @@ export function LannaMirror() {
 
     result.close()
     animationRef.current = requestAnimationFrame(renderLoop)
-  }, [])
+  }, [isMobile])
 
   // 重新开始
   const restart = useCallback(() => {
@@ -944,8 +953,8 @@ export function LannaMirror() {
         muted
       />
 
-      {/* 顶部历史记录横条 - 走马灯自动滚动 */}
-      <div className="shrink-0 border-b border-[#D4AF37]/20 bg-black/95">
+      {/* 顶部历史记录横条 - 走马灯自动滚动 (移动端隐藏以节省空间) */}
+      <div className={`shrink-0 border-b border-[#D4AF37]/20 bg-black/95 ${isMobile ? 'hidden' : ''}`}>
         <div className="h-40 px-4 flex items-center">
           {historyRecords.length > 0 ? (
             <div
@@ -1046,7 +1055,120 @@ export function LannaMirror() {
         </div>
       </div>
 
-      {/* 主体区域：左右分栏 */}
+      {/* 主体区域：桌面端左右分栏，移动端全屏镜子 */}
+      {isMobile ? (
+        /* 移动端布局：全屏镜子 + 底部工具栏 */
+        <div className="flex-1 min-h-0 relative flex flex-col">
+          {/* 镜子区域 */}
+          <div className="flex-1 relative overflow-hidden">
+            {/* 原始视频输入 - 镜像显示 */}
+            <video
+              ref={rawVideoRef}
+              className={`absolute inset-0 h-full w-full object-cover ${showRawVideoInput ? '' : 'hidden'}`}
+              style={{ transform: 'scaleX(-1)' }}
+              playsInline
+              muted
+            />
+            {/* 主画布 - AI 处理后效果 */}
+            <canvas
+              ref={canvasRef}
+              className={`absolute inset-0 h-full w-full object-cover ${showRawVideoInput ? 'hidden' : ''}`}
+            />
+            {/* 覆盖层画布 */}
+            <canvas
+              ref={overlayCanvasRef}
+              className={`absolute inset-0 h-full w-full object-cover pointer-events-none ${showRawVideoInput ? 'hidden' : ''}`}
+            />
+            {/* 镜子加载占位 */}
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <div className="w-16 h-16 rounded-xl border-2 border-[#D4AF37]/40 flex items-center justify-center animate-pulse">
+                  <Sparkles className="w-8 h-8 text-[#D4AF37]/60" />
+                </div>
+              </div>
+            )}
+            {/* 顶部状态栏 - 简洁紧凑设计 */}
+            <div className="absolute top-0 left-0 right-0 safe-area-top">
+              <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-b from-black/70 via-black/40 to-transparent">
+                {/* 左侧：简洁 Logo */}
+                <div className="flex items-center gap-1.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#CC785C]/20 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-[#CC785C]" />
+                  </div>
+                  <span className="text-sm font-semibold text-white/90">LannaMirror</span>
+                </div>
+                {/* 右侧：紧凑操作区 */}
+                <div className="flex items-center gap-1.5">
+                  <LocaleSwitcher className="text-white/80 scale-90" />
+                  <Link
+                    href="/gallery"
+                    className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] active:bg-[#D4AF37]/30"
+                  >
+                    <Palette className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 移动端底部工具栏 */}
+          <div className="shrink-0 bg-black/95 border-t border-[#D4AF37]/20 p-3 safe-area-bottom">
+            {!isLoading && hasPersons ? (
+              <div className="flex items-center gap-3">
+                {/* 检测到的人员头像列表 */}
+                <div className="flex -space-x-2 overflow-hidden flex-1 min-w-0">
+                  {trackedPersons.slice(0, 4).map((person) => {
+                    const thumbnail = headThumbnails[person.id]
+                    return (
+                      <div
+                        key={person.id}
+                        className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#D4AF37]/60 shrink-0"
+                        style={{ background: 'radial-gradient(circle, #D4AF3740 0%, #D4AF3720 100%)' }}
+                      >
+                        {thumbnail ? (
+                          <img src={thumbnail} alt="" className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white/30 text-xs">...</div>
+                        )}
+                      </div>
+                    )
+                  })}
+                  {trackedPersons.length > 4 && (
+                    <div className="w-12 h-12 rounded-full bg-[#D4AF37]/20 border-2 border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37] text-xs font-medium shrink-0">
+                      +{trackedPersons.length - 4}
+                    </div>
+                  )}
+                </div>
+
+                {/* 生成按钮 */}
+                {trackedPersons.length === 1 ? (
+                  <Button
+                    onClick={() => handleOpenOptionsDialog(trackedPersons[0]!)}
+                    className="shrink-0 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] text-white font-medium touch-manipulation"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    Generate
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleOpenGroupOptionsDialog}
+                    disabled={groupGenerating}
+                    className="shrink-0 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] text-white font-medium touch-manipulation"
+                  >
+                    <Users className="w-4 h-4 mr-1" />
+                    Group
+                  </Button>
+                )}
+              </div>
+            ) : !isLoading ? (
+              <div className="text-center py-2">
+                <p className="text-white/40 text-sm">{t('step_closer')}</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+      /* 桌面端布局：左右分栏 */
       <ResizablePanelGroup
         direction="horizontal"
         className="flex-1 min-h-0"
@@ -1437,6 +1559,7 @@ export function LannaMirror() {
         )}
       </ResizablePanel>
     </ResizablePanelGroup>
+      )}
 
       {/* 合像生成浮层 */}
       {(groupGenerating || groupPersons.length > 0) && (

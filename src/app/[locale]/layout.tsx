@@ -22,6 +22,19 @@ const firaCode = Fira_Code({
   display: 'swap',
 });
 
+// Viewport configuration for mobile optimization
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F9F9F7' },
+    { media: '(prefers-color-scheme: dark)', color: '#141413' },
+  ],
+};
+
 // Base metadata configuration - specific metadata will be generated per locale
 export const generateMetadata = async (props: {
   params: Promise<{ locale: string }>;
@@ -187,6 +200,19 @@ export default async function RootLayout(props: {
 
   return (
     <html lang={locale} className={`${inter.variable} ${firaCode.variable}`}>
+      <head>
+        {/* Preconnect to critical third-party origins for faster resource loading */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+        <link rel="preconnect" href="https://storage.googleapis.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://storage.googleapis.com" />
+        {/* iOS PWA optimizations */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="LannaMirror3" />
+        {/* Prevent phone number detection on mobile */}
+        <meta name="format-detection" content="telephone=no" />
+      </head>
       <body className="font-sans antialiased">
         <NextIntlClientProvider>
           <PostHogProvider>
