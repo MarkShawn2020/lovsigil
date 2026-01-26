@@ -147,7 +147,7 @@ export function extractFaceFeatures(landmarks: NormalizedLandmark[]): FaceFeatur
   const rightEyeWidth = distance(rightEyeInner, rightEyeOuter)
   const rightEyeHeight = distance(rightEyeTop, rightEyeBottom)
   const avgEyeAspect = ((leftEyeHeight / leftEyeWidth) + (rightEyeHeight / rightEyeWidth)) / 2
-  const eyeRoundness = Math.min(1, avgEyeAspect * 2.5) // 归一化
+  const eyeRoundness = Math.min(1, avgEyeAspect * 1.5) // 归一化（降低系数避免都挤在1附近）
 
   // 眼角倾斜度
   const leftEyeSlant = yDiff(leftEyeInner, leftEyeOuter) / leftEyeWidth
@@ -227,6 +227,15 @@ export function mapFeaturesToSpirits(features: FaceFeatureScores): SpiritMatchSc
     foreheadWidthRatio,
   } = features
 
+  // DEBUG: 打印关键特征值
+  console.log('[FaceFeatures] Key:', {
+    eyeRoundness: eyeRoundness.toFixed(2),
+    faceWidthRatio: faceWidthRatio.toFixed(2),
+    mouthWidthRatio: mouthWidthRatio.toFixed(2),
+    cheekboneProminence: cheekboneProminence.toFixed(2),
+    jawSharpness: jawSharpness.toFixed(2),
+  })
+
   // Mom (莫): 嘴宽、脸敦实、唇厚（降低眼睛权重，眼镜干扰大）
   const momScore
     = eyeRoundness * 0.15 // 降低：眼镜干扰
@@ -266,6 +275,15 @@ export function mapFeaturesToSpirits(features: FaceFeatureScores): SpiritMatchSc
     + noseBridgeHeight * 0.2
     + jawSharpness * 0.15 // 轮廓锐利
     + (1 - faceWidthRatio) * 0.1 // 脸型偏长
+
+  // DEBUG: 打印原始分数
+  console.log('[SpiritScores] Raw:', {
+    mom: momScore.toFixed(3),
+    naga: nagaScore.toFixed(3),
+    singha: singhaScore.toFixed(3),
+    makara: makaraScore.toFixed(3),
+    hadsadiling: hadsadilingScore.toFixed(3),
+  })
 
   return {
     mom: momScore,

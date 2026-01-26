@@ -1062,24 +1062,22 @@ export function LannaMirror() {
                   <p className="text-white/30 text-xs mt-3">{t('analyzing')}</p>
                 </div>
               ) : (
-                <>
-                  {/* 守护灵面板 - 单行精简显示 */}
-                  <div className="space-y-2">
+                <div className="flex flex-col h-full">
+                  {/* 人员列表 */}
+                  <div className="flex-1 space-y-2">
                     {trackedPersons.map((person) => {
                       const thumbnail = headThumbnails[person.id]
-                      const spiritInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
 
                       return (
                         <div
                           key={person.id}
-                          className="flex items-center gap-2 bg-black/50 rounded-lg px-3 py-2 border border-[#D4AF37]/20"
+                          className="flex items-center gap-3 bg-black/50 rounded-lg px-3 py-2 border border-[#D4AF37]/20"
                         >
                           {/* 头像 */}
                           <div
-                            className="w-20 h-20 rounded-full overflow-hidden border-2 shrink-0"
+                            className="w-20 h-20 rounded-full overflow-hidden border-2 shrink-0 border-[#D4AF37]/60"
                             style={{
-                              borderColor: spiritInfo?.color || '#D4AF37',
-                              background: `radial-gradient(circle, ${spiritInfo?.color}40 0%, ${spiritInfo?.color}20 100%)`,
+                              background: 'radial-gradient(circle, #D4AF3740 0%, #D4AF3720 100%)',
                             }}
                           >
                             {thumbnail ? (
@@ -1090,14 +1088,11 @@ export function LannaMirror() {
                               </div>
                             )}
                           </div>
-                          {/* 守护灵 */}
-                          <span className="text-lg">{spiritInfo?.emoji}</span>
-                          <span className="text-white/70 text-sm flex-1 truncate">{spiritInfo?.name}</span>
                           {/* 生成按钮 */}
                           <Button
                             onClick={() => handleOpenOptionsDialog(person)}
                             size="sm"
-                            className="shrink-0"
+                            className="shrink-0 ml-auto"
                           >
                             <Sparkles className="w-4 h-4 mr-1" />
                             Generate
@@ -1105,27 +1100,27 @@ export function LannaMirror() {
                         </div>
                       )
                     })}
-
-                    {/* 合像按钮 - 常驻显示，非多人时 disabled */}
-                    <Button
-                      onClick={handleOpenGroupOptionsDialog}
-                      disabled={groupGenerating || trackedPersons.length < 2}
-                      className="w-full mt-2 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D] text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {groupGenerating ? (
-                        <>
-                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          {t('generating_group')}
-                        </>
-                      ) : (
-                        <>
-                          <Users className="w-4 h-4 mr-1" />
-                          Group
-                        </>
-                      )}
-                    </Button>
                   </div>
-                </>
+
+                  {/* 合像按钮 - 固定底部 */}
+                  <Button
+                    onClick={handleOpenGroupOptionsDialog}
+                    disabled={groupGenerating || trackedPersons.length < 2}
+                    className="w-full mt-4 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D] text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {groupGenerating ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        {t('generating_group')}
+                      </>
+                    ) : (
+                      <>
+                        <Users className="w-4 h-4 mr-1" />
+                        Group
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
             </>
           )}
