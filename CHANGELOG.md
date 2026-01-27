@@ -1,5 +1,11 @@
 # lovsigil
 
+## 1.0.3
+
+### Patch Changes
+
+- SVG 下载时自动转换为 2x DPI 的 PNG 格式
+
 ## 1.0.2
 
 ### Patch Changes
