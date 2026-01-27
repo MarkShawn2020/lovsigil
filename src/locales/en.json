@@ -93,7 +93,10 @@
     "insufficient_credits": "Insufficient credits",
     "generate_with_credits": "Generate ({credits} credits)",
     "view_detail": "View Details",
-    "make_same": "Make Same Style"
+    "make_same": "Make Same Style",
+    "turn_off_camera": "Turn off camera",
+    "turn_on_camera": "Turn on camera",
+    "camera_off": "Camera is off"
   },
   "Counter": {
     "meta_title": "Counter",

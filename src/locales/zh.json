@@ -93,7 +93,10 @@
     "insufficient_credits": "积分不足",
     "generate_with_credits": "生成 ({credits} 积分)",
     "view_detail": "查看详情",
-    "make_same": "我要做同款"
+    "make_same": "我要做同款",
+    "turn_off_camera": "关闭摄像头",
+    "turn_on_camera": "开启摄像头",
+    "camera_off": "摄像头已关闭"
   },
   "Counter": {
     "meta_title": "计数器",

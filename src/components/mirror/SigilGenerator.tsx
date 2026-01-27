@@ -1,9 +1,10 @@
 'use client'
 
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Camera,
+  CameraOff,
   Coins,
-  Download,
   LogOut,
   Palette,
   RotateCcw,
@@ -13,21 +14,21 @@ import {
   Video,
   X,
 } from 'lucide-react'
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 
+import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { useIsMobile } from '@/hooks/use-mobile'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable'
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { version } from '../../../package.json'
 
 // 过滤 MediaPipe 的 INFO 日志
@@ -42,13 +43,11 @@ if (typeof window !== 'undefined') {
   }
 }
 
-import type { SigilInput } from './sigilTypes'
+import type { AspectRatio, SigilInput  } from './sigilTypes'
 import { useSpiritHistory } from '@/hooks/useSpiritHistory'
 import { spiritKeys } from '@/libs/queryKeys'
 import { useAuth } from '@/providers/AuthProvider'
-import { downloadImage } from './posterGenerator'
 import { SigilInputDialog } from './SigilInputDialog'
-import type { AspectRatio } from './sigilTypes'
 import { WebGLRenderer } from './webglRenderer'
 
 // Sigil 默认发光颜色（深金色）
@@ -78,9 +77,12 @@ export function SigilGenerator() {
   const [mounted, setMounted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showRawVideoInput, setShowRawVideoInput] = useState(false)
+  const [cameraEnabled, setCameraEnabled] = useState(true)
 
   const animationRef = useRef<number>(0)
   const dialogOpenRef = useRef(false)
+  const cameraEnabledRef = useRef(true)
+  const rebuildingMediaPipeRef = useRef(false)
   const segmenterRef = useRef<any>(null)
   const faceLandmarkerRef = useRef<any>(null)
   const webglRendererRef = useRef<WebGLRenderer | null>(null)
@@ -178,8 +180,26 @@ export function SigilGenerator() {
     dialogOpenRef.current = sigilDialog.open
   }, [sigilDialog.open])
 
+  // 停止摄像头
+  const stopCamera = useCallback(() => {
+    if (persistentStream) {
+      persistentStream.getTracks().forEach(track => track.stop())
+      persistentStream = null
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+    if (rawVideoRef.current) {
+      rawVideoRef.current.srcObject = null
+    }
+  }, [])
+
   // 初始化摄像头
+  // 注意：使用 cameraEnabledRef 而不是 cameraEnabled state，
+  // 避免函数重建导致 useEffect cleanup 取消 renderLoop
   const initCamera = useCallback(async () => {
+    if (!cameraEnabledRef.current) return
+
     try {
       let stream = persistentStream
       if (!stream || !stream.active) {
@@ -283,13 +303,19 @@ export function SigilGenerator() {
 
   // 渲染循环 - 简化版
   const renderLoop = useCallback(() => {
+    // 摄像头关闭或正在重建 MediaPipe 时跳过处理
+    if (!cameraEnabledRef.current || rebuildingMediaPipeRef.current) {
+      animationRef.current = requestAnimationFrame(renderLoop)
+      return
+    }
+
     const video = videoRef.current
     const canvas = canvasRef.current
     const segmenter = segmenterRef.current
     const faceLandmarker = faceLandmarkerRef.current
     const webglRenderer = webglRendererRef.current
 
-    if (!video || !canvas || !segmenter || video.readyState < 2) {
+    if (!video || !canvas || !segmenter || !faceLandmarker || video.readyState < 2) {
       animationRef.current = requestAnimationFrame(renderLoop)
       return
     }
@@ -414,6 +440,80 @@ export function SigilGenerator() {
     setSigilDialog({ open: true, capturedPhoto: undefined, defaultRatio: urlRatio, defaultBio: urlBio })
   }, [urlRatio, urlBio])
 
+  // 切换摄像头开关
+  const toggleCamera = useCallback(async () => {
+    if (cameraEnabled) {
+      stopCamera()
+      setCameraEnabled(false)
+      cameraEnabledRef.current = false
+      setHasFaceDetected(false)
+    } else {
+      // 设置重建标志，阻止 renderLoop 使用旧实例
+      rebuildingMediaPipeRef.current = true
+
+      // 清除旧的 refs，防止 renderLoop 使用已关闭的实例
+      segmenterRef.current = null
+      faceLandmarkerRef.current = null
+
+      // 更新状态
+      setCameraEnabled(true)
+      cameraEnabledRef.current = true
+
+      // 重新创建 MediaPipe 实例
+      try {
+        const { ImageSegmenter, FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision')
+        const vision = await FilesetResolver.forVisionTasks(
+          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm',
+        )
+
+        // 关闭旧实例
+        if (persistentSegmenter) {
+          persistentSegmenter.close()
+          persistentSegmenter = null
+        }
+        if (persistentFaceLandmarker) {
+          persistentFaceLandmarker.close()
+          persistentFaceLandmarker = null
+        }
+
+        // 创建新实例
+        const segmenter = await ImageSegmenter.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          outputCategoryMask: true,
+        })
+        segmenterRef.current = segmenter
+        persistentSegmenter = segmenter
+
+        const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numFaces: 1,
+          outputFaceBlendshapes: false,
+          minFaceDetectionConfidence: 0.5,
+          minFacePresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        })
+        faceLandmarkerRef.current = faceLandmarker
+        persistentFaceLandmarker = faceLandmarker
+      } catch (err) {
+        console.error('Failed to reinitialize MediaPipe:', err)
+      } finally {
+        // 无论成功或失败，都清除重建标志
+        rebuildingMediaPipeRef.current = false
+      }
+
+      // 重新初始化摄像头
+      await initCamera()
+    }
+  }, [cameraEnabled, stopCamera, initCamera])
+
   // 确认生成
   const handleConfirmSigil = useCallback(async (input: SigilInput) => {
     setSigilDialog({ open: false })
@@ -475,6 +575,13 @@ export function SigilGenerator() {
     }
   }, [mounted, initCamera, initMediaPipe, initWebGL])
 
+  // 当开启摄像头时重新初始化
+  useEffect(() => {
+    if (mounted && cameraEnabled) {
+      initCamera()
+    }
+  }, [mounted, cameraEnabled, initCamera])
+
   useEffect(() => {
     if (!isLoading) {
       animationRef.current = requestAnimationFrame(renderLoop)
@@ -499,99 +606,32 @@ export function SigilGenerator() {
     return <div className="h-screen w-screen bg-black" />
   }
 
-  // 左侧面板内容
-  const renderSidebarContent = () => (
-    <>
-      {/* 加载状态 */}
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center py-12 text-white">
-          <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-white/60">{t('loading_ai')}</p>
-        </div>
-      )}
-
-      {/* 主内容 */}
-      {!isLoading && (
-        <div className="space-y-4">
-          {/* 已拍照：显示头像预览 */}
-          {capturedThumbnail ? (
-            <div className="text-center space-y-3">
-              <div className="relative inline-block">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary mx-auto">
-                  <img src={capturedThumbnail} alt="" className="w-full h-full object-cover" />
-                </div>
-                <button
-                  onClick={handleClearPhoto}
-                  className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-              <Button
-                onClick={handleOpenSigilDialog}
-                className="w-full gradient-gold-copper hover:brightness-110"
-              >
-                <Sparkles className="w-4 h-4 mr-1.5" />
-                {t('generate_portrait')}
-              </Button>
-              <Button
-                onClick={handleClearPhoto}
-                variant="outline"
-                size="sm"
-                className="w-full border-white/20 text-white/60 hover:text-white hover:bg-white/10"
-              >
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                {t('retake') || '重新拍照'}
-              </Button>
-            </div>
-          ) : (
-            /* 未拍照：显示拍照/无头像按钮 */
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full border-2 border-dashed border-primary/40 flex items-center justify-center">
-                <Camera className="w-6 h-6 text-primary/60" />
-              </div>
-
-              {hasFaceDetected ? (
-                <p className="text-white/60 text-sm">{t('face_detected') || '检测到人脸，点击拍照'}</p>
-              ) : (
-                <p className="text-white/40 text-sm">{t('step_closer')}</p>
-              )}
-
-              <div className="space-y-2">
-                <Button
-                  onClick={handleCapturePhoto}
-                  disabled={!hasFaceDetected}
-                  className={`w-full ${hasFaceDetected
-                    ? 'gradient-gold-copper hover:brightness-110'
-                    : 'bg-white/20 cursor-not-allowed'
-                  }`}
-                >
-                  <Camera className="w-4 h-4 mr-1.5" />
-                  {t('capture_photo') || '拍照'}
-                </Button>
-                <Button
-                  onClick={handleOpenSigilDialogWithoutPhoto}
-                  variant="outline"
-                  className="w-full border-primary/40 text-primary/80 hover:bg-primary/10"
-                >
-                  {t('generate_without_photo')}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  )
-
   return (
     <div className="h-dvh w-screen overflow-hidden bg-black flex flex-col">
       {/* 隐藏的视频元素 */}
       <video ref={videoRef} className="hidden" playsInline muted />
 
       {/* 顶部历史记录 */}
-      <div className={`shrink-0 border-b border-primary/20 bg-black/95 ${isMobile ? 'hidden' : ''}`}>
-        <div className="h-40 px-4 flex items-center">
+      <div className={`shrink-0 border-b border-primary/20 bg-bg-dark ${isMobile ? 'hidden' : ''}`}>
+        <div className="h-32 px-4 flex items-center gap-4">
+          {/* Logo + 标题 */}
+          <div className="shrink-0 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold tracking-widest text-secondary">{t('title')}</h1>
+                <Badge variant="outline" className="text-[10px] text-muted-foreground border-muted">v{version}</Badge>
+              </div>
+              <p className="text-muted-foreground text-xs">{t('subtitle')}</p>
+            </div>
+          </div>
+
+          {/* 分割线 */}
+          {historyRecords.length > 0 && <div className="w-px h-16 bg-primary/20" />}
+
+          {/* 历史记录滚动 */}
           {historyRecords.length > 0 && (
             <div
               className="flex-1 h-full overflow-hidden relative group flex items-center"
@@ -631,7 +671,7 @@ export function SigilGenerator() {
                     <img
                       src={record.generatedImage}
                       alt={record.name || 'Sigil'}
-                      className="w-36 h-36 object-cover rounded-lg border border-white/10 group-hover/item:border-primary/50 transition-colors"
+                      className="w-24 h-24 object-cover rounded-lg border border-muted group-hover/item:border-primary/50 transition-colors"
                     />
                   </div>
                 ))}
@@ -734,78 +774,174 @@ export function SigilGenerator() {
           </div>
         </div>
       ) : (
-        /* 桌面端布局 */
-        <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0" autoSaveId="lanna-mirror-sidebar">
-          <ResizablePanel
-            defaultSize={20}
-            minSize={5}
-            maxSize={35}
-            className="flex flex-col bg-black/95 overflow-y-auto"
-            style={{ flexBasis: 320, minWidth: 120, maxWidth: 480 }}
-          >
-            {/* 标题 */}
-            <div className="px-4 py-3 border-b border-primary/20">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold tracking-widest text-secondary">
-                  {t('title')}
-                </h1>
-                <Badge variant="outline" className="text-[10px] text-white/40 border-white/20">
-                  v{version}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-white/50 text-sm">{t('subtitle')}</p>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href="/gallery"
-                    className="p-1.5 rounded-md hover:bg-primary/20 text-primary"
-                  >
-                    <Palette className="w-4 h-4" />
-                  </Link>
-                  <LocaleSwitcher className="text-white" />
+        /* 桌面端布局：居中镜子 + 悬浮控制 */
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative">
+          {/* 镜子区域 - 居中显示 */}
+          <div className="relative w-full max-w-4xl aspect-video mx-auto">
+            {/* 始终渲染 video/canvas，用 CSS 控制显隐，保持 refs 有效 */}
+            <video
+              ref={rawVideoRef}
+              className={`absolute inset-0 h-full w-full object-cover rounded-2xl ${cameraEnabled && showRawVideoInput ? '' : 'hidden'}`}
+              style={{ transform: 'scaleX(-1)' }}
+              playsInline
+              muted
+            />
+            <canvas
+              ref={canvasRef}
+              className={`absolute inset-0 h-full w-full object-cover rounded-2xl ${cameraEnabled && !showRawVideoInput ? '' : 'hidden'}`}
+            />
+            <canvas
+              ref={overlayCanvasRef}
+              className={`absolute inset-0 h-full w-full object-cover pointer-events-none rounded-2xl ${cameraEnabled && !showRawVideoInput ? '' : 'hidden'}`}
+            />
+            {/* 加载中 */}
+            {cameraEnabled && isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-bg-card rounded-2xl">
+                <div className="w-16 h-16 rounded-xl border-2 border-primary/40 flex items-center justify-center animate-pulse">
+                  <Sparkles className="w-8 h-8 text-primary/60" />
                 </div>
               </div>
-            </div>
+            )}
+            {/* 摄像头关闭时的占位 */}
+            {!cameraEnabled && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-card rounded-2xl border border-primary/20">
+                <CameraOff className="w-16 h-16 text-primary/40 mb-4" />
+                <p className="text-muted-foreground">{t('camera_off') || '摄像头已关闭'}</p>
+              </div>
+            )}
 
-            {/* 内容区 */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4">
-              {renderSidebarContent()}
-            </div>
+            {/* 镜子内悬浮控制按钮 */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={toggleCamera}
+                      className={`p-2.5 rounded-xl backdrop-blur-sm transition-colors border ${
+                        cameraEnabled
+                          ? 'bg-black/50 hover:bg-black/70 border-white/20 text-white/70 hover:text-white'
+                          : 'bg-primary/20 hover:bg-primary/30 border-primary/40 text-primary'
+                      }`}
+                    >
+                      {cameraEnabled ? <CameraOff className="w-5 h-5" /> : <Camera className="w-5 h-5" />}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {cameraEnabled ? (t('turn_off_camera') || '关闭摄像头') : (t('turn_on_camera') || '开启摄像头')}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-            {/* 用户登录区域 */}
-            <div className="p-3 border-t border-primary/20">
+              {cameraEnabled && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setShowRawVideoInput(!showRawVideoInput)}
+                        className="p-2.5 bg-black/50 backdrop-blur-sm rounded-xl text-white/70 hover:text-white hover:bg-black/70 transition-colors border border-white/20"
+                      >
+                        {showRawVideoInput ? <Sparkles className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {showRawVideoInput ? t('ai_effect') : t('raw_input')}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+          </div>
+
+          {/* 底部控制面板 */}
+          <div className="mt-6 flex items-center gap-4">
+            {/* 已拍照：显示头像 + 生成按钮 */}
+            {capturedThumbnail ? (
+              <div className="flex items-center gap-3 px-4 py-3 bg-bg-card/80 backdrop-blur-sm rounded-2xl border border-primary/20">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary">
+                    <img src={capturedThumbnail} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <button
+                    onClick={handleClearPhoto}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+                <Button
+                  onClick={handleOpenSigilDialog}
+                  className="gradient-gold-copper hover:brightness-110"
+                >
+                  <Sparkles className="w-4 h-4 mr-1.5" />
+                  {t('generate_portrait')}
+                </Button>
+                <Button
+                  onClick={handleClearPhoto}
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              /* 未拍照：拍照按钮 + 无头像生成 */
+              <div className="flex items-center gap-3 px-4 py-3 bg-bg-card/80 backdrop-blur-sm rounded-2xl border border-primary/20">
+                {cameraEnabled ? (
+                  <>
+                    <Button
+                      onClick={handleCapturePhoto}
+                      disabled={!hasFaceDetected}
+                      className={hasFaceDetected
+                        ? 'gradient-gold-copper hover:brightness-110'
+                        : 'bg-muted cursor-not-allowed text-muted-foreground'
+                      }
+                    >
+                      <Camera className="w-4 h-4 mr-1.5" />
+                      {t('capture_photo') || '拍照'}
+                    </Button>
+                    {!hasFaceDetected && (
+                      <span className="text-muted-foreground text-sm">{t('step_closer')}</span>
+                    )}
+                  </>
+                ) : null}
+                <Button
+                  onClick={handleOpenSigilDialogWithoutPhoto}
+                  variant="outline"
+                  className="border-primary/40 text-primary hover:bg-primary/10"
+                >
+                  <Sparkles className="w-4 h-4 mr-1.5" />
+                  {t('generate_without_photo')}
+                </Button>
+              </div>
+            )}
+
+            {/* 用户信息 */}
+            <div className="px-3 py-2 bg-bg-card/80 backdrop-blur-sm rounded-xl border border-primary/20">
               {authLoading ? (
-                <div className="flex items-center justify-center py-2">
+                <div className="h-8 w-8 flex items-center justify-center">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
               ) : user ? (
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-medium shrink-0 overflow-hidden">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-medium shrink-0 overflow-hidden">
                     {user.profile?.avatarUrl ? (
                       <img src={user.profile.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
                       user.profile?.displayName?.[0] || user.email?.[0]?.toUpperCase() || '?'
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white/80 text-sm truncate">
-                      {user.profile?.displayName || user.email?.split('@')[0]}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      {isAdmin && <span className="text-[10px] text-primary/80">Admin</span>}
-                      <Link href="/credits" className="text-[10px] text-white/50 flex items-center gap-0.5 hover:text-primary">
-                        <Coins className="w-3 h-3 text-primary" />
-                        <span className="text-primary">{credits}</span>
-                      </Link>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => signOut()} className="text-white/40 hover:text-white/80 h-8 px-2">
+                  <Link href="/credits" className="text-xs text-muted-foreground flex items-center gap-1 hover:text-primary">
+                    <Coins className="w-3 h-3 text-primary" />
+                    <span className="text-primary font-medium">{credits}</span>
+                  </Link>
+                  <Button variant="ghost" size="icon" onClick={() => signOut()} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                     <LogOut className="w-4 h-4" />
                   </Button>
                 </div>
               ) : (
-                <Button onClick={() => signInWithGoogle()} className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/20">
-                  <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+                <Button onClick={() => signInWithGoogle()} variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  <svg className="w-4 h-4 mr-1.5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -815,52 +951,19 @@ export function SigilGenerator() {
                 </Button>
               )}
             </div>
-          </ResizablePanel>
 
-          <ResizableHandle withHandle className="bg-primary/30 hover:bg-primary/50 transition-colors" />
-
-          {/* 右侧镜子区域 */}
-          <ResizablePanel defaultSize={80} className="relative min-w-0 overflow-hidden">
-            <video
-              ref={rawVideoRef}
-              className={`absolute inset-0 h-full w-full object-cover ${showRawVideoInput ? '' : 'hidden'}`}
-              style={{ transform: 'scaleX(-1)' }}
-              playsInline
-              muted
-            />
-            <canvas
-              ref={canvasRef}
-              className={`absolute inset-0 h-full w-full object-cover ${showRawVideoInput ? 'hidden' : ''}`}
-            />
-            <canvas
-              ref={overlayCanvasRef}
-              className={`absolute inset-0 h-full w-full object-cover pointer-events-none ${showRawVideoInput ? 'hidden' : ''}`}
-            />
-            <button
-              onClick={() => setShowRawVideoInput(!showRawVideoInput)}
-              className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-lg text-white/70 hover:text-white hover:bg-black/70 transition-colors text-xs border border-white/20 flex items-center gap-1.5"
-            >
-              {showRawVideoInput ? (
-                <>
-                  <Palette className="w-3.5 h-3.5" />
-                  {t('ai_effect')}
-                </>
-              ) : (
-                <>
-                  <Video className="w-3.5 h-3.5" />
-                  {t('raw_input')}
-                </>
-              )}
-            </button>
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black">
-                <div className="w-16 h-16 rounded-xl border-2 border-primary/40 flex items-center justify-center animate-pulse">
-                  <Sparkles className="w-8 h-8 text-primary/60" />
-                </div>
-              </div>
-            )}
-          </ResizablePanel>
-        </ResizablePanelGroup>
+            {/* 工具栏 */}
+            <div className="flex items-center gap-1 px-2 py-2 bg-bg-card/80 backdrop-blur-sm rounded-xl border border-primary/20">
+              <Link
+                href="/gallery"
+                className="p-2 rounded-lg hover:bg-primary/20 text-primary transition-colors"
+              >
+                <Palette className="w-4 h-4" />
+              </Link>
+              <LocaleSwitcher className="text-muted-foreground" />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 大图预览浮层 */}
