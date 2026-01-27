@@ -1,13 +1,13 @@
-// 兰纳守护灵类型
+// Sigil element types
 export type SpiritElement = 'earth-water' | 'water-spirit' | 'fire-gold' | 'illusion' | 'wind-air'
 
 export interface LannaSpirit {
   id: string
-  name: string // 泰语名
-  nameEn: string // 英文名
-  nameCn: string // 中文名
+  name: string
+  nameEn: string
+  nameCn: string
   element: SpiritElement
-  culturalRole: string // 兰纳文化职责
+  culturalRole: string
   description: string
   traits: string[]
   color: string // 主色调 hex
@@ -34,7 +34,7 @@ export interface QuestionOption {
   id: string
   text: string
   textEn: string
-  spirits: string[] // 关联的守护灵 ID
+  spirits: string[] // related sigil IDs
 }
 
 // 用户答案

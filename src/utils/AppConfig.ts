@@ -30,8 +30,8 @@ export const detectUserLocale = (acceptLanguage?: string | null): string => {
 };
 
 export const AppConfig = {
-  name: 'LannaMirror3',
+  name: 'LovSigil',
   locales: ['th', 'en', 'ko', 'zh'],
-  defaultLocale: 'th', // Default to Thai (Lanna Mirror is Thai-focused)
+  defaultLocale: 'en',
   localePrefix,
 };

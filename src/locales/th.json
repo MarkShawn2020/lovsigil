@@ -17,26 +17,26 @@
     "sign_up_link": "สมัครสมาชิก"
   },
   "BaseTemplate": {
-    "description": "LannaMirror3 - Next.js SaaS Template พร้อมใช้งาน",
+    "description": "LovSigil - Next.js SaaS Template พร้อมใช้งาน",
     "made_with": "สร้างด้วยความใส่ใจโดย <author></author>"
   },
   "Index": {
-    "meta_title": "LannaMirror3 - Next.js SaaS Template พร้อมใช้งาน",
+    "meta_title": "LovSigil - Next.js SaaS Template พร้อมใช้งาน",
     "meta_description": "Full-stack SaaS template ที่สร้างด้วย Next.js 15, Supabase และ Tailwind CSS เริ่มโปรเจกต์ใหม่ได้ในไม่กี่นาที",
     "sponsors_title": "พันธมิตร"
   },
   "LannaMirror": {
-    "title": "กระจกวิญญาณล้านนา",
-    "subtitle": "Lanna Spirit Mirror",
+    "title": "LovSigil",
+    "subtitle": "เครื่องสร้าง Sigil ส่วนตัว AI",
     "loading_ai": "กำลังโหลด AI...",
     "camera_error": "ไม่สามารถเข้าถึงกล้อง",
     "ai_load_error": "โหลด AI ล้มเหลว",
     "retry": "ลองอีกครั้ง",
     "step_closer": "เข้ามาใกล้กระจก...",
     "analyzing": "ระบบจะวิเคราะห์การแสดงออกของคุณ",
-    "generate_portrait": "สร้างภาพวิญญาณ",
+    "generate_portrait": "สร้าง Sigil",
     "original": "ต้นฉบับ",
-    "spirit": "วิญญาณ",
+    "spirit": "Sigil",
     "preview": "ดูตัวอย่าง",
     "another_one": "ลองอีกครั้ง",
     "generating": "กำลังสร้างภาพ...",
@@ -49,7 +49,7 @@
     "ai_effect": "AI Effect",
     "raw_input": "Raw Input",
     "generating_poster": "กำลังสร้างโปสเตอร์...",
-    "spirit_only": "เฉพาะวิญญาณ",
+    "spirit_only": "เฉพาะ Sigil",
     "with_original": "+ ต้นฉบับ",
     "download": "ดาวน์โหลด",
     "delete": "ลบ",
@@ -57,7 +57,7 @@
     "close": "ปิด",
     "generate_group_portrait": "สร้างภาพรวมกลุ่ม",
     "generating_group": "กำลังสร้าง...",
-    "group_portrait": "ภาพวิญญาณรวมกลุ่ม",
+    "group_portrait": "Sigil รวมกลุ่ม",
     "waiting": "กำลังรอ",
     "composing_group_poster": "กำลังสร้างโปสเตอร์กลุ่ม...",
     "view_detail": "ดูรายละเอียด",
@@ -82,8 +82,8 @@
   },
   "About": {
     "meta_title": "เกี่ยวกับเรา",
-    "meta_description": "เรียนรู้เกี่ยวกับ LannaMirror3 template และทีม Lovstudio",
-    "about_paragraph": "ยินดีต้อนรับสู่ LannaMirror3! นี่คือ Next.js SaaS starter ที่พร้อมใช้งานจริง สร้างโดยทีม Lovstudio เพื่อช่วยนักพัฒนาสร้างเว็บแอปพลิเคชันสมัยใหม่อย่างรวดเร็ว",
+    "meta_description": "เรียนรู้เกี่ยวกับ LovSigil template และทีม Lovstudio",
+    "about_paragraph": "ยินดีต้อนรับสู่ LovSigil! นี่คือ Next.js SaaS starter ที่พร้อมใช้งานจริง สร้างโดยทีม Lovstudio เพื่อช่วยนักพัฒนาสร้างเว็บแอปพลิเคชันสมัยใหม่อย่างรวดเร็ว",
     "translation_powered_by": "การแปลขับเคลื่อนโดย"
   },
   "notifications": {
@@ -111,7 +111,7 @@
     "loading": "กำลังโหลด..."
   },
   "SignIn": {
-    "meta_title": "เข้าสู่ระบบ - LannaMirror3",
+    "meta_title": "เข้าสู่ระบบ - LovSigil",
     "title": "เข้าสู่ระบบ",
     "subtitle": "ยินดีต้อนรับกลับมา! กรุณาเข้าสู่ระบบ",
     "email_label": "อีเมล",
@@ -124,9 +124,9 @@
     "sign_up_link": "สมัครสมาชิก"
   },
   "SignUp": {
-    "meta_title": "สมัครสมาชิก - LannaMirror3",
+    "meta_title": "สมัครสมาชิก - LovSigil",
     "title": "สร้างบัญชี",
-    "subtitle": "เข้าร่วมกับผู้สร้างหลายพันคนที่ใช้ LannaMirror3",
+    "subtitle": "เข้าร่วมกับผู้สร้างหลายพันคนที่ใช้ LovSigil",
     "sign_up_button": "สร้างบัญชี",
     "creating_account": "กำลังสร้างบัญชี...",
     "have_account": "มีบัญชีอยู่แล้ว?",
@@ -149,7 +149,7 @@
     "rights_reserved": "สงวนลิขสิทธิ์"
   },
   "UserProfile": {
-    "meta_title": "ตั้งค่าโปรไฟล์ - LannaMirror3",
+    "meta_title": "ตั้งค่าโปรไฟล์ - LovSigil",
     "title": "ตั้งค่าโปรไฟล์",
     "loading": "กำลังโหลดโปรไฟล์...",
     "locale_label": "ภาษา",
@@ -161,7 +161,7 @@
     "updating": "กำลังอัปเดต..."
   },
   "Pricing": {
-    "meta_title": "ราคา - LannaMirror3 แพลตฟอร์มสร้างสรรค์ AI",
+    "meta_title": "ราคา - LovSigil แพลตฟอร์มสร้างสรรค์ AI",
     "meta_description": "แผนราคาที่ยืดหยุ่นสำหรับผู้สร้างเนื้อหาและทีม เริ่มต้นฟรีด้วย 3 โปรเจกต์ อัปเกรดเพื่อการสร้างเนื้อหา AI ไม่จำกัดและการทำงานร่วมกัน",
     "hero_title": "ราคาที่ยืดหยุ่นสำหรับทุกคน",
     "hero_description": "เลือกแผนที่เหมาะสมกับความต้องการในการสร้างเนื้อหาของคุณ เริ่มต้นฟรีและขยายตามการเติบโต",
@@ -243,7 +243,7 @@
       { "name": "TikTok", "description": "เนื้อหาแบบสั้น" }
     ],
     "testimonial": {
-      "quote": "LannaMirror3 เปลี่ยนแปลงวิธีที่เราสร้างเนื้อหา ผู้ช่วย AI ใช้งานง่ายมากและช่วยให้เรารักษาความสม่ำเสมอในทุกช่องทาง",
+      "quote": "LovSigil เปลี่ยนแปลงวิธีที่เราสร้างเนื้อหา ผู้ช่วย AI ใช้งานง่ายมากและช่วยให้เรารักษาความสม่ำเสมอในทุกช่องทาง",
       "author": "Sarah Chen",
       "company": "Digital Marketing Agency",
       "avatar": "/avatars/sarah-chen.jpg"
@@ -276,8 +276,8 @@
     "faq_title": "คำถามที่พบบ่อย",
     "faq": [
       {
-        "question": "LannaMirror3 รองรับแพลตฟอร์มใดบ้าง?",
-        "answer": "LannaMirror3 รองรับการสร้างเนื้อหาสำหรับทุกแพลตฟอร์มหลัก รวมถึง WordPress, Medium, LinkedIn, Twitter/X, Facebook, Instagram, YouTube และ TikTok เราเพิ่มการสนับสนุนแพลตฟอร์มใหม่อย่างต่อเนื่อง"
+        "question": "LovSigil รองรับแพลตฟอร์มใดบ้าง?",
+        "answer": "LovSigil รองรับการสร้างเนื้อหาสำหรับทุกแพลตฟอร์มหลัก รวมถึง WordPress, Medium, LinkedIn, Twitter/X, Facebook, Instagram, YouTube และ TikTok เราเพิ่มการสนับสนุนแพลตฟอร์มใหม่อย่างต่อเนื่อง"
       },
       {
         "question": "ฉันสามารถเปลี่ยนแผนได้ทุกเมื่อหรือไม่?",
@@ -320,7 +320,7 @@
     "generate_sigil": "สร้าง Sigil"
   },
   "Gallery": {
-    "title": "แกลเลอรีวิญญาณ",
+    "title": "แกลเลอรี Sigil",
     "back": "กลับ",
     "images": "รูปภาพ",
     "loading": "กำลังโหลดแกลเลอรี...",

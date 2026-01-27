@@ -43,10 +43,10 @@ export function ProfessionalAuthLayout({
               </svg>
             </div>
             <h1 className="text-3xl font-bold mb-2" style={{ color: '#F9F9F7', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-              LannaMirror3
+              LovSigil
             </h1>
             <p className="text-lg" style={{ color: 'rgba(249, 249, 247, 0.8)' }}>
-              Production-ready SaaS Starter
+              AI Personal Sigil Generator
             </p>
           </Link>
 
@@ -95,7 +95,7 @@ export function ProfessionalAuthLayout({
                   color: '#181818',
                   fontFamily: 'ui-sans-serif, system-ui, sans-serif'
                 }}>
-              LannaMirror3
+              LovSigil
             </h1>
           </Link>
 
@@ -127,7 +127,7 @@ export function ProfessionalAuthLayout({
           {/* Footer info */}
           <div className="mt-8 text-center">
             <p className="text-sm" style={{ color: '#87867F' }}>
-              © 2025 LannaMirror3 by Lovstudio
+              © 2025 LovSigil by Lovstudio
             </p>
           </div>
         </div>

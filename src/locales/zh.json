@@ -17,26 +17,26 @@
     "sign_up_link": "注册"
   },
   "BaseTemplate": {
-    "description": "LannaMirror3 - 生产就绪的 Next.js SaaS 模板",
+    "description": "LovSigil - 生产就绪的 Next.js SaaS 模板",
     "made_with": "由 <author></author> 精心打造。"
   },
   "Index": {
-    "meta_title": "LannaMirror3 - 生产就绪的 Next.js SaaS 模板",
+    "meta_title": "LovSigil - 生产就绪的 Next.js SaaS 模板",
     "meta_description": "基于 Next.js 15、Supabase 和 Tailwind CSS 的全栈 SaaS 模板，快速启动您的下一个项目。",
     "sponsors_title": "合作伙伴"
   },
   "LannaMirror": {
-    "title": "兰纳灵魂之镜",
-    "subtitle": "Lanna Spirit Mirror",
+    "title": "LovSigil",
+    "subtitle": "AI 个人符文图腾生成器",
     "loading_ai": "AI 加载中...",
     "camera_error": "无法访问摄像头",
     "ai_load_error": "AI 加载失败",
     "retry": "重试",
     "step_closer": "请靠近镜子...",
     "analyzing": "系统将分析您的表情",
-    "generate_portrait": "生成灵魂画像",
+    "generate_portrait": "生成符文图腾",
     "original": "原始照片",
-    "spirit": "灵魂",
+    "spirit": "图腾",
     "preview": "预览",
     "another_one": "再来一次",
     "generating": "生成中...",
@@ -49,7 +49,7 @@
     "ai_effect": "AI 效果",
     "raw_input": "原始输入",
     "generating_poster": "生成海报中...",
-    "spirit_only": "仅灵魂",
+    "spirit_only": "仅图腾",
     "with_original": "+ 原图",
     "download": "下载",
     "delete": "删除",
@@ -57,21 +57,21 @@
     "close": "关闭",
     "generate_group_portrait": "生成合像",
     "generating_group": "生成中...",
-    "group_portrait": "守护灵合像",
+    "group_portrait": "图腾合像",
     "waiting": "等待中",
     "composing_group_poster": "正在合成海报...",
     "qr_title": "扫码查看",
-    "qr_subtitle": "扫描二维码或点击链接查看你的守护灵画像",
+    "qr_subtitle": "扫描二维码或点击链接查看你的符文图腾",
     "qr_generating": "正在生成你的画像...",
     "qr_completed": "生成完成！",
     "qr_or_link": "或点击打开",
     "qr_close": "关闭",
     "generation_options_title": "选择风格",
-    "generation_options_desc": "为你的守护灵画像选择艺术风格和画面比例",
+    "generation_options_desc": "为你的符文图腾选择艺术风格和画面比例",
     "generation_options_desc_person": "选择 {name} 的呈现方式",
     "select_style": "艺术风格",
     "select_ratio": "画面比例",
-    "style_mural": "兰纳壁画",
+    "style_mural": "古典壁画",
     "style_mural_desc": "传统寺庙壁画风",
     "style_cute": "可爱萌系",
     "style_cute_desc": "萌萌哒二次元风",
@@ -110,8 +110,8 @@
   },
   "About": {
     "meta_title": "关于我们",
-    "meta_description": "了解 LannaMirror3 模板和 Lovstudio 团队",
-    "about_paragraph": "欢迎来到 LannaMirror3！这是一个由 Lovstudio 团队打造的生产就绪 Next.js SaaS 模板，帮助开发者快速构建现代 Web 应用。",
+    "meta_description": "了解 LovSigil 模板和 Lovstudio 团队",
+    "about_paragraph": "欢迎来到 LovSigil！这是一个由 Lovstudio 团队打造的生产就绪 Next.js SaaS 模板，帮助开发者快速构建现代 Web 应用。",
     "translation_powered_by": "翻译服务由以下提供支持"
   },
   "Portfolio": {
@@ -172,7 +172,7 @@
         "blog": "博客"
       },
       "product": {
-        "platform": "LannaMirror3 平台",
+        "platform": "LovSigil 平台",
         "pricing": "定价方案",
         "api_docs": "API 文档",
         "help_docs": "帮助文档"
@@ -317,16 +317,16 @@
   },
   "TermsOfService": {
     "meta_title": "服务条款",
-    "meta_description": "LannaMirror3 AI 智能创作平台服务条款",
+    "meta_description": "LovSigil AI 智能创作平台服务条款",
     "title": "服务条款",
     "sections": {
       "acceptance": {
         "title": "1. 条款接受",
-        "content": "通过访问和使用 LannaMirror3，您接受并同意受本协议条款和条件的约束。如果您不同意遵守以上条款，请不要使用本服务。"
+        "content": "通过访问和使用 LovSigil，您接受并同意受本协议条款和条件的约束。如果您不同意遵守以上条款，请不要使用本服务。"
       },
       "description": {
         "title": "2. 服务描述",
-        "content": "LannaMirror3 是专为知识博主和内容创作者设计的 AI 智能创作平台。我们的服务提供内容创作、协作和发布工具。"
+        "content": "LovSigil 是专为知识博主和内容创作者设计的 AI 智能创作平台。我们的服务提供内容创作、协作和发布工具。"
       },
       "user_accounts": {
         "title": "3. 用户账户和注册",
@@ -338,7 +338,7 @@
       },
       "intellectual_property": {
         "title": "5. 知识产权",
-        "content": "本服务及其原创内容、功能和特色是且将继续是 LannaMirror3 及其许可方的专有财产。"
+        "content": "本服务及其原创内容、功能和特色是且将继续是 LovSigil 及其许可方的专有财产。"
       },
       "ai_usage": {
         "title": "6. AI 和数据使用",
@@ -354,7 +354,7 @@
       },
       "governing_law": {
         "title": "9. 适用法律",
-        "content": "本条款应受 LannaMirror3 运营所在司法管辖区法律管辖并据此解释。"
+        "content": "本条款应受 LovSigil 运营所在司法管辖区法律管辖并据此解释。"
       },
       "contact": {
         "title": "10. 联系信息",
@@ -364,12 +364,12 @@
   },
   "PrivacyPolicy": {
     "meta_title": "隐私政策",
-    "meta_description": "LannaMirror3 AI 智能创作平台隐私政策",
+    "meta_description": "LovSigil AI 智能创作平台隐私政策",
     "title": "隐私政策",
     "sections": {
       "introduction": {
         "title": "1. 简介",
-        "content": "LannaMirror3 尊重您的隐私，致力于保护您的个人数据。本隐私政策解释了当您使用我们的服务时，我们如何收集、使用和分享您的信息。"
+        "content": "LovSigil 尊重您的隐私，致力于保护您的个人数据。本隐私政策解释了当您使用我们的服务时，我们如何收集、使用和分享您的信息。"
       },
       "information_collected": {
         "title": "2. 我们收集的信息",
@@ -419,7 +419,7 @@
   },
   "CookiePolicy": {
     "meta_title": "Cookie 政策",
-    "meta_description": "LannaMirror3 AI 智能创作平台 Cookie 政策",
+    "meta_description": "LovSigil AI 智能创作平台 Cookie 政策",
     "title": "Cookie 政策",
     "sections": {
       "what_are_cookies": {
@@ -457,27 +457,27 @@
     "error": "错误",
     "order_not_found": "未找到订单",
     "fetch_error": "加载失败",
-    "spirit_portrait": "你的守护灵",
-    "group_portrait": "守护灵合像",
+    "spirit_portrait": "你的符文图腾",
+    "group_portrait": "图腾合像",
     "status_pending": "正在准备你的画像...",
-    "status_generating": "正在生成你的守护灵画像...",
+    "status_generating": "正在生成你的符文图腾...",
     "status_failed": "生成失败",
     "unknown_error": "发生未知错误",
     "generation_time": "大约需要 10-30 秒",
     "download": "下载",
     "original_photo": "原始照片",
-    "spirit_result": "守护灵",
+    "spirit_result": "符文",
     "show_image": "显示图片",
     "show_poster": "显示海报",
-    "spirit_only": "仅守护灵",
+    "spirit_only": "仅图腾",
     "with_original": "+ 原图",
     "qr_scan_title": "扫码在手机上查看",
-    "qr_scan_hint": "在手机上继续查看和管理你的守护灵",
+    "qr_scan_hint": "在手机上继续查看和管理你的符文图腾",
     "qr_scan_mobile": "扫码在手机上查看",
     "qr_scan_wait": "在手机上继续等待生成结果",
     "qr_scan_share": "扫码分享此页面",
-    "print_title": "让守护灵走进现实",
-    "print_subtitle": "将你的守护灵变成实体收藏品",
+    "print_title": "让符文图腾走进现实",
+    "print_subtitle": "将你的符文图腾变成实体收藏品",
     "print_tattoo": "纹身贴",
     "print_tattoo_desc": "临时纹身贴纸",
     "print_frame": "相框",
@@ -498,14 +498,14 @@
     "cancel": "取消",
     "submitting": "提交中...",
     "print_submit": "提交订单",
-    "powered_by": "兰纳灵魂之镜"
+    "powered_by": "LovSigil"
   },
   "Auth": {
     "loading": "加载中..."
   },
   "SignIn": {
-    "meta_title": "登录 - LannaMirror3",
-    "meta_description": "登录您的 LannaMirror3 账户",
+    "meta_title": "登录 - LovSigil",
+    "meta_description": "登录您的 LovSigil 账户",
     "title": "登录",
     "subtitle": "欢迎回来！请登录您的账户",
     "email_label": "邮箱地址",
@@ -521,8 +521,8 @@
     "sign_up_link": "立即注册"
   },
   "SignUp": {
-    "meta_title": "注册 - LannaMirror3",
-    "meta_description": "创建您的 LannaMirror3 账户，开始使用 SaaS 模板",
+    "meta_title": "注册 - LovSigil",
+    "meta_description": "创建您的 LovSigil 账户，开始使用 SaaS 模板",
     "title": "创建账户",
     "subtitle": "创建账户，开始使用模板",
     "full_name_label": "姓名",
@@ -558,7 +558,7 @@
     "email_sent_message": "如果该邮箱对应的账户存在，我们已向您发送了密码重置链接。"
   },
   "UserProfile": {
-    "meta_title": "个人设置 - LannaMirror3",
+    "meta_title": "个人设置 - LovSigil",
     "title": "个人设置",
     "loading": "加载个人资料中...",
     "profile_updated_success": "个人资料更新成功",
@@ -587,7 +587,7 @@
     "not_verified": "未验证"
   },
   "Pricing": {
-    "meta_title": "定价 - LannaMirror3 AI 智能创作平台",
+    "meta_title": "定价 - LovSigil AI 智能创作平台",
     "meta_description": "灵活的定价方案，满足内容创作者和团队需求。免费开始，支持 3 个项目，升级享受无限 AI 创作和协作功能。",
     "hero_title": "灵活定价，适合所有人",
     "hero_description": "选择最适合您内容创作需求的方案。免费开始，随着业务增长而扩展。",
@@ -669,7 +669,7 @@
       { "name": "Medium", "description": "文章发布" }
     ],
     "testimonial": {
-      "quote": "LannaMirror3 彻底改变了我们的内容创作方式。AI 助手非常直观，帮助我们在所有渠道保持内容的一致性。",
+      "quote": "LovSigil 彻底改变了我们的内容创作方式。AI 助手非常直观，帮助我们在所有渠道保持内容的一致性。",
       "author": "张小明",
       "company": "数字营销机构",
       "avatar": "/avatars/zhang-xiaoming.jpg"
@@ -702,8 +702,8 @@
     "faq_title": "常见问题",
     "faq": [
       {
-        "question": "LannaMirror3 支持哪些平台？",
-        "answer": "LannaMirror3 支持所有主流平台的内容创作，包括微信公众号、知乎、小红书、抖音、微博、B站、WordPress、Medium 等。我们持续添加对新平台的支持。"
+        "question": "LovSigil 支持哪些平台？",
+        "answer": "LovSigil 支持所有主流平台的内容创作，包括微信公众号、知乎、小红书、抖音、微博、B站、WordPress、Medium 等。我们持续添加对新平台的支持。"
       },
       {
         "question": "我可以随时更改套餐吗？",
@@ -746,7 +746,7 @@
     "generate_sigil": "生成图腾"
   },
   "Gallery": {
-    "title": "守护灵画廊",
+    "title": "符文图腾画廊",
     "back": "返回",
     "images": "张图片",
     "loading": "加载画廊中...",
@@ -758,7 +758,7 @@
     "make_same": "我要做同款"
   },
   "Credits": {
-    "meta_title": "积分 - 兰纳照妖镜",
+    "meta_title": "积分 - LovSigil",
     "meta_description": "管理您的积分余额、充值和交易记录",
     "title": "我的积分",
     "login_required": "请先登录",

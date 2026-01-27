@@ -8,7 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "next dev -p 6484",
+    "dev": "next dev -p 6886",
     "build:next": "next build",
     "build": "run-p build:* --race",
     "start": "next start",

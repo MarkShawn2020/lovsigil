@@ -17,29 +17,29 @@
     "sign_up_link": "Sign up"
   },
   "BaseTemplate": {
-    "description": "LannaMirror3 - Production-ready Next.js SaaS Starter",
+    "description": "LovSigil - Production-ready Next.js SaaS Starter",
     "made_with": "Crafted with <author></author>."
   },
   "Index": {
-    "meta_title": "LannaMirror3 - Production-ready Next.js SaaS Starter",
+    "meta_title": "LovSigil - Production-ready Next.js SaaS Starter",
     "meta_description": "A full-stack SaaS template built with Next.js 15, Supabase, and Tailwind CSS. Start your next project in minutes.",
     "sponsors_title": "Partners"
   },
   "LannaMirror": {
-    "title": "Lanna Spirit Mirror",
-    "subtitle": "กระจกวิญญาณล้านนา",
+    "title": "LovSigil",
+    "subtitle": "AI Personal Sigil Generator",
     "loading_ai": "Loading AI...",
     "camera_error": "Cannot access camera",
     "ai_load_error": "Failed to load AI",
     "retry": "Retry",
     "step_closer": "Step closer to the mirror...",
     "analyzing": "System will analyze your expressions",
-    "generate_portrait": "Generate Portrait",
+    "generate_portrait": "Generate Sigil",
     "original": "Original",
-    "spirit": "Spirit",
+    "spirit": "Sigil",
     "preview": "Preview",
     "another_one": "Another One",
-    "generating": "Generating portrait...",
+    "generating": "Generating sigil...",
     "generation_time": "About 10-30 seconds",
     "generation_failed": "Generation Failed",
     "start_over": "Start Over",
@@ -49,7 +49,7 @@
     "ai_effect": "AI Effect",
     "raw_input": "Raw Input",
     "generating_poster": "Generating poster...",
-    "spirit_only": "Spirit Only",
+    "spirit_only": "Sigil Only",
     "with_original": "+ Original",
     "download": "Download",
     "delete": "Delete",
@@ -57,7 +57,7 @@
     "close": "Close",
     "generate_group_portrait": "Generate Group Portrait",
     "generating_group": "Generating...",
-    "group_portrait": "Group Portrait",
+    "group_portrait": "Group Sigil",
     "waiting": "Waiting",
     "composing_group_poster": "Composing group poster...",
     "qr_title": "Scan to View",
@@ -72,7 +72,7 @@
     "select_style": "Art Style",
     "select_ratio": "Aspect Ratio",
     "style_mural": "Temple Mural",
-    "style_mural_desc": "Traditional Lanna art",
+    "style_mural_desc": "Traditional temple art",
     "style_cute": "Cute & Chibi",
     "style_cute_desc": "Adorable kawaii style",
     "style_mysterious": "Dark Mystical",
@@ -110,8 +110,8 @@
   },
   "About": {
     "meta_title": "About",
-    "meta_description": "Learn about LannaMirror3 template and the Lovstudio team",
-    "about_paragraph": "Welcome to LannaMirror3! This is a production-ready Next.js SaaS starter built by the Lovstudio team to help developers build modern web applications quickly.",
+    "meta_description": "Learn about LovSigil template and the Lovstudio team",
+    "about_paragraph": "Welcome to LovSigil! This is a production-ready Next.js SaaS starter built by the Lovstudio team to help developers build modern web applications quickly.",
     "translation_powered_by": "Translation powered by"
   },
   "Portfolio": {
@@ -172,7 +172,7 @@
         "blog": "Blog"
       },
       "product": {
-        "platform": "LannaMirror3 Platform",
+        "platform": "LovSigil Platform",
         "pricing": "Pricing",
         "api_docs": "API Documentation",
         "help_docs": "Help Center"
@@ -317,16 +317,16 @@
   },
   "TermsOfService": {
     "meta_title": "Terms of Service",
-    "meta_description": "Terms of Service for LannaMirror3 AI creation platform",
+    "meta_description": "Terms of Service for LovSigil AI creation platform",
     "title": "Terms of Service",
     "sections": {
       "acceptance": {
         "title": "1. Acceptance of Terms",
-        "content": "By accessing and using LannaMirror3, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service."
+        "content": "By accessing and using LovSigil, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service."
       },
       "description": {
         "title": "2. Description of Service",
-        "content": "LannaMirror3 is an AI-powered intelligent creation platform designed specifically for knowledge bloggers and content creators. Our service provides tools for content creation, collaboration, and publishing."
+        "content": "LovSigil is an AI-powered intelligent creation platform designed specifically for knowledge bloggers and content creators. Our service provides tools for content creation, collaboration, and publishing."
       },
       "user_accounts": {
         "title": "3. User Accounts and Registration",
@@ -338,7 +338,7 @@
       },
       "intellectual_property": {
         "title": "5. Intellectual Property Rights",
-        "content": "The service and its original content, features, and functionality are and will remain the exclusive property of LannaMirror3 and its licensors."
+        "content": "The service and its original content, features, and functionality are and will remain the exclusive property of LovSigil and its licensors."
       },
       "ai_usage": {
         "title": "6. AI and Data Usage",
@@ -354,7 +354,7 @@
       },
       "governing_law": {
         "title": "9. Governing Law",
-        "content": "These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which LannaMirror3 operates."
+        "content": "These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which LovSigil operates."
       },
       "contact": {
         "title": "10. Contact Information",
@@ -364,12 +364,12 @@
   },
   "PrivacyPolicy": {
     "meta_title": "Privacy Policy",
-    "meta_description": "Privacy Policy for LannaMirror3 AI creation platform",
+    "meta_description": "Privacy Policy for LovSigil AI creation platform",
     "title": "Privacy Policy",
     "sections": {
       "introduction": {
         "title": "1. Introduction",
-        "content": "LannaMirror3 respects your privacy and is committed to protecting your personal data. This privacy policy explains how we collect, use, and share information about you when you use our services."
+        "content": "LovSigil respects your privacy and is committed to protecting your personal data. This privacy policy explains how we collect, use, and share information about you when you use our services."
       },
       "information_collected": {
         "title": "2. Information We Collect",
@@ -419,7 +419,7 @@
   },
   "CookiePolicy": {
     "meta_title": "Cookie Policy",
-    "meta_description": "Cookie Policy for LannaMirror3 AI creation platform",
+    "meta_description": "Cookie Policy for LovSigil AI creation platform",
     "title": "Cookie Policy",
     "sections": {
       "what_are_cookies": {
@@ -457,27 +457,27 @@
     "error": "Error",
     "order_not_found": "Order not found",
     "fetch_error": "Failed to load order",
-    "spirit_portrait": "Your Guardian Spirit",
-    "group_portrait": "Group Portrait",
+    "spirit_portrait": "Your Personal Sigil",
+    "group_portrait": "Group Sigil",
     "status_pending": "Preparing your portrait...",
-    "status_generating": "Creating your guardian spirit portrait...",
+    "status_generating": "Creating your personal sigil...",
     "status_failed": "Generation Failed",
     "unknown_error": "An unknown error occurred",
     "generation_time": "This may take 10-30 seconds",
     "download": "Download",
     "original_photo": "Original",
-    "spirit_result": "Spirit",
+    "spirit_result": "Sigil",
     "show_image": "Show Image",
     "show_poster": "Show Poster",
-    "spirit_only": "Spirit Only",
+    "spirit_only": "Sigil Only",
     "with_original": "+ Original",
     "qr_scan_title": "Scan to View on Mobile",
-    "qr_scan_hint": "Continue viewing and manage your spirit on your phone",
+    "qr_scan_hint": "Continue viewing and manage your sigil on your phone",
     "qr_scan_mobile": "Scan to view on mobile",
     "qr_scan_wait": "Continue waiting on your phone",
     "qr_scan_share": "Scan to share this page",
-    "print_title": "Bring Your Spirit to Life",
-    "print_subtitle": "Transform your guardian spirit into a physical keepsake",
+    "print_title": "Bring Your Sigil to Life",
+    "print_subtitle": "Transform your personal sigil into a physical keepsake",
     "print_tattoo": "Tattoo Sticker",
     "print_tattoo_desc": "Temporary tattoo",
     "print_frame": "Photo Frame",
@@ -498,14 +498,14 @@
     "cancel": "Cancel",
     "submitting": "Submitting...",
     "print_submit": "Submit Order",
-    "powered_by": "Powered by Lanna Spirit Mirror"
+    "powered_by": "Powered by LovSigil"
   },
   "Auth": {
     "loading": "Loading..."
   },
   "SignIn": {
-    "meta_title": "Sign In - LannaMirror3",
-    "meta_description": "Sign in to your LannaMirror3 account to access AI-powered content creation tools",
+    "meta_title": "Sign In - LovSigil",
+    "meta_description": "Sign in to your LovSigil account to access AI-powered content creation tools",
     "title": "Sign In",
     "subtitle": "Welcome back! Please sign in to your account",
     "email_label": "Email Address",
@@ -521,10 +521,10 @@
     "sign_up_link": "Sign up"
   },
   "SignUp": {
-    "meta_title": "Sign Up - LannaMirror3",
-    "meta_description": "Create your LannaMirror3 account and start building amazing content with AI assistance",
+    "meta_title": "Sign Up - LovSigil",
+    "meta_description": "Create your LovSigil account and start building amazing content with AI assistance",
     "title": "Create Account",
-    "subtitle": "Join thousands of creators using LannaMirror3",
+    "subtitle": "Join thousands of creators using LovSigil",
     "full_name_label": "Full Name",
     "full_name_placeholder": "Enter your full name",
     "email_label": "Email Address",
@@ -558,7 +558,7 @@
     "email_sent_message": "If an account with that email exists, we've sent you a password reset link."
   },
   "UserProfile": {
-    "meta_title": "Profile Settings - LannaMirror3",
+    "meta_title": "Profile Settings - LovSigil",
     "title": "Profile Settings",
     "loading": "Loading profile...",
     "profile_updated_success": "Profile updated successfully",
@@ -587,7 +587,7 @@
     "not_verified": "No"
   },
   "Pricing": {
-    "meta_title": "Pricing - LannaMirror3 AI Creation Platform",
+    "meta_title": "Pricing - LovSigil AI Creation Platform",
     "meta_description": "Flexible pricing plans for content creators and teams. Start free with 3 projects, upgrade for unlimited AI-powered content creation and collaboration.",
     "hero_title": "Flexible pricing for everyone",
     "hero_description": "Choose the perfect plan for your content creation needs. Start free and scale as you grow.",
@@ -669,7 +669,7 @@
       { "name": "TikTok", "description": "Short-form content" }
     ],
     "testimonial": {
-      "quote": "LannaMirror3 has transformed how we create content. The AI assistance is incredibly intuitive and helps us maintain consistency across all our channels.",
+      "quote": "LovSigil has transformed how we create content. The AI assistance is incredibly intuitive and helps us maintain consistency across all our channels.",
       "author": "Sarah Chen",
       "company": "Digital Marketing Agency",
       "avatar": "/avatars/sarah-chen.jpg"
@@ -702,8 +702,8 @@
     "faq_title": "Frequently Asked Questions",
     "faq": [
       {
-        "question": "What platforms does LannaMirror3 support?",
-        "answer": "LannaMirror3 supports content creation for all major platforms including WordPress, Medium, LinkedIn, Twitter/X, Facebook, Instagram, YouTube, and TikTok. We're constantly adding support for new platforms."
+        "question": "What platforms does LovSigil support?",
+        "answer": "LovSigil supports content creation for all major platforms including WordPress, Medium, LinkedIn, Twitter/X, Facebook, Instagram, YouTube, and TikTok. We're constantly adding support for new platforms."
       },
       {
         "question": "Can I change my plan at any time?",
@@ -746,7 +746,7 @@
     "generate_sigil": "Generate Sigil"
   },
   "Gallery": {
-    "title": "Spirit Gallery",
+    "title": "Sigil Gallery",
     "back": "Back",
     "images": "images",
     "loading": "Loading gallery...",
@@ -758,7 +758,7 @@
     "make_same": "Make same style"
   },
   "Credits": {
-    "meta_title": "Credits - Lanna Spirit Mirror",
+    "meta_title": "Credits - LovSigil",
     "meta_description": "Manage your credits balance, recharge and transaction history",
     "title": "My Credits",
     "login_required": "Please sign in first",

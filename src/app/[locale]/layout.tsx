@@ -40,37 +40,37 @@ export const generateMetadata = async (props: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> => {
   const { locale } = await props.params;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://lanna-mirror-3.ai';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://lovsigil.lovstudio.ai';
 
   // Locale-specific metadata
   const metadataByLocale = {
     zh: {
       title: {
-        default: '兰纳照妖镜 - 发现你的守护灵',
-        template: '%s | 兰纳照妖镜',
+        default: 'LovSigil - AI 个人符文图腾生成器',
+        template: '%s | LovSigil',
       },
-      description: '基于 AI 面部表情分析的兰纳守护灵匹配系统。照见你的那伽、狮子、天鹅、大象或金翅鸟守护灵。',
-      keywords: ['兰纳', '守护灵', 'AI', '面部分析', '那伽', '狮子', '天鹅', '大象', '金翅鸟', '泰北文化'],
+      description: '基于 AI 面部分析的个人符文图腾生成器。通过面部特征分析你的内在本质，生成专属的卢恩风格 Sigil 图腾。',
+      keywords: ['Sigil', '符文', 'AI', '面部分析', '图腾', '个性化', '卢恩', '神秘'],
       ogLocale: 'zh_CN',
-      ogTitle: '兰纳照妖镜 - 发现你的守护灵',
-      ogDescription: '基于 AI 面部表情分析，发现属于你的兰纳五大守护灵。',
-      twitterTitle: '兰纳照妖镜 - 发现你的守护灵',
-      twitterDescription: '基于 AI 面部表情分析的兰纳守护灵匹配系统。',
-      ogImageAlt: '兰纳照妖镜 - Lanna Spirit Mirror',
+      ogTitle: 'LovSigil - AI 个人符文图腾生成器',
+      ogDescription: '基于 AI 面部分析，生成专属于你的卢恩风格 Sigil 图腾。',
+      twitterTitle: 'LovSigil - AI 个人符文图腾生成器',
+      twitterDescription: '基于 AI 面部分析的个人符文图腾生成器。',
+      ogImageAlt: 'LovSigil - AI Sigil Generator',
     },
     en: {
       title: {
-        default: 'Lanna Spirit Mirror - Discover Your Guardian Spirit',
-        template: '%s | Lanna Spirit Mirror',
+        default: 'LovSigil - AI Personal Sigil Totem Generator',
+        template: '%s | LovSigil',
       },
-      description: 'AI-powered facial expression analysis to match your Lanna guardian spirit. Discover your Naga, Singha, Hong, Chang, or Garuda protector.',
-      keywords: ['Lanna', 'guardian spirit', 'AI', 'facial analysis', 'Naga', 'Singha', 'Hong', 'Chang', 'Garuda', 'Thai culture'],
+      description: 'AI-powered personal Sigil totem generator. Analyze your inner essence through facial features and create unique rune-style Sigil totems.',
+      keywords: ['Sigil', 'rune', 'AI', 'facial analysis', 'totem', 'personalization', 'mystic', 'generator'],
       ogLocale: 'en_US',
-      ogTitle: 'Lanna Spirit Mirror - Discover Your Guardian Spirit',
-      ogDescription: 'AI-powered facial expression analysis to discover your Lanna guardian spirit.',
-      twitterTitle: 'Lanna Spirit Mirror - Discover Your Guardian Spirit',
-      twitterDescription: 'AI-powered Lanna guardian spirit matching through facial expression analysis.',
-      ogImageAlt: 'Lanna Spirit Mirror',
+      ogTitle: 'LovSigil - AI Personal Sigil Totem Generator',
+      ogDescription: 'AI-powered personal Sigil totem generator with face detection and rune-style personalization.',
+      twitterTitle: 'LovSigil - AI Personal Sigil Totem Generator',
+      twitterDescription: 'Generate unique rune-style Sigil totems based on your inner essence.',
+      ogImageAlt: 'LovSigil - AI Sigil Generator',
     },
   };
 
@@ -80,9 +80,9 @@ export const generateMetadata = async (props: {
     title: currentMetadata.title,
     description: currentMetadata.description,
     keywords: currentMetadata.keywords,
-    authors: [{ name: 'LannaMirror3 Technology' }],
-    creator: 'LannaMirror3 Technology',
-    publisher: 'LannaMirror3 Technology',
+    authors: [{ name: 'LovStudio' }],
+    creator: 'LovStudio',
+    publisher: 'LovStudio',
     formatDetection: {
       email: false,
       address: false,
@@ -104,7 +104,7 @@ export const generateMetadata = async (props: {
       url: `/${locale}`,
       title: currentMetadata.ogTitle,
       description: currentMetadata.ogDescription,
-      siteName: 'LannaMirror3',
+      siteName: 'LovSigil',
       images: [
         {
           url: '/og-image.png',
@@ -116,8 +116,8 @@ export const generateMetadata = async (props: {
     },
     twitter: {
       card: 'summary_large_image',
-      site: '@lanna-mirror-3_ai',
-      creator: '@lanna-mirror-3_ai',
+      site: '@lovstudio_ai',
+      creator: '@lovstudio_ai',
       title: currentMetadata.twitterTitle,
       description: currentMetadata.twitterDescription,
       images: ['/og-image.png'],
@@ -209,7 +209,7 @@ export default async function RootLayout(props: {
         {/* iOS PWA optimizations */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="LannaMirror3" />
+        <meta name="apple-mobile-web-app-title" content="LovSigil" />
         {/* Prevent phone number detection on mobile */}
         <meta name="format-detection" content="telephone=no" />
       </head>

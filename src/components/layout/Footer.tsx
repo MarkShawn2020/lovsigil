@@ -1,7 +1,7 @@
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import React from 'react';
-import { LannaMirror3Icon } from '../LannaMirror3Icon';
+import { LovSigilIcon } from '../LovSigilIcon';
 import { SocialIcon } from '../SocialIcons';
 import { Container } from './Container';
 
@@ -27,11 +27,11 @@ const Footer = () => {
             {/* Brand */}
             <div className="lg:col-span-1">
               <Link href="/" className="flex items-center space-x-2 no-underline mb-4">
-                <LannaMirror3Icon className="h-8 w-8" />
-                <span className="text-xl font-semibold text-text-main">LannaMirror3</span>
+                <LovSigilIcon className="h-8 w-8" />
+                <span className="text-xl font-semibold text-text-main">LovSigil</span>
               </Link>
               <p className="text-sm text-text-faded mb-4">
-                Production-ready Next.js SaaS Starter
+                AI-powered personal Sigil totem generator
               </p>
               <div className="flex space-x-4">
                 <SocialIcon href="https://github.com/lovstudio" icon="github" />

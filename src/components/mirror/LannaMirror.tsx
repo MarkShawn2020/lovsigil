@@ -963,7 +963,7 @@ export function LannaMirror() {
             </div>
           )}
 
-          {/* 吸引模式 - 等待或显示守护灵面板 */}
+          {/* Attract mode - waiting or show sigil panel */}
           {state === 'attract' && !isLoading && (
             <>
               {!hasPersons ? (

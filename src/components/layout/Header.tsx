@@ -8,7 +8,7 @@ import {useRouter} from '@/libs/I18nNavigation';
 import {cn} from '@/utils/Helpers';
 import packageJson from '../../../package.json';
 import {Button} from '../Button';
-import {LannaMirror3Icon} from '../LannaMirror3Icon';
+import {LovSigilIcon} from '../LovSigilIcon';
 import {LocaleSwitcher} from '../LocaleSwitcher';
 import {UserDropdown} from '../UserDropdown';
 import {Container} from './Container';
@@ -72,8 +72,8 @@ const Header = () => {
                     <div className="flex items-center">
                         <Link href="/" className="flex items-center space-x-2 no-underline"
                               style={{color: 'var(--color-primary, #d97757)'}}>
-                            <LannaMirror3Icon className="h-8 w-8"/>
-                            <span className="text-xl font-bold">LannaMirror3</span>
+                            <LovSigilIcon className="h-8 w-8"/>
+                            <span className="text-xl font-bold">LovSigil</span>
                         </Link>
                         <span
                             className="ml-2 px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full border border-primary/20">
