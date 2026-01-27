@@ -146,7 +146,40 @@
     "company_title": "บริษัท",
     "product_title": "ผลิตภัณฑ์",
     "support_title": "สนับสนุน",
-    "rights_reserved": "สงวนลิขสิทธิ์"
+    "newsletter_title": "จดหมายข่าว",
+    "newsletter_description": "รับข่าวสารผลิตภัณฑ์ล่าสุด",
+    "email_placeholder": "กรอกอีเมลของคุณ",
+    "subscribe_button": "สมัครรับข่าว",
+    "rights_reserved": "สงวนลิขสิทธิ์",
+    "links": {
+      "company": {
+        "about": "เกี่ยวกับเรา",
+        "careers": "ร่วมงานกับเรา",
+        "press": "ข่าวสาร",
+        "blog": "บล็อก"
+      },
+      "product": {
+        "platform": "แพลตฟอร์ม LovSigil",
+        "pricing": "ราคา",
+        "api_docs": "เอกสาร API",
+        "help_docs": "ศูนย์ช่วยเหลือ"
+      },
+      "support": {
+        "help_center": "ศูนย์ช่วยเหลือ",
+        "contact": "ติดต่อเรา",
+        "status": "สถานะระบบ",
+        "privacy": "นโยบายความเป็นส่วนตัว"
+      },
+      "legal": {
+        "terms": "ข้อกำหนดการใช้งาน",
+        "privacy": "นโยบายความเป็นส่วนตัว",
+        "cookies": "นโยบายคุกกี้"
+      }
+    }
+  },
+  "DemoBanner": {
+    "demo_text": "Next.js Template Demo - สร้างโดย Lovstudio",
+    "try_auth": "ลองใช้การยืนยันตัวตน"
   },
   "UserProfile": {
     "meta_title": "ตั้งค่าโปรไฟล์ - LovSigil",
