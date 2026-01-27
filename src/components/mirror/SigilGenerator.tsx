@@ -82,6 +82,7 @@ export function SigilGenerator() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const animationRef = useRef<number>(0)
+  const dialogOpenRef = useRef(false) // 跟踪 dialog 是否打开，用于暂停 AI 推理
   const segmenterRef = useRef<any>(null)
   const faceLandmarkerRef = useRef<any>(null)
   const poseLandmarkerRef = useRef<any>(null)
@@ -207,6 +208,11 @@ export function SigilGenerator() {
     completed: boolean
     resultImage: string | null
   }>({ show: false, orderId: null, orderUrl: null, sigilName: null, userPhoto: null, completed: false, resultImage: null })
+
+  // 同步 dialog 状态到 ref，用于暂停 renderLoop 中的 AI 推理
+  useEffect(() => {
+    dialogOpenRef.current = sigilDialog.open || qrModal.show
+  }, [sigilDialog.open, qrModal.show])
 
   // 初始化摄像头 - 移动端使用较低分辨率以提升性能
   const initCamera = useCallback(async () => {
@@ -344,6 +350,12 @@ export function SigilGenerator() {
     const webglRenderer = webglRendererRef.current
 
     if (!video || !canvas || !segmenter || video.readyState < 2) {
+      animationRef.current = requestAnimationFrame(renderLoop)
+      return
+    }
+
+    // Dialog 打开时暂停 AI 推理以提升交互响应
+    if (dialogOpenRef.current) {
       animationRef.current = requestAnimationFrame(renderLoop)
       return
     }
