@@ -61,7 +61,35 @@
     "waiting": "กำลังรอ",
     "composing_group_poster": "กำลังสร้างโปสเตอร์กลุ่ม...",
     "view_detail": "ดูรายละเอียด",
-    "make_same": "ทำแบบเดียวกัน"
+    "make_same": "ทำแบบเดียวกัน",
+    "qr_title": "Scan to View",
+    "qr_subtitle": "Scan the QR code or click the link to view your portrait",
+    "qr_generating": "Generating your portrait...",
+    "qr_completed": "Generation complete!",
+    "qr_or_link": "Or click to open",
+    "qr_close": "Close",
+    "generation_options_title": "Choose Your Style",
+    "generation_options_desc": "Select the art style and aspect ratio for your portrait",
+    "generation_options_desc_person": "Choose how {name} will be portrayed",
+    "select_style": "Art Style",
+    "select_ratio": "Aspect Ratio",
+    "style_mural": "Temple Mural",
+    "style_mural_desc": "Traditional temple art",
+    "style_cute": "Cute & Chibi",
+    "style_cute_desc": "Adorable kawaii style",
+    "style_mysterious": "Dark Mystical",
+    "style_mysterious_desc": "Ethereal shadows",
+    "style_modern": "Modern Digital",
+    "style_modern_desc": "Contemporary art",
+    "cancel": "Cancel",
+    "generate_with_price": "Generate ฿{price}",
+    "login_required": "Login required to use AI services",
+    "sign_in_to_generate": "Sign in to generate",
+    "your_credits": "Credits",
+    "cost": "Cost",
+    "login_first": "Login first",
+    "insufficient_credits": "Insufficient credits",
+    "generate_with_credits": "Generate ({credits} credits)"
   },
   "Counter": {
     "meta_title": "ตัวนับ",
@@ -97,7 +125,25 @@
     "delete_success": "ลบสำเร็จ",
     "delete_error": "ลบล้มเหลว",
     "loading": "กำลังโหลด...",
-    "please_wait": "กรุณารอสักครู่"
+    "please_wait": "กรุณารอสักครู่",
+    "update_success": "Updated successfully",
+    "update_error": "Failed to update",
+    "create_success": "Created successfully",
+    "create_error": "Failed to create",
+    "network_error": "Network connection failed",
+    "server_error": "Server error occurred",
+    "validation_error": "Please check your input",
+    "permission_error": "You don't have permission to perform this action",
+    "file_upload_success": "File uploaded successfully",
+    "file_upload_error": "File upload failed",
+    "copy_success": "Copied to clipboard",
+    "copy_error": "Failed to copy",
+    "operation_completed": "Operation completed",
+    "changes_saved": "Changes saved",
+    "no_changes": "No changes to save",
+    "confirm_delete": "Confirm deletion?",
+    "confirm_action": "Confirm this action?",
+    "action_cannot_be_undone": "This action cannot be undone"
   },
   "button_states": {
     "loading": "กำลังโหลด...",
@@ -105,7 +151,13 @@
     "saving": "กำลังบันทึก...",
     "deleting": "กำลังลบ...",
     "updating": "กำลังอัปเดต...",
-    "processing": "กำลังประมวลผล..."
+    "processing": "กำลังประมวลผล...",
+    "disabled_loading": "Operation in progress, please wait...",
+    "disabled_permission": "You don't have permission to perform this action",
+    "disabled_form_invalid": "Please fill in all required form fields",
+    "disabled_other_loading": "Another operation is in progress, please wait...",
+    "success": "Operation successful",
+    "error": "Operation failed"
   },
   "Auth": {
     "loading": "กำลังโหลด..."
@@ -121,7 +173,11 @@
     "sign_in_button": "เข้าสู่ระบบ",
     "signing_in": "กำลังเข้าสู่ระบบ...",
     "no_account": "ยังไม่มีบัญชี?",
-    "sign_up_link": "สมัครสมาชิก"
+    "sign_up_link": "สมัครสมาชิก",
+    "meta_description": "Sign in to your LovSigil account to access AI-powered content creation tools",
+    "remember_me": "Remember me",
+    "forgot_password": "Forgot password?",
+    "or": "or"
   },
   "SignUp": {
     "meta_title": "สมัครสมาชิก - LovSigil",
@@ -130,12 +186,50 @@
     "sign_up_button": "สร้างบัญชี",
     "creating_account": "กำลังสร้างบัญชี...",
     "have_account": "มีบัญชีอยู่แล้ว?",
-    "sign_in_link": "เข้าสู่ระบบ"
+    "sign_in_link": "เข้าสู่ระบบ",
+    "meta_description": "Create your LovSigil account and start building amazing content with AI assistance",
+    "full_name_label": "Full Name",
+    "full_name_placeholder": "Enter your full name",
+    "email_label": "Email Address",
+    "email_placeholder": "Enter your email address",
+    "password_label": "Password",
+    "password_placeholder": "Create a secure password",
+    "confirm_password_label": "Confirm Password",
+    "confirm_password_placeholder": "Confirm your password",
+    "accept_terms_part1": "I agree to the",
+    "terms_of_service": "Terms of Service",
+    "and": "and",
+    "privacy_policy": "Privacy Policy",
+    "or": "or",
+    "check_email_title": "Check Your Email",
+    "check_email_message": "We've sent a verification link to your email address. Please check your email and click the link to activate your account.",
+    "back_to_sign_in": "Back to Sign In"
   },
   "Dashboard": {
     "meta_title": "แดชบอร์ด",
     "welcome": "ยินดีต้อนรับกลับมา {name}!",
-    "welcome_subtitle": "นี่คือแดชบอร์ดของคุณ จัดการโปรเจกต์และการตั้งค่าได้ที่นี่"
+    "welcome_subtitle": "นี่คือแดชบอร์ดของคุณ จัดการโปรเจกต์และการตั้งค่าได้ที่นี่",
+    "hello_message": "Hello {email}!",
+    "alternative_message": "Want to build your SaaS faster using the same stack? Try <url></url>.",
+    "stats": {
+      "projects": "Projects",
+      "tasks": "Tasks",
+      "storage": "Storage"
+    },
+    "quick_actions": {
+      "title": "Quick Actions",
+      "profile": "Edit Profile",
+      "profile_desc": "Update your personal information and preferences",
+      "settings": "Account Settings",
+      "settings_desc": "Manage your account and security settings",
+      "docs": "View Documentation",
+      "docs_desc": "Learn how to use and customize the template"
+    },
+    "getting_started": {
+      "title": "Getting Started",
+      "description": "This is a demo dashboard. In a real project, you can display key data and actions here.",
+      "cta": "View on GitHub"
+    }
   },
   "DashboardLayout": {
     "dashboard_link": "แดชบอร์ด",
@@ -191,7 +285,26 @@
     "locale_ko": "한국어 (เกาหลี)",
     "locale_zh": "中文 (จีน)",
     "update_profile": "อัปเดตโปรไฟล์",
-    "updating": "กำลังอัปเดต..."
+    "updating": "กำลังอัปเดต...",
+    "profile_updated_success": "Profile updated successfully",
+    "email_label": "Email Address",
+    "email_help": "Contact support to change your email address",
+    "full_name_label": "Full Name",
+    "full_name_placeholder": "Enter your full name",
+    "avatar_url_label": "Avatar URL",
+    "avatar_url_placeholder": "https://example.com/avatar.jpg",
+    "timezone_label": "Timezone",
+    "timezone_shanghai": "Asia/Shanghai (GMT+8)",
+    "timezone_new_york": "America/New_York (GMT-5)",
+    "timezone_london": "Europe/London (GMT+0)",
+    "timezone_tokyo": "Asia/Tokyo (GMT+9)",
+    "timezone_sydney": "Australia/Sydney (GMT+10)",
+    "account_info_title": "Account Information",
+    "user_id": "User ID",
+    "created_at": "Created",
+    "email_verified": "Email Verified",
+    "verified": "Yes",
+    "not_verified": "No"
   },
   "Pricing": {
     "meta_title": "ราคา - LovSigil แพลตฟอร์มสร้างสรรค์ AI",
@@ -266,14 +379,38 @@
     "features_title": "เชื่อมต่อแพลตฟอร์มที่คุณชอบ",
     "features_description": "เผยแพร่และจัดการเนื้อหาของคุณในทุกแพลตฟอร์มหลัก",
     "supported_platforms": [
-      { "name": "WordPress", "description": "เผยแพร่บล็อก" },
-      { "name": "Medium", "description": "เผยแพร่บทความ" },
-      { "name": "LinkedIn", "description": "เนื้อหาระดับมืออาชีพ" },
-      { "name": "Twitter/X", "description": "โพสต์โซเชียลมีเดีย" },
-      { "name": "Facebook", "description": "การตลาดโซเชียลมีเดีย" },
-      { "name": "Instagram", "description": "เนื้อหาภาพ" },
-      { "name": "YouTube", "description": "คำอธิบายวิดีโอ" },
-      { "name": "TikTok", "description": "เนื้อหาแบบสั้น" }
+      {
+        "name": "WordPress",
+        "description": "เผยแพร่บล็อก"
+      },
+      {
+        "name": "Medium",
+        "description": "เผยแพร่บทความ"
+      },
+      {
+        "name": "LinkedIn",
+        "description": "เนื้อหาระดับมืออาชีพ"
+      },
+      {
+        "name": "Twitter/X",
+        "description": "โพสต์โซเชียลมีเดีย"
+      },
+      {
+        "name": "Facebook",
+        "description": "การตลาดโซเชียลมีเดีย"
+      },
+      {
+        "name": "Instagram",
+        "description": "เนื้อหาภาพ"
+      },
+      {
+        "name": "YouTube",
+        "description": "คำอธิบายวิดีโอ"
+      },
+      {
+        "name": "TikTok",
+        "description": "เนื้อหาแบบสั้น"
+      }
     ],
     "testimonial": {
       "quote": "LovSigil เปลี่ยนแปลงวิธีที่เราสร้างเนื้อหา ผู้ช่วย AI ใช้งานง่ายมากและช่วยให้เรารักษาความสม่ำเสมอในทุกช่องทาง",
@@ -364,5 +501,319 @@
     "view_detail": "ดูรายละเอียด",
     "download": "ดาวน์โหลด",
     "make_same": "ทำแบบเดียวกัน"
+  },
+  "Portfolio": {
+    "meta_title": "Portfolio",
+    "meta_description": "Welcome to my portfolio page!",
+    "presentation": "Welcome to my portfolio page! Here you will find a carefully curated collection of my work and accomplishments. Through this portfolio, I'm to showcase my expertise, creativity, and the value I can bring to your projects.",
+    "portfolio_name": "Portfolio {name}",
+    "error_reporting_powered_by": "Error reporting powered by",
+    "coverage_powered_by": "Code coverage powered by"
+  },
+  "PortfolioSlug": {
+    "meta_title": "Portfolio {slug}",
+    "meta_description": "Portfolio {slug} description",
+    "header": "Portfolio {slug}",
+    "content": "Created a set of promotional materials and branding elements for a corporate event. Crafted a visually unified theme, encompassing a logo, posters, banners, and digital assets. Integrated the client's brand identity while infusing it with a contemporary and innovative approach.",
+    "code_review_powered_by": "Code review powered by"
+  },
+  "HomePage": {
+    "hero_badge": "Production Ready",
+    "hero_title": "Build Your Next SaaS",
+    "hero_description": "A full-stack template built with Next.js 15, Supabase, and Tailwind CSS v4. Authentication, database, UI components - all ready out of the box.",
+    "get_started": "Get Started",
+    "view_github": "View on GitHub",
+    "features_title": "Everything You Need",
+    "features_description": "We've configured everything you need to build a SaaS, so you can focus on your business logic.",
+    "features": {
+      "auth": {
+        "title": "Authentication",
+        "description": "Supabase Auth provides complete authentication with email login, social login, and SSO support."
+      },
+      "database": {
+        "title": "Database",
+        "description": "DrizzleORM + PostgreSQL for type-safe database operations with automatic migrations."
+      },
+      "ui": {
+        "title": "UI Components",
+        "description": "shadcn/ui + Tailwind CSS v4 for beautiful and customizable components."
+      },
+      "i18n": {
+        "title": "Internationalization",
+        "description": "next-intl provides complete i18n support with Chinese and English by default."
+      },
+      "monitoring": {
+        "title": "Monitoring",
+        "description": "Sentry error tracking, PostHog analytics, and Better Stack logging."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Arcjet provides WAF, bot detection, and rate limiting protection."
+      }
+    },
+    "tech": {
+      "nextjs": "App Router",
+      "typescript": "Type Safe",
+      "tailwind": "Utility CSS",
+      "supabase": "BaaS",
+      "drizzle": "Type-safe ORM",
+      "shadcn": "UI Components"
+    },
+    "included_title": "What's Included",
+    "included_description": "All the core features you need to build a SaaS",
+    "included": {
+      "auth": "Complete auth flow (login/signup/reset password)",
+      "dashboard": "User dashboard layout",
+      "profile": "User profile management",
+      "i18n": "Chinese & English internationalization",
+      "seo": "SEO optimization",
+      "forms": "React Hook Form integration",
+      "validation": "Zod validation",
+      "dark_mode": "Dark mode support (coming soon)"
+    },
+    "demo_title": "Explore the Demo",
+    "demo_description": "See the template in action. Experience the complete user flow.",
+    "demo_signup": "Try Sign Up",
+    "demo_pricing": "View Pricing",
+    "demo_counter": "Counter Demo",
+    "cta_title": "Ready to Get Started?",
+    "cta_description": "Clone the repository and launch your SaaS project in minutes.",
+    "cta_clone": "Clone Repository",
+    "cta_try_demo": "Try the Demo"
+  },
+  "Legal": {
+    "effective_date": "Effective Date",
+    "last_updated": "Last Updated",
+    "contact_us": "Contact Us",
+    "back_to_top": "Back to Top",
+    "table_of_contents": "Table of Contents"
+  },
+  "TermsOfService": {
+    "meta_title": "Terms of Service",
+    "meta_description": "Terms of Service for LovSigil AI creation platform",
+    "title": "Terms of Service",
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of Terms",
+        "content": "By accessing and using LovSigil, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service."
+      },
+      "description": {
+        "title": "2. Description of Service",
+        "content": "LovSigil is an AI-powered intelligent creation platform designed specifically for knowledge bloggers and content creators. Our service provides tools for content creation, collaboration, and publishing."
+      },
+      "user_accounts": {
+        "title": "3. User Accounts and Registration",
+        "content": "You must register for an account to access certain features. You are responsible for maintaining the confidentiality of your account and password and for restricting access to your computer."
+      },
+      "user_content": {
+        "title": "4. User Content and Conduct",
+        "content": "You retain ownership of content you create using our platform. You grant us a license to use, modify, publicly perform, publicly display, reproduce, and distribute such content on and through the service."
+      },
+      "intellectual_property": {
+        "title": "5. Intellectual Property Rights",
+        "content": "The service and its original content, features, and functionality are and will remain the exclusive property of LovSigil and its licensors."
+      },
+      "ai_usage": {
+        "title": "6. AI and Data Usage",
+        "content": "Our AI services may use your content to improve our models and services. We implement appropriate safeguards to protect your intellectual property and privacy."
+      },
+      "termination": {
+        "title": "7. Termination",
+        "content": "We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms."
+      },
+      "disclaimers": {
+        "title": "8. Disclaimers and Limitations",
+        "content": "The information on this service is provided on an 'as is' basis. To the fullest extent permitted by law, we exclude all representations, warranties, and conditions relating to our service."
+      },
+      "governing_law": {
+        "title": "9. Governing Law",
+        "content": "These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which LovSigil operates."
+      },
+      "contact": {
+        "title": "10. Contact Information",
+        "content": "If you have any questions about these Terms, please contact us at mark@cs-magic.com"
+      }
+    }
+  },
+  "PrivacyPolicy": {
+    "meta_title": "Privacy Policy",
+    "meta_description": "Privacy Policy for LovSigil AI creation platform",
+    "title": "Privacy Policy",
+    "sections": {
+      "introduction": {
+        "title": "1. Introduction",
+        "content": "LovSigil respects your privacy and is committed to protecting your personal data. This privacy policy explains how we collect, use, and share information about you when you use our services."
+      },
+      "information_collected": {
+        "title": "2. Information We Collect",
+        "content": "We collect information you provide directly to us, information we obtain automatically when you use our services, and information from third-party sources."
+      },
+      "how_we_use": {
+        "title": "3. How We Use Information",
+        "content": "We use the information we collect to provide, maintain, and improve our services, process transactions, send communications, and protect against fraud and abuse."
+      },
+      "information_sharing": {
+        "title": "4. Information Sharing and Disclosure",
+        "content": "We may share your information in certain limited circumstances, including with your consent, to comply with laws, or to protect rights and safety."
+      },
+      "data_retention": {
+        "title": "5. Data Retention",
+        "content": "We retain personal information for as long as necessary to provide our services, comply with legal obligations, resolve disputes, and enforce our agreements."
+      },
+      "security": {
+        "title": "6. Security Measures",
+        "content": "We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction."
+      },
+      "ai_processing": {
+        "title": "7. AI and Machine Learning",
+        "content": "Our AI services process your content to provide intelligent creation assistance. We implement privacy-preserving techniques to protect your data during AI processing."
+      },
+      "third_party": {
+        "title": "8. Third-Party Services",
+        "content": "Our service integrates with third-party services for authentication, data storage, and analytics. These services have their own privacy policies."
+      },
+      "your_rights": {
+        "title": "9. Your Rights and Choices",
+        "content": "Depending on your location, you may have certain rights regarding your personal information, including the right to access, update, delete, or restrict processing."
+      },
+      "international_transfers": {
+        "title": "10. International Data Transfers",
+        "content": "Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place for such transfers."
+      },
+      "changes": {
+        "title": "11. Changes to Privacy Policy",
+        "content": "We may update this privacy policy from time to time. We will notify you of any material changes by posting the new policy on our website."
+      },
+      "contact": {
+        "title": "12. Contact Information",
+        "content": "If you have any questions about this Privacy Policy, please contact us at mark@cs-magic.com"
+      }
+    }
+  },
+  "CookiePolicy": {
+    "meta_title": "Cookie Policy",
+    "meta_description": "Cookie Policy for LovSigil AI creation platform",
+    "title": "Cookie Policy",
+    "sections": {
+      "what_are_cookies": {
+        "title": "1. What Are Cookies",
+        "content": "Cookies are small text files that are stored on your computer or mobile device when you visit our website. They help us provide you with a better experience by remembering your preferences."
+      },
+      "types_of_cookies": {
+        "title": "2. Types of Cookies We Use",
+        "content": "We use essential cookies for basic functionality, performance cookies to analyze usage, and preference cookies to remember your settings."
+      },
+      "third_party_cookies": {
+        "title": "3. Third-Party Cookies",
+        "content": "We use third-party services for analytics, authentication, and other features. These services may set their own cookies on your device."
+      },
+      "cookie_consent": {
+        "title": "4. Cookie Consent Management",
+        "content": "You can manage your cookie preferences through our cookie consent banner and settings. You may accept or reject non-essential cookies."
+      },
+      "control_cookies": {
+        "title": "5. How to Control Cookies",
+        "content": "You can control and delete cookies through your browser settings. Please note that disabling cookies may affect the functionality of our service."
+      },
+      "updates": {
+        "title": "6. Updates to Cookie Policy",
+        "content": "We may update this Cookie Policy from time to time. Any changes will be posted on this page with an updated effective date."
+      },
+      "contact": {
+        "title": "7. Contact Information",
+        "content": "If you have any questions about our use of cookies, please contact us at mark@cs-magic.com"
+      }
+    }
+  },
+  "SpiritOrder": {
+    "loading": "Loading...",
+    "error": "Error",
+    "order_not_found": "Order not found",
+    "fetch_error": "Failed to load order",
+    "spirit_portrait": "Your Personal Sigil",
+    "group_portrait": "Group Sigil",
+    "status_pending": "Preparing your portrait...",
+    "status_generating": "Creating your personal sigil...",
+    "status_failed": "Generation Failed",
+    "unknown_error": "An unknown error occurred",
+    "generation_time": "This may take 10-30 seconds",
+    "download": "Download",
+    "original_photo": "Original",
+    "spirit_result": "Sigil",
+    "show_image": "Show Image",
+    "show_poster": "Show Poster",
+    "spirit_only": "Sigil Only",
+    "with_original": "+ Original",
+    "qr_scan_title": "Scan to View on Mobile",
+    "qr_scan_hint": "Continue viewing and manage your sigil on your phone",
+    "qr_scan_mobile": "Scan to view on mobile",
+    "qr_scan_wait": "Continue waiting on your phone",
+    "qr_scan_share": "Scan to share this page",
+    "print_title": "Bring Your Sigil to Life",
+    "print_subtitle": "Transform your personal sigil into a physical keepsake",
+    "print_tattoo": "Tattoo Sticker",
+    "print_tattoo_desc": "Temporary tattoo",
+    "print_frame": "Photo Frame",
+    "print_frame_desc": "Mounted with frame",
+    "print_figurine": "3D Relief",
+    "print_figurine_desc": "Custom 3D relief",
+    "print_dialog_desc": "Please provide your contact information for delivery or pickup",
+    "print_form_name": "Name",
+    "print_form_name_placeholder": "Your name",
+    "print_form_phone": "Phone",
+    "print_form_phone_placeholder": "Contact number",
+    "print_form_address": "Delivery Address",
+    "print_form_address_placeholder": "Your address or hotel name",
+    "print_form_delivery_note": "We can deliver to your location or arrange for pickup",
+    "print_form_required": "Please fill in all fields",
+    "print_order_success": "Order submitted! We will contact you soon.",
+    "print_order_error": "Failed to submit order. Please try again.",
+    "cancel": "Cancel",
+    "submitting": "Submitting...",
+    "print_submit": "Submit Order",
+    "powered_by": "Powered by LovSigil"
+  },
+  "ResetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your email address and we'll send you a link to reset your password",
+    "email_label": "Email Address",
+    "email_placeholder": "Enter your email address",
+    "send_reset_email": "Send Reset Email",
+    "sending": "Sending...",
+    "back_to_sign_in": "Back to Sign In",
+    "email_sent_title": "Email Sent",
+    "email_sent_message": "If an account with that email exists, we've sent you a password reset link."
+  },
+  "Credits": {
+    "meta_title": "Credits - LovSigil",
+    "meta_description": "Manage your credits balance, recharge and transaction history",
+    "title": "My Credits",
+    "login_required": "Please sign in first",
+    "back_home": "Back to Home",
+    "tab_overview": "Overview",
+    "tab_recharge": "Recharge",
+    "tab_history": "History",
+    "current_balance": "Current Balance",
+    "credits_unit": "credits",
+    "total_purchased": "Total Purchased",
+    "total_bonus": "Total Bonus",
+    "total_spent": "Total Spent",
+    "need_more": "Need more credits?",
+    "need_more_desc": "Purchase a credit pack to unlock more generations",
+    "recharge_now": "Recharge Now",
+    "no_packages": "No packages available",
+    "no_transactions": "No transactions yet",
+    "popular": "Popular",
+    "bonus": "bonus",
+    "processing": "Processing...",
+    "purchase": "Purchase",
+    "type_purchase": "Purchase",
+    "type_bonus": "Bonus",
+    "type_spend": "Spend",
+    "type_refund": "Refund",
+    "type_adjust": "Adjustment",
+    "balance_after": "Balance",
+    "currency_symbol": "$",
+    "price_format": "${price}"
   }
 }
