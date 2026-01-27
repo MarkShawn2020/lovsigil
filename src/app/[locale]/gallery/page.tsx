@@ -80,7 +80,7 @@ function GalleryCard({ data: record, index, onSelect }: GalleryCardProps) {
     >
       {/* 固定比例容器 */}
       <div
-        className="relative rounded-lg overflow-hidden bg-white/5 border border-white/10 active:border-[#D4AF37]/50 sm:hover:border-[#D4AF37]/50 transition-all duration-200"
+        className="relative rounded-lg overflow-hidden bg-white/5 border border-white/10 active:border-primary/50 sm:hover:border-primary/50 transition-all duration-200"
         style={{ aspectRatio }}
       >
         {/* 骨架屏 shimmer */}
@@ -108,7 +108,7 @@ function GalleryCard({ data: record, index, onSelect }: GalleryCardProps) {
         <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200`}>
           <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs text-white font-medium bg-[#D4AF37]">
+              <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs text-white font-medium bg-primary">
                 ✨ {isMobile ? '' : record.name}
               </span>
             </div>
@@ -181,9 +181,9 @@ export default function GalleryPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen min-h-dvh bg-gradient-to-br from-[#1a1a2e] to-[#16213e] flex items-center justify-center">
+      <div className="min-h-screen min-h-dvh bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-[#D4AF37] mx-auto mb-4" />
+          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
           <p className="text-white/60">{t('loading')}</p>
         </div>
       </div>
@@ -191,9 +191,9 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="min-h-screen min-h-dvh bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
+    <div className="min-h-screen min-h-dvh bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-sm border-b border-[#D4AF37]/20 safe-area-top">
+      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-sm border-b border-primary/20 safe-area-top">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <Link href="/" className="touch-manipulation">
             <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 h-10 px-2 sm:px-3">
@@ -201,7 +201,7 @@ export default function GalleryPage() {
               <span className="hidden sm:inline">{t('back')}</span>
             </Button>
           </Link>
-          <div className="flex items-center gap-1.5 sm:gap-2 text-[#D4AF37]">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-primary">
             <Grid className="w-4 h-4 sm:w-5 sm:h-5" />
             <h1 className="text-base sm:text-lg font-semibold">{t('title')}</h1>
           </div>
@@ -244,7 +244,7 @@ export default function GalleryPage() {
 
       {/* 图片详情悬浮窗 */}
       <Dialog open={!!selectedRecord} onOpenChange={(open) => !open && setSelectedRecord(null)}>
-        <DialogContent className="bg-[#1a1a2e] border-[#D4AF37]/30 p-0 max-w-lg sm:max-w-2xl overflow-hidden" showCloseButton={false}>
+        <DialogContent className="bg-card border-primary/30 p-0 max-w-lg sm:max-w-2xl overflow-hidden" showCloseButton={false}>
           {selectedRecord && (
             <div className="flex flex-col">
               {/* 大图 */}
@@ -262,7 +262,7 @@ export default function GalleryPage() {
                   <span className="text-xl leading-none">&times;</span>
                 </button>
                 {/* Sigil 标签 */}
-                <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-full backdrop-blur-sm bg-[#D4AF37]/80">
+                <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-full backdrop-blur-sm bg-primary/80">
                   <span className="text-white font-medium text-sm">
                     ✨ {selectedRecord.name}
                   </span>
@@ -279,7 +279,7 @@ export default function GalleryPage() {
                   {selectedRecord.orderId && (
                     <Link
                       href={`/sigil/${selectedRecord.orderId}`}
-                      className="text-[#D4AF37] hover:underline"
+                      className="text-primary hover:underline"
                       target="_blank"
                     >
                       {t('view_detail')}
@@ -305,7 +305,7 @@ export default function GalleryPage() {
                       setSelectedRecord(null)
                       handleMakeSame()
                     }}
-                    className="flex-1 text-white font-medium bg-[#D4AF37] hover:bg-[#D4AF37]/90"
+                    className="flex-1 text-white font-medium bg-primary hover:bg-primary/90"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
                     {t('make_same')}

@@ -36,18 +36,18 @@ export function CreditsPageContent() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center text-white/60">
           <p>{t('login_required')}</p>
-          <Link href="/" className="text-[#D4AF37] hover:underline mt-2 inline-block">
+          <Link href="/" className="text-primary hover:underline mt-2 inline-block">
             {t('back_home')}
           </Link>
         </div>
@@ -56,7 +56,7 @@ export function CreditsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-white/10 bg-black/30">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -65,7 +65,7 @@ export function CreditsPageContent() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <h1 className="text-xl font-semibold text-white flex items-center gap-2">
-              <Coins className="w-5 h-5 text-[#D4AF37]" />
+              <Coins className="w-5 h-5 text-primary" />
               {t('title')}
             </h1>
           </div>
@@ -76,15 +76,15 @@ export function CreditsPageContent() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-white/5 border border-white/10">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-[#D4AF37]/20 data-[state=active]:text-[#D4AF37]">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               <Wallet className="w-4 h-4 mr-1.5" />
               {t('tab_overview')}
             </TabsTrigger>
-            <TabsTrigger value="recharge" className="data-[state=active]:bg-[#D4AF37]/20 data-[state=active]:text-[#D4AF37]">
+            <TabsTrigger value="recharge" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               <Package className="w-4 h-4 mr-1.5" />
               {t('tab_recharge')}
             </TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-[#D4AF37]/20 data-[state=active]:text-[#D4AF37]">
+            <TabsTrigger value="history" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               <History className="w-4 h-4 mr-1.5" />
               {t('tab_history')}
             </TabsTrigger>
@@ -93,15 +93,15 @@ export function CreditsPageContent() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Balance Card */}
-            <div className="bg-gradient-to-br from-[#D4AF37]/20 to-[#CC785C]/20 rounded-2xl p-6 border border-[#D4AF37]/30">
+            <div className="bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl p-6 border border-primary/30">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/60 text-sm">{t('current_balance')}</p>
-                  <p className="text-4xl font-bold text-[#D4AF37] mt-1">{balance}</p>
+                  <p className="text-4xl font-bold text-primary mt-1">{balance}</p>
                   <p className="text-white/40 text-xs mt-1">{t('credits_unit')}</p>
                 </div>
-                <div className="w-16 h-16 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
-                  <Coins className="w-8 h-8 text-[#D4AF37]" />
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Coins className="w-8 h-8 text-primary" />
                 </div>
               </div>
             </div>
@@ -133,7 +133,7 @@ export function CreditsPageContent() {
                 </div>
                 <Button
                   onClick={() => setActiveTab('recharge')}
-                  className="bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D]"
+                  className="gradient-gold-copper hover:brightness-110"
                 >
                   <Sparkles className="w-4 h-4 mr-1.5" />
                   {t('recharge_now')}
@@ -200,12 +200,12 @@ function PackageCard({
       className={cn(
         'relative bg-white/5 rounded-xl p-5 border transition-all',
         pkg.is_popular
-          ? 'border-[#D4AF37] ring-1 ring-[#D4AF37]/30'
+          ? 'border-primary ring-1 ring-primary/30'
           : 'border-white/10 hover:border-white/20'
       )}
     >
       {pkg.is_popular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#D4AF37] text-black text-xs font-medium rounded-full">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary text-black text-xs font-medium rounded-full">
           {t('popular')}
         </div>
       )}
@@ -218,7 +218,7 @@ function PackageCard({
           )}
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-[#D4AF37]">{t('price_format', { price: priceFormatted })}</p>
+          <p className="text-2xl font-bold text-primary">{t('price_format', { price: priceFormatted })}</p>
         </div>
       </div>
 
@@ -238,7 +238,7 @@ function PackageCard({
         className={cn(
           'w-full',
           pkg.is_popular
-            ? 'bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D]'
+            ? 'gradient-gold-copper hover:brightness-110'
             : 'bg-white/10 hover:bg-white/20'
         )}
       >

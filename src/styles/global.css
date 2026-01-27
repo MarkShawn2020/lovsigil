@@ -152,26 +152,49 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Design System Variables */
-@theme {
-  --color-primary: #d97757;
-  --color-text-main: #181818;
-  --color-text-faded: #87867f;
-  --color-background-main: #f9f9f7;
-  --color-background-dark: #141413;
-  --color-background-ivory-medium: #f0eee6;
-  --color-background-oat: #f7f4ec;
-  --color-background-clay: #cc785c;
-  --color-background-faded: #3d3d3a;
-  --color-border-default: #87867f;
+/* ============================================
+   LOVSIGIL DESIGN SYSTEM - Mystic Rune Theme
+   ============================================
 
-  --color-swatch-slate-light: #87867f;
-  --color-swatch-cloud-light: #e8e6dc;
-  --color-swatch-fig: #b49fd8;
-  --color-swatch-olive: #c2c07d;
-  --color-swatch-cactus: #629a90;
-  --color-swatch-sky: #97b5d5;
-  --color-swatch-heather: #d2bedf;
+   Color Philosophy:
+   - Deep, mysterious backgrounds for immersion
+   - Rune Gold (#D4AF37) as the primary accent - represents ancient wisdom
+   - Rune Copper (#CC785C) as secondary - adds warmth and earthiness
+   - Clean neutrals for readability
+
+   Usage:
+   - NEVER hardcode colors in components
+   - Always use semantic classes: bg-primary, text-primary, border-gold, etc.
+   - Use opacity modifiers: bg-gold/20, text-gold/80
+*/
+
+@theme {
+  /* === Primary Brand Colors === */
+  --color-gold: #D4AF37;        /* Rune Gold - primary accent */
+  --color-copper: #CC785C;      /* Rune Copper - secondary accent */
+
+  /* === Neutral Palette === */
+  --color-text-main: #F5F5F5;   /* Light text on dark */
+  --color-text-muted: #9CA3AF;  /* Muted text */
+  --color-text-faded: #6B7280;  /* Faded text */
+
+  /* === Background Palette === */
+  --color-bg-deep: #0A0A0B;     /* Deepest black */
+  --color-bg-dark: #121214;     /* Primary dark background */
+  --color-bg-card: #1A1A1E;     /* Card/elevated surfaces */
+  --color-bg-elevated: #252529; /* More elevated surfaces */
+  --color-bg-hover: #2A2A2E;    /* Hover states */
+
+  /* === Border Colors === */
+  --color-border-subtle: #2A2A2E;   /* Subtle borders */
+  --color-border-default: #3A3A3E;  /* Default borders */
+  --color-border-gold: #D4AF37;     /* Gold accent borders */
+
+  /* === Semantic Colors === */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
 
   /* Container & Layout */
   --container-main: min(80rem, 100vw);
@@ -191,11 +214,12 @@
   --border-radius-lg: 1.5rem;
 }
 
-/* Typography System - Lovpen Integration */
+/* Typography System - Sigil Mystic Theme */
 @layer base {
   :root {
-    --font-sans: 'Fira Code', ui-sans-serif, system-ui, sans-serif;
-    --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Fira Code', ui-monospace, monospace;
+    --font-display: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   }
 
   body {
@@ -203,9 +227,9 @@
     font-family: var(--font-sans);
   }
 
-  /* Display Typography - Lovpen Integration */
+  /* Display Typography - Sigil Theme */
   .u-display-xl {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-size: clamp(2.5rem, 2.04rem + 1.95vw, 4rem);
     font-weight: 600;
     color: var(--foreground);
@@ -221,7 +245,7 @@
   }
 
   .u-display-m {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-size: clamp(1.75rem, 1.67rem + 0.32vw, 2rem);
     font-weight: 600;
     color: var(--foreground);
@@ -236,37 +260,16 @@
     line-height: 1.3;
   }
 
-  /* Paragraph Typography - Lovpen Integration */
-  .u-paragraph-l {
-    font-family: var(--font-sans);
-    font-size: clamp(1.375rem, 1.33rem + 0.16vw, 1.5rem);
-    font-weight: 400;
-    line-height: 1.4;
-    color: var(--foreground);
-  }
-
-  .u-paragraph-m {
-    font-family: var(--font-sans);
-    font-size: clamp(1.125rem, 1.08rem + 0.16vw, 1.25rem);
-    font-weight: 400;
-    line-height: 1.5;
-    color: var(--foreground);
-  }
-
-  /* Link Styling - Lovpen Integration */
+  /* Link Styling - Sigil Theme */
   a {
     color: var(--primary);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-    text-decoration-thickness: 0.08em;
-    text-decoration-color: var(--primary);
+    text-decoration: none;
     transition: all 0.2s ease;
   }
 
   a:hover {
     color: var(--primary);
-    opacity: 0.8;
-    text-decoration-thickness: 0.12em;
+    opacity: 0.85;
   }
 }
 
@@ -281,90 +284,42 @@
     padding-right: var(--site-margin);
   }
 
-  /* Grid System */
-  .u-grid-desktop {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-m);
+  /* Sigil-specific utilities */
+  .sigil-glow {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
   }
 
-  @media (min-width: 991px) {
-    .u-grid-desktop {
-      grid-template-columns: repeat(12, 1fr);
-      gap: var(--spacing-l);
-    }
+  .sigil-glow-strong {
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
   }
 
-  /* Background Utilities - Lovpen Integration */
-  .u-bg-ivory-medium {
-    background-color: var(--secondary);
+  .text-gold {
+    color: var(--color-gold);
   }
 
-  .u-bg-oat {
-    background-color: var(--muted);
+  .text-copper {
+    color: var(--color-copper);
   }
 
-  .u-bg-cloud-light {
-    background-color: var(--accent);
+  .bg-gold {
+    background-color: var(--color-gold);
   }
 
-  .u-theme-dark {
-    background-color: var(--background);
-    color: var(--foreground);
+  .bg-copper {
+    background-color: var(--color-copper);
   }
 
-  /* Lovpen Swatch Utilities */
-  .u-bg-fig {
-    background-color: var(--chart-1);
+  .border-gold {
+    border-color: var(--color-gold);
   }
 
-  .u-bg-olive {
-    background-color: var(--chart-2);
+  .border-copper {
+    border-color: var(--color-copper);
   }
 
-  .u-bg-cactus {
-    background-color: var(--chart-3);
-  }
-
-  .u-bg-sky {
-    background-color: var(--chart-4);
-  }
-
-  .u-bg-heather {
-    background-color: var(--chart-5);
-  }
-
-  /* Spacing Utilities */
-  .u-mb-text {
-    margin-bottom: var(--spacing-text);
-  }
-
-  .u-mb-gutter {
-    margin-bottom: var(--spacing-gutter);
-  }
-
-  .u-mt-gutter {
-    margin-top: var(--spacing-gutter);
-  }
-
-  .u-gap-s {
-    gap: var(--spacing-s);
-  }
-
-  .u-gap-m {
-    gap: var(--spacing-m);
-  }
-
-  .u-gap-l {
-    gap: var(--spacing-l);
-  }
-
-  .u-gap-xl {
-    gap: var(--spacing-xl);
-  }
-
-  .u-gap-xxl {
-    gap: var(--spacing-xxl);
+  /* Gradient utilities */
+  .gradient-gold-copper {
+    background: linear-gradient(135deg, var(--color-gold), var(--color-copper));
   }
 }
 
@@ -407,84 +362,120 @@
 }
 
 :root {
-  /* Lovstudio Warm Academic Theme - Light Mode */
-  --radius: 0.75rem; /* Updated to match Lovpen border-radius-md */
+  /* ============================================
+     LOVSIGIL MYSTIC RUNE THEME
+     ============================================
+     This is a dark-first theme for the Sigil generator.
+     Light mode inherits from dark with minor adjustments.
+  */
+  --radius: 0.625rem;
 
-  /* Lovpen Theme Integration - Light Mode */
-  --background: #f9f9f7; /* Lovpen warm off-white */
-  --foreground: #181818; /* Lovpen text main */
-  --card: #f9f9f7; /* Match background */
-  --card-foreground: #181818; /* Lovpen text main */
-  --popover: #f9f9f7; /* Match background */
-  --popover-foreground: #181818; /* Lovpen text main */
-  --primary: #d97757; /* Lovpen primary terracotta */
-  --primary-foreground: #f9f9f7; /* Light text on primary */
-  --secondary: #f0eee6; /* Lovpen ivory medium */
-  --secondary-foreground: #181818; /* Lovpen text main */
-  --muted: #f7f4ec; /* Lovpen oat */
-  --muted-foreground: #87867f; /* Lovpen text faded */
-  --accent: #e8e6dc; /* Lovpen cloud light */
-  --accent-foreground: #181818; /* Lovpen text main */
-  --destructive: #cc785c; /* Lovpen clay for destructive */
-  --border: #87867f; /* Lovpen border default */
-  --input: #f0eee6; /* Lovpen ivory medium */
-  --ring: #d97757; /* Lovpen primary for focus rings */
+  /* Core semantic colors - Dark mode is the default */
+  --background: #121214;       /* Deep dark background */
+  --foreground: #F5F5F5;       /* Light text */
+  --card: #1A1A1E;             /* Card surfaces */
+  --card-foreground: #F5F5F5;
+  --popover: #1A1A1E;
+  --popover-foreground: #F5F5F5;
 
-  /* Chart colors using Lovpen swatch */
-  --chart-1: #b49fd8; /* Lovpen fig */
-  --chart-2: #c2c07d; /* Lovpen olive */
-  --chart-3: #629a90; /* Lovpen cactus */
-  --chart-4: #97b5d5; /* Lovpen sky */
-  --chart-5: #d2bedf; /* Lovpen heather */
+  /* Primary: Rune Gold */
+  --primary: #D4AF37;
+  --primary-foreground: #0A0A0B;
 
-  /* Sidebar using Lovpen colors */
-  --sidebar: #f0eee6; /* Lovpen ivory medium */
-  --sidebar-foreground: #181818; /* Lovpen text main */
-  --sidebar-primary: #d97757; /* Lovpen primary */
-  --sidebar-primary-foreground: #f9f9f7; /* Light on primary */
-  --sidebar-accent: #e8e6dc; /* Lovpen cloud light */
-  --sidebar-accent-foreground: #181818; /* Lovpen text main */
-  --sidebar-border: #87867f; /* Lovpen border */
-  --sidebar-ring: #d97757; /* Lovpen primary */
+  /* Secondary: Rune Copper */
+  --secondary: #CC785C;
+  --secondary-foreground: #F5F5F5;
+
+  /* Muted colors */
+  --muted: #252529;
+  --muted-foreground: #9CA3AF;
+
+  /* Accent: Elevated surface */
+  --accent: #2A2A2E;
+  --accent-foreground: #F5F5F5;
+
+  /* Destructive */
+  --destructive: #EF4444;
+  --destructive-foreground: #F5F5F5;
+
+  /* Borders and inputs */
+  --border: #3A3A3E;
+  --input: #252529;
+  --ring: #D4AF37;
+
+  /* Chart colors - harmonious with gold/copper */
+  --chart-1: #D4AF37;  /* Gold */
+  --chart-2: #CC785C;  /* Copper */
+  --chart-3: #8B7355;  /* Bronze */
+  --chart-4: #B8860B;  /* Dark goldenrod */
+  --chart-5: #A0522D;  /* Sienna */
+
+  /* Sidebar */
+  --sidebar: #0A0A0B;
+  --sidebar-foreground: #F5F5F5;
+  --sidebar-primary: #D4AF37;
+  --sidebar-primary-foreground: #0A0A0B;
+  --sidebar-accent: #1A1A1E;
+  --sidebar-accent-foreground: #F5F5F5;
+  --sidebar-border: #2A2A2E;
+  --sidebar-ring: #D4AF37;
 }
 
+/* Light mode - rarely used but available */
+.light {
+  --background: #F5F5F5;
+  --foreground: #1A1A1E;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A1E;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1E;
+  --primary: #D4AF37;
+  --primary-foreground: #1A1A1E;
+  --secondary: #CC785C;
+  --secondary-foreground: #FFFFFF;
+  --muted: #E5E5E5;
+  --muted-foreground: #6B7280;
+  --accent: #F0F0F0;
+  --accent-foreground: #1A1A1E;
+  --border: #D4D4D4;
+  --input: #E5E5E5;
+  --ring: #D4AF37;
+}
+
+/* Dark mode class - same as root for this theme */
 .dark {
-  /* Lovpen Theme Integration - Dark Mode */
-  --background: #141413; /* Lovpen dark background */
-  --foreground: #f9f9f7; /* Lovpen light text on dark */
-  --card: #3d3d3a; /* Lovpen faded background */
-  --card-foreground: #f9f9f7; /* Light text */
-  --popover: #3d3d3a; /* Lovpen faded background */
-  --popover-foreground: #f9f9f7; /* Light text */
-  --primary: #d97757; /* Keep Lovpen primary consistent */
-  --primary-foreground: #f9f9f7; /* Light text on primary */
-  --secondary: #3d3d3a; /* Lovpen faded */
-  --secondary-foreground: #f9f9f7; /* Light text */
-  --muted: #3d3d3a; /* Lovpen faded */
-  --muted-foreground: #87867f; /* Lovpen text faded */
-  --accent: #3d3d3a; /* Lovpen faded */
-  --accent-foreground: #f9f9f7; /* Light text */
-  --destructive: #cc785c; /* Lovpen clay consistent */
-  --border: #87867f; /* Lovpen border consistent */
-  --input: #3d3d3a; /* Lovpen faded */
-  --ring: #d97757; /* Lovpen primary for focus */
-
-  /* Dark mode chart colors - slightly muted versions */
-  --chart-1: #b49fd8; /* Lovpen fig */
-  --chart-2: #c2c07d; /* Lovpen olive */
-  --chart-3: #629a90; /* Lovpen cactus */
-  --chart-4: #97b5d5; /* Lovpen sky */
-  --chart-5: #d2bedf; /* Lovpen heather */
-
-  /* Dark sidebar */
-  --sidebar: #3d3d3a; /* Lovpen faded */
-  --sidebar-foreground: #f9f9f7; /* Light text */
-  --sidebar-primary: #d97757; /* Lovpen primary */
-  --sidebar-primary-foreground: #f9f9f7; /* Light text */
-  --sidebar-accent: #3d3d3a; /* Lovpen faded */
-  --sidebar-accent-foreground: #f9f9f7; /* Light text */
-  --sidebar-border: #87867f; /* Lovpen border */
-  --sidebar-ring: #d97757; /* Lovpen primary */
+  --background: #121214;
+  --foreground: #F5F5F5;
+  --card: #1A1A1E;
+  --card-foreground: #F5F5F5;
+  --popover: #1A1A1E;
+  --popover-foreground: #F5F5F5;
+  --primary: #D4AF37;
+  --primary-foreground: #0A0A0B;
+  --secondary: #CC785C;
+  --secondary-foreground: #F5F5F5;
+  --muted: #252529;
+  --muted-foreground: #9CA3AF;
+  --accent: #2A2A2E;
+  --accent-foreground: #F5F5F5;
+  --destructive: #EF4444;
+  --destructive-foreground: #F5F5F5;
+  --border: #3A3A3E;
+  --input: #252529;
+  --ring: #D4AF37;
+  --chart-1: #D4AF37;
+  --chart-2: #CC785C;
+  --chart-3: #8B7355;
+  --chart-4: #B8860B;
+  --chart-5: #A0522D;
+  --sidebar: #0A0A0B;
+  --sidebar-foreground: #F5F5F5;
+  --sidebar-primary: #D4AF37;
+  --sidebar-primary-foreground: #0A0A0B;
+  --sidebar-accent: #1A1A1E;
+  --sidebar-accent-foreground: #F5F5F5;
+  --sidebar-border: #2A2A2E;
+  --sidebar-ring: #D4AF37;
 }
 
 @layer base {

@@ -106,16 +106,16 @@ export default function AdminPrintOrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] to-[#16213e] flex items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] to-[#16213e] flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-black/50 border-red-500/30">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full bg-card border-red-500/30">
           <CardHeader>
             <CardTitle className="text-red-400">Error</CardTitle>
           </CardHeader>
@@ -128,15 +128,15 @@ export default function AdminPrintOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] to-[#16213e] p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-[#D4AF37]">Print Orders</h1>
+          <h1 className="text-2xl font-bold text-primary">Print Orders</h1>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-40 bg-black/50 border-white/20 text-white">
+            <SelectTrigger className="w-40 bg-card border-white/20 text-white">
               <SelectValue placeholder="Filter status" />
             </SelectTrigger>
-            <SelectContent className="bg-[#1a1a2e] border-white/20">
+            <SelectContent className="bg-card border-white/20">
               <SelectItem value="all" className="text-white">All</SelectItem>
               {Object.entries(STATUS_CONFIG).map(([key, config]) => (
                 <SelectItem key={key} value={key} className="text-white">{config.label}</SelectItem>
@@ -146,7 +146,7 @@ export default function AdminPrintOrdersPage() {
         </div>
 
         {orders.length === 0 ? (
-          <Card className="bg-black/50 border-white/10">
+          <Card className="bg-card border-white/10">
             <CardContent className="py-12 text-center">
               <p className="text-white/40">No orders found</p>
             </CardContent>
@@ -160,7 +160,7 @@ export default function AdminPrintOrdersPage() {
               return (
                 <Card
                   key={order.id}
-                  className="bg-black/50 border-white/10 hover:border-[#D4AF37]/30 transition-colors cursor-pointer"
+                  className="bg-card border-white/10 hover:border-primary/30 transition-colors cursor-pointer"
                   onClick={() => setSelectedOrder(order)}
                 >
                   <CardContent className="p-4">
@@ -185,11 +185,11 @@ export default function AdminPrintOrdersPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <ProductIcon className="w-4 h-4 text-[#D4AF37]" />
+                              <ProductIcon className="w-4 h-4 text-primary" />
                               <span className="text-white font-medium">
                                 {order.product_type === 'frame' ? 'Photo Frame' : 'Figurine'}
                               </span>
-                              <span className="text-[#D4AF37] font-semibold">
+                              <span className="text-primary font-semibold">
                                 ฿{(order.price_cents / 100).toFixed(0)}
                               </span>
                             </div>
@@ -221,11 +221,11 @@ export default function AdminPrintOrdersPage() {
 
       {/* Order Detail Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="bg-[#1a1a2e] border-[#D4AF37]/20 text-white max-w-lg">
+        <DialogContent className="bg-card border-primary/20 text-white max-w-lg">
           {selectedOrder && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-[#D4AF37]">Order Details</DialogTitle>
+                <DialogTitle className="text-primary">Order Details</DialogTitle>
               </DialogHeader>
 
               <div className="space-y-4">
@@ -245,7 +245,7 @@ export default function AdminPrintOrdersPage() {
                       {selectedOrder.product_type === 'frame' ? 'Photo Frame' : 'Figurine'}
                     </p>
                     <p className="text-white/60 text-sm">{selectedOrder.spirit_generations?.spirit_name}</p>
-                    <p className="text-[#D4AF37] font-semibold mt-1">
+                    <p className="text-primary font-semibold mt-1">
                       ฿{(selectedOrder.price_cents / 100).toFixed(0)}
                     </p>
                   </div>
@@ -268,7 +268,7 @@ export default function AdminPrintOrdersPage() {
                         size="sm"
                         variant={selectedOrder.status === key ? 'default' : 'outline'}
                         className={selectedOrder.status === key
-                          ? 'bg-[#D4AF37] text-black'
+                          ? 'bg-primary text-primary-foreground'
                           : 'border-white/20 text-white/70 hover:bg-white/10'
                         }
                         disabled={updating}

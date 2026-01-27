@@ -517,7 +517,7 @@ export function SigilGenerator() {
           {capturedThumbnail ? (
             <div className="text-center space-y-3">
               <div className="relative inline-block">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#D4AF37] mx-auto">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary mx-auto">
                   <img src={capturedThumbnail} alt="" className="w-full h-full object-cover" />
                 </div>
                 <button
@@ -529,7 +529,7 @@ export function SigilGenerator() {
               </div>
               <Button
                 onClick={handleOpenSigilDialog}
-                className="w-full bg-gradient-to-r from-[#C9A227] to-[#00D4FF] hover:brightness-110"
+                className="w-full gradient-gold-copper hover:brightness-110"
               >
                 <Sparkles className="w-4 h-4 mr-1.5" />
                 {t('generate_portrait')}
@@ -547,8 +547,8 @@ export function SigilGenerator() {
           ) : (
             /* 未拍照：显示拍照/无头像按钮 */
             <div className="text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full border-2 border-dashed border-[#D4AF37]/40 flex items-center justify-center">
-                <Camera className="w-6 h-6 text-[#D4AF37]/60" />
+              <div className="w-16 h-16 mx-auto rounded-full border-2 border-dashed border-primary/40 flex items-center justify-center">
+                <Camera className="w-6 h-6 text-primary/60" />
               </div>
 
               {hasFaceDetected ? (
@@ -562,7 +562,7 @@ export function SigilGenerator() {
                   onClick={handleCapturePhoto}
                   disabled={!hasFaceDetected}
                   className={`w-full ${hasFaceDetected
-                    ? 'bg-gradient-to-r from-[#C9A227] to-[#00D4FF] hover:brightness-110'
+                    ? 'gradient-gold-copper hover:brightness-110'
                     : 'bg-white/20 cursor-not-allowed'
                   }`}
                 >
@@ -572,7 +572,7 @@ export function SigilGenerator() {
                 <Button
                   onClick={handleOpenSigilDialogWithoutPhoto}
                   variant="outline"
-                  className="w-full border-[#D4AF37]/40 text-[#D4AF37]/80 hover:bg-[#D4AF37]/10"
+                  className="w-full border-primary/40 text-primary/80 hover:bg-primary/10"
                 >
                   {t('generate_without_photo')}
                 </Button>
@@ -590,7 +590,7 @@ export function SigilGenerator() {
       <video ref={videoRef} className="hidden" playsInline muted />
 
       {/* 顶部历史记录 */}
-      <div className={`shrink-0 border-b border-[#D4AF37]/20 bg-black/95 ${isMobile ? 'hidden' : ''}`}>
+      <div className={`shrink-0 border-b border-primary/20 bg-black/95 ${isMobile ? 'hidden' : ''}`}>
         <div className="h-40 px-4 flex items-center">
           {historyRecords.length > 0 && (
             <div
@@ -631,7 +631,7 @@ export function SigilGenerator() {
                     <img
                       src={record.generatedImage}
                       alt={record.name || 'Sigil'}
-                      className="w-36 h-36 object-cover rounded-lg border border-white/10 group-hover/item:border-[#D4AF37]/50 transition-colors"
+                      className="w-36 h-36 object-cover rounded-lg border border-white/10 group-hover/item:border-primary/50 transition-colors"
                     />
                   </div>
                 ))}
@@ -663,8 +663,8 @@ export function SigilGenerator() {
             />
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-black">
-                <div className="w-16 h-16 rounded-xl border-2 border-[#D4AF37]/40 flex items-center justify-center animate-pulse">
-                  <Sparkles className="w-8 h-8 text-[#D4AF37]/60" />
+                <div className="w-16 h-16 rounded-xl border-2 border-primary/40 flex items-center justify-center animate-pulse">
+                  <Sparkles className="w-8 h-8 text-primary/60" />
                 </div>
               </div>
             )}
@@ -672,8 +672,8 @@ export function SigilGenerator() {
             <div className="absolute top-0 left-0 right-0 safe-area-top">
               <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-b from-black/70 via-black/40 to-transparent">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-7 h-7 rounded-lg bg-[#CC785C]/20 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-[#CC785C]" />
+                  <div className="w-7 h-7 rounded-lg bg-secondary/20 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-secondary" />
                   </div>
                   <span className="text-sm font-semibold text-white/90">LovSigil</span>
                 </div>
@@ -681,7 +681,7 @@ export function SigilGenerator() {
                   <LocaleSwitcher className="text-white/80 scale-90" />
                   <Link
                     href="/gallery"
-                    className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] active:bg-[#D4AF37]/30"
+                    className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-primary active:bg-primary/30"
                   >
                     <Palette className="w-4 h-4" />
                   </Link>
@@ -691,17 +691,17 @@ export function SigilGenerator() {
           </div>
 
           {/* 移动端底部工具栏 */}
-          <div className="shrink-0 bg-black/95 border-t border-[#D4AF37]/20 p-3 safe-area-bottom">
+          <div className="shrink-0 bg-black/95 border-t border-primary/20 p-3 safe-area-bottom">
             {!isLoading && (
               <div className="flex items-center gap-3">
                 {capturedThumbnail ? (
                   <>
-                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#D4AF37] shrink-0">
+                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary shrink-0">
                       <img src={capturedThumbnail} alt="" className="w-full h-full object-cover" />
                     </div>
                     <Button
                       onClick={handleOpenSigilDialog}
-                      className="flex-1 bg-gradient-to-r from-[#C9A227] to-[#00D4FF]"
+                      className="flex-1 gradient-gold-copper"
                     >
                       <Sparkles className="w-4 h-4 mr-1" />
                       Generate
@@ -715,7 +715,7 @@ export function SigilGenerator() {
                     <Button
                       onClick={handleCapturePhoto}
                       disabled={!hasFaceDetected}
-                      className={`flex-1 ${hasFaceDetected ? 'bg-[#D4AF37]' : 'bg-white/20'}`}
+                      className={`flex-1 ${hasFaceDetected ? 'bg-primary' : 'bg-white/20'}`}
                     >
                       <Camera className="w-4 h-4 mr-1" />
                       {t('capture_photo') || '拍照'}
@@ -723,7 +723,7 @@ export function SigilGenerator() {
                     <Button
                       onClick={handleOpenSigilDialogWithoutPhoto}
                       variant="outline"
-                      className="border-[#D4AF37]/40 text-[#D4AF37]"
+                      className="border-primary/40 text-primary"
                     >
                       {t('generate_without_photo')}
                     </Button>
@@ -744,9 +744,9 @@ export function SigilGenerator() {
             style={{ flexBasis: 320, minWidth: 120, maxWidth: 480 }}
           >
             {/* 标题 */}
-            <div className="px-4 py-3 border-b border-[#D4AF37]/20">
+            <div className="px-4 py-3 border-b border-primary/20">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold tracking-widest" style={{ color: '#CC785C' }}>
+                <h1 className="text-xl font-bold tracking-widest text-secondary">
                   {t('title')}
                 </h1>
                 <Badge variant="outline" className="text-[10px] text-white/40 border-white/20">
@@ -758,7 +758,7 @@ export function SigilGenerator() {
                 <div className="flex items-center gap-2">
                   <Link
                     href="/gallery"
-                    className="p-1.5 rounded-md hover:bg-[#D4AF37]/20 text-[#D4AF37]"
+                    className="p-1.5 rounded-md hover:bg-primary/20 text-primary"
                   >
                     <Palette className="w-4 h-4" />
                   </Link>
@@ -773,14 +773,14 @@ export function SigilGenerator() {
             </div>
 
             {/* 用户登录区域 */}
-            <div className="p-3 border-t border-[#D4AF37]/20">
+            <div className="p-3 border-t border-primary/20">
               {authLoading ? (
                 <div className="flex items-center justify-center py-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
               ) : user ? (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37] font-medium shrink-0 overflow-hidden">
+                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-medium shrink-0 overflow-hidden">
                     {user.profile?.avatarUrl ? (
                       <img src={user.profile.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -792,10 +792,10 @@ export function SigilGenerator() {
                       {user.profile?.displayName || user.email?.split('@')[0]}
                     </p>
                     <div className="flex items-center gap-2">
-                      {isAdmin && <span className="text-[10px] text-[#D4AF37]/80">Admin</span>}
-                      <Link href="/credits" className="text-[10px] text-white/50 flex items-center gap-0.5 hover:text-[#D4AF37]">
-                        <Coins className="w-3 h-3 text-[#D4AF37]" />
-                        <span className="text-[#D4AF37]">{credits}</span>
+                      {isAdmin && <span className="text-[10px] text-primary/80">Admin</span>}
+                      <Link href="/credits" className="text-[10px] text-white/50 flex items-center gap-0.5 hover:text-primary">
+                        <Coins className="w-3 h-3 text-primary" />
+                        <span className="text-primary">{credits}</span>
                       </Link>
                     </div>
                   </div>
@@ -817,7 +817,7 @@ export function SigilGenerator() {
             </div>
           </ResizablePanel>
 
-          <ResizableHandle withHandle className="bg-[#D4AF37]/30 hover:bg-[#D4AF37]/50 transition-colors" />
+          <ResizableHandle withHandle className="bg-primary/30 hover:bg-primary/50 transition-colors" />
 
           {/* 右侧镜子区域 */}
           <ResizablePanel defaultSize={80} className="relative min-w-0 overflow-hidden">
@@ -854,8 +854,8 @@ export function SigilGenerator() {
             </button>
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-black">
-                <div className="w-16 h-16 rounded-xl border-2 border-[#D4AF37]/40 flex items-center justify-center animate-pulse">
-                  <Sparkles className="w-8 h-8 text-[#D4AF37]/60" />
+                <div className="w-16 h-16 rounded-xl border-2 border-primary/40 flex items-center justify-center animate-pulse">
+                  <Sparkles className="w-8 h-8 text-primary/60" />
                 </div>
               </div>
             )}
@@ -908,7 +908,7 @@ export function SigilGenerator() {
                     setPreviewRecord(null)
                     setSigilDialog({ open: true, capturedPhoto: capturedThumbnail || undefined, defaultRatio, defaultBio })
                   }}
-                  className="bg-gradient-to-r from-[#D4AF37] to-[#CC785C] text-white font-medium hover:brightness-110"
+                  className="gradient-gold-copper text-white font-medium hover:brightness-110"
                 >
                   <Sparkles className="w-4 h-4 mr-1.5" />
                   {t('make_same')}

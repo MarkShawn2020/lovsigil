@@ -7,7 +7,6 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 
 interface SigilOrder {
@@ -173,31 +172,21 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0D1B2A] p-4">
-        <Link href="/" className="absolute left-4 top-4 text-amber-300/60 hover:text-amber-300 transition-colors">
-          &larr; Back to Home
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <p className="text-lg text-red-400 mb-4">{error}</p>
+        <Link href="/">
+          <Button variant="outline" className="border-white/10">
+            Go Home
+          </Button>
         </Link>
-        <Card className="w-full max-w-md border-amber-500/20 bg-[#1B2838]">
-          <CardContent className="p-8 text-center">
-            <p className="text-lg text-red-400">{error}</p>
-            <Link href="/">
-              <Button className="mt-4" variant="outline">
-                Go Home
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
       </div>
     )
   }
 
   if (!order) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0D1B2A]">
-        <Link href="/" className="absolute left-4 top-4 text-amber-300/60 hover:text-amber-300 transition-colors">
-          &larr; Back to Home
-        </Link>
-        <Spinner className="size-8 text-amber-500" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Spinner className="size-8 text-primary" />
       </div>
     )
   }
@@ -212,105 +201,89 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
   const status = statusConfig[order.status]
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0D1B2A] p-4">
-      {/* Back to Home */}
-      <Link href="/" className="absolute left-4 top-4 text-amber-300/60 hover:text-amber-300 transition-colors">
-        &larr; Back to Home
-      </Link>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-sm border-b border-white/5">
+        <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
+          &larr; Back
+        </Link>
+        <Badge className={`${status.color} text-xs`}>{status.label}</Badge>
+      </header>
 
-      <Card className="w-full max-w-lg border-amber-500/20 bg-[#1B2838]">
-        <CardContent className="p-6">
-          {/* Header */}
-          <div className="mb-6 text-center">
-            <h1 className="text-2xl font-bold text-amber-100">{order.name}&apos;s Sigil</h1>
-            <Badge className={`mt-2 ${status.color}`}>{status.label}</Badge>
-          </div>
+      {/* Main Content */}
+      <main className="px-4 py-6 max-w-lg mx-auto">
+        {/* Title */}
+        <h1 className="text-xl font-semibold text-center text-foreground mb-4">
+          {order.name}&apos;s Sigil
+        </h1>
 
-          {/* Sigil Image or Loading */}
-          <div className="relative mb-6 aspect-square overflow-hidden rounded-lg bg-[#0D1B2A]">
-            {order.status === 'completed' && order.generated_image ? (
-              <Image
-                src={order.generated_image}
-                alt={`${order.name}'s personal sigil`}
-                fill
-                className="object-contain"
-                unoptimized
-              />
-            ) : order.status === 'failed' ? (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-red-400">Generation failed</p>
-              </div>
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-4">
-                <Spinner className="size-12 text-amber-500" />
-                <p className="text-amber-200/60">
-                  {order.status === 'pending' ? 'Waiting to start...' : 'Creating your sigil...'}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Vibe Analysis */}
-          {order.status === 'completed' && order.vibe_analysis?.description && (
-            <div className="space-y-3 rounded-lg bg-[#0D1B2A] p-4">
-              <p className="text-center text-sm italic text-amber-200/80">
-                &quot;{order.vibe_analysis.description}&quot;
+        {/* Sigil Image */}
+        <div className="relative w-full overflow-hidden rounded-xl shadow-2xl shadow-black/50">
+          {order.status === 'completed' && order.generated_image ? (
+            <Image
+              src={order.generated_image}
+              alt={`${order.name}'s personal sigil`}
+              width={600}
+              height={600}
+              className="w-full h-auto"
+              unoptimized
+            />
+          ) : order.status === 'failed' ? (
+            <div className="aspect-square flex items-center justify-center bg-card">
+              <p className="text-red-400">Generation failed</p>
+            </div>
+          ) : (
+            <div className="aspect-square flex flex-col items-center justify-center gap-4 bg-card">
+              <Spinner className="size-12 text-primary" />
+              <p className="text-muted-foreground">
+                {order.status === 'pending' ? 'Waiting to start...' : 'Creating your sigil...'}
               </p>
-              {(order.vibe_analysis.dominantVibe || order.vibe_analysis.traits?.length) && (
-                <div className="flex flex-wrap justify-center gap-2">
-                  {order.vibe_analysis.dominantVibe && (
-                    <Badge variant="outline" className="border-amber-500/30 text-amber-300">
-                      {order.vibe_analysis.dominantVibe}
-                    </Badge>
-                  )}
-                  {order.vibe_analysis.traits?.map(trait => (
-                    <Badge key={trait} variant="outline" className="border-cyan-500/30 text-cyan-300">
-                      {trait}
-                    </Badge>
-                  ))}
-                </div>
-              )}
             </div>
           )}
+        </div>
 
-          {/* Generation Parameters */}
-          <div className="mt-4 rounded-lg bg-[#0D1B2A]/50 p-3 text-xs">
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-              <span className="text-amber-200/60">Name</span>
-              <span className="text-amber-200/80">{order.name}</span>
-              {order.bio && (
-                <>
-                  <span className="text-amber-200/60">Bio</span>
-                  <span className="text-amber-200/80">{order.bio}</span>
-                </>
-              )}
-              {order.style && (
-                <>
-                  <span className="text-amber-200/60">Style</span>
-                  <span className="text-amber-200/80">{order.style === 'totem' ? '生命图腾' : '神秘符文'}</span>
-                </>
-              )}
-              {order.aspect_ratio && (
-                <>
-                  <span className="text-amber-200/60">Ratio</span>
-                  <span className="text-amber-200/80">{order.aspect_ratio}</span>
-                </>
-              )}
-            </div>
-          </div>
+        {/* Meta Tags - Compact inline style */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+          {order.style && (
+            <span className="px-2 py-1 rounded-full bg-white/5">
+              {order.style === 'totem' ? '生命图腾' : '神秘符文'}
+            </span>
+          )}
+          {order.aspect_ratio && (
+            <span className="px-2 py-1 rounded-full bg-white/5">
+              {order.aspect_ratio}
+            </span>
+          )}
+          <span className="px-2 py-1 rounded-full bg-white/5">
+            {new Date(order.created_at).toLocaleDateString()}
+          </span>
+        </div>
 
-          {/* Actions */}
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href="/">
-              <Button variant="outline" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
-                Create Your Own
+        {/* Actions - Primary action emphasized */}
+        <div className="mt-6 space-y-3">
+          {order.status === 'completed' && order.generated_image && (
+            <Button
+              className="w-full h-12 gradient-gold-copper text-base font-medium"
+              onClick={handleDownload}
+            >
+              <Download className="mr-2 size-5" />
+              Download Sigil
+            </Button>
+          )}
+
+          <div className="flex gap-3">
+            <Link href="/" className="flex-1">
+              <Button
+                variant="outline"
+                className="w-full border-white/10 text-foreground/80 hover:bg-white/5"
+              >
+                Create New
               </Button>
             </Link>
-            {/* Retry button - show for completed or failed */}
             {(order.status === 'completed' || order.status === 'failed') && (
               <Button
                 variant="outline"
-                className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10"
+                className="flex-1 border-white/10 text-foreground/80 hover:bg-white/5"
                 onClick={handleRetry}
                 disabled={isRetrying}
               >
@@ -319,23 +292,17 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
                 ) : (
                   <RefreshCw className="mr-2 size-4" />
                 )}
-                Retry
-              </Button>
-            )}
-            {order.status === 'completed' && order.generated_image && (
-              <Button className="bg-amber-600 hover:bg-amber-700" onClick={handleDownload}>
-                <Download className="mr-2 size-4" />
-                Download
+                Regenerate
               </Button>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </main>
 
       {/* Footer */}
-      <p className="mt-6 text-sm text-amber-200/40">
-        Powered by LovSigil
-      </p>
+      <footer className="fixed bottom-0 inset-x-0 py-3 text-center text-xs text-muted-foreground/40">
+        LovSigil
+      </footer>
     </div>
   )
 }

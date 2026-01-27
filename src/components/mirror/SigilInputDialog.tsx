@@ -104,9 +104,9 @@ export function SigilInputDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px] max-h-[85vh] overflow-y-auto bg-[#0D1B2A] border-[#C9A227]/30 text-white">
+      <DialogContent className="sm:max-w-[420px] max-h-[85vh] overflow-y-auto bg-card border-primary/30 text-white">
         <DialogHeader className="pb-2">
-          <DialogTitle className="text-[#C9A227] flex items-center gap-2 text-base">
+          <DialogTitle className="text-primary flex items-center gap-2 text-base">
             <Sparkles className="w-4 h-4" />
             {t('create_sigil_title')}
           </DialogTitle>
@@ -120,11 +120,11 @@ export function SigilInputDialog({
           <div className="flex items-center gap-4">
             {userPhoto && (
               <div className="relative shrink-0">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#C9A227]/50 bg-black/30">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/50 bg-black/30">
                   <img src={userPhoto} alt="" className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#0D1B2A] border border-[#C9A227]/50 flex items-center justify-center">
-                  <User className="w-2.5 h-2.5 text-[#C9A227]" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-card border border-primary/50 flex items-center justify-center">
+                  <User className="w-2.5 h-2.5 text-primary" />
                 </div>
               </div>
             )}
@@ -138,7 +138,7 @@ export function SigilInputDialog({
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('name_placeholder')}
                 maxLength={50}
-                className="bg-black/30 border-white/20 text-white placeholder:text-white/40 focus:border-[#C9A227]/50 focus:ring-[#C9A227]/20"
+                className="bg-black/30 border-white/20 text-white placeholder:text-white/40 focus:border-primary/50 focus:ring-primary/20"
               />
             </div>
           </div>
@@ -153,7 +153,7 @@ export function SigilInputDialog({
               onChange={(e) => setBio(e.target.value)}
               placeholder={t('bio_placeholder')}
               maxLength={200}
-              className="bg-black/30 border-white/20 text-white placeholder:text-white/40 focus:border-[#C9A227]/50 focus:ring-[#C9A227]/20"
+              className="bg-black/30 border-white/20 text-white placeholder:text-white/40 focus:border-primary/50 focus:ring-primary/20"
             />
           </div>
 
@@ -170,13 +170,13 @@ export function SigilInputDialog({
                   className={cn(
                     'flex-1 py-2 rounded-lg border-2 transition-all text-center',
                     selectedStyle === style.id
-                      ? 'border-[#C9A227] bg-[#C9A227]/10'
+                      ? 'border-primary bg-primary/10'
                       : 'border-white/20 hover:border-white/40',
                   )}
                 >
                   <span className={cn(
                     'text-sm font-medium',
-                    selectedStyle === style.id ? 'text-[#C9A227]' : 'text-white/80',
+                    selectedStyle === style.id ? 'text-primary' : 'text-white/80',
                   )}>
                     {style.labelZh}
                   </span>
@@ -198,7 +198,7 @@ export function SigilInputDialog({
                   className={cn(
                     'flex-1 py-1.5 rounded border-2 transition-all text-xs font-medium',
                     selectedRatio === ratio.id
-                      ? 'border-[#C9A227] bg-[#C9A227]/20 text-[#C9A227]'
+                      ? 'border-primary bg-primary/20 text-primary'
                       : 'border-white/20 text-white/60 hover:border-white/40 hover:text-white/80',
                   )}
                 >
@@ -213,7 +213,7 @@ export function SigilInputDialog({
         <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-1">
           <div>
             {authLoading ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#C9A227] border-t-transparent" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             ) : !isLoggedIn ? (
               <Button
                 type="button"
@@ -226,9 +226,9 @@ export function SigilInputDialog({
               </Button>
             ) : (
               <div className="flex items-center gap-2 text-sm">
-                <Coins className="w-4 h-4 text-[#C9A227]" />
+                <Coins className="w-4 h-4 text-primary" />
                 <span className="text-white/60">
-                  <span className="text-[#C9A227] font-medium">{credits}</span>
+                  <span className="text-primary font-medium">{credits}</span>
                 </span>
                 <span className={cn(
                   'text-xs px-1.5 py-0.5 rounded',
@@ -257,7 +257,7 @@ export function SigilInputDialog({
               className={cn(
                 'text-white',
                 isLoggedIn && hasEnoughCredits && isNameValid
-                  ? 'bg-gradient-to-r from-[#C9A227] to-[#00D4FF] hover:brightness-110'
+                  ? 'gradient-gold-copper hover:brightness-110'
                   : 'bg-white/20 cursor-not-allowed',
               )}
             >

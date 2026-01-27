@@ -54,7 +54,7 @@ export const LocaleSwitcher = ({ className }: LocaleSwitcherProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={`flex items-center gap-1 p-1.5 rounded-md border border-transparent hover:bg-[#D4AF37]/20 hover:border-[#D4AF37]/40 text-sm transition-colors focus:outline-none disabled:opacity-50 ${className || ''}`}
+        className={`flex items-center gap-1 p-1.5 rounded-md border border-transparent hover:bg-primary/20 hover:border-primary/40 text-sm transition-colors focus:outline-none disabled:opacity-50 ${className || ''}`}
         disabled={isNavigating}
       >
         <span className="text-base">{currentConfig.flag}</span>
