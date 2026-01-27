@@ -1,5 +1,5 @@
-import { LannaMirror } from '@/components/mirror/LannaMirror'
+import { SigilGenerator } from '@/components/mirror/SigilGenerator'
 
 export default function HomePage() {
-  return <LannaMirror />
+  return <SigilGenerator />
 }

@@ -4,7 +4,7 @@ import { Check, Coins, LogIn, Sparkles, User } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
-import type { AspectRatio } from './sigilTypes'
+import type { AspectRatio, SigilStyle } from './sigilTypes'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -17,12 +17,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/providers/AuthProvider'
-import { ASPECT_RATIOS } from './sigilTypes'
+import { ASPECT_RATIOS, SIGIL_STYLES } from './sigilTypes'
 
 export interface SigilInput {
   name: string
   bio: string
   aspectRatio: AspectRatio
+  style: SigilStyle
 }
 
 interface SigilInputDialogProps {
@@ -31,6 +32,7 @@ interface SigilInputDialogProps {
   onConfirm: (input: SigilInput) => void
   userPhoto?: string
   defaultRatio?: AspectRatio
+  defaultBio?: string
 }
 
 // Credits cost: 2 per sigil
@@ -42,21 +44,24 @@ export function SigilInputDialog({
   onConfirm,
   userPhoto,
   defaultRatio = '1:1',
+  defaultBio = '',
 }: SigilInputDialogProps) {
   const t = useTranslations('Sigil')
   const { user, credits, signInWithGoogle, loading: authLoading } = useAuth()
   const [name, setName] = useState('')
-  const [bio, setBio] = useState('')
+  const [bio, setBio] = useState(defaultBio)
   const [selectedRatio, setSelectedRatio] = useState<AspectRatio>(defaultRatio)
+  const [selectedStyle, setSelectedStyle] = useState<SigilStyle>('rune')
 
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setName('')
-      setBio('')
+      setBio(defaultBio)
       setSelectedRatio(defaultRatio)
+      setSelectedStyle('rune')
     }
-  }, [open, defaultRatio])
+  }, [open, defaultRatio, defaultBio])
 
   const hasEnoughCredits = credits >= SIGIL_CREDITS
   const isLoggedIn = !!user
@@ -68,6 +73,7 @@ export function SigilInputDialog({
       name: name.trim(),
       bio: bio.trim(),
       aspectRatio: selectedRatio,
+      style: selectedStyle,
     })
   }
 
@@ -128,6 +134,40 @@ export function SigilInputDialog({
               className="bg-black/30 border-white/20 text-white placeholder:text-white/40 focus:border-[#C9A227]/50 focus:ring-[#C9A227]/20"
             />
             <p className="text-xs text-white/40 text-right">{bio.length}/200</p>
+          </div>
+
+          {/* Style Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white/80">
+              {t('select_style') || 'Style'}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {SIGIL_STYLES.map((style) => (
+                <button
+                  key={style.id}
+                  onClick={() => setSelectedStyle(style.id)}
+                  className={cn(
+                    'p-3 rounded-lg border-2 transition-all text-left',
+                    selectedStyle === style.id
+                      ? 'border-[#C9A227] bg-[#C9A227]/10'
+                      : 'border-white/20 hover:border-white/40',
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      'text-sm font-medium',
+                      selectedStyle === style.id ? 'text-[#C9A227]' : 'text-white/80',
+                    )}>
+                      {style.labelZh}
+                    </span>
+                    {selectedStyle === style.id && (
+                      <Check className="w-3 h-3 text-[#C9A227]" />
+                    )}
+                  </div>
+                  <p className="text-xs text-white/50 mt-1">{style.descZh}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Aspect Ratio Selection */}

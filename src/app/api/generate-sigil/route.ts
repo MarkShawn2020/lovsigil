@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 
 import { EnvServer } from '@/libs/EnvServer'
 import { supabaseAdmin, supabaseServer } from '@/libs/SupabaseServer'
-import { analyzeSigilVibe, buildSigilPrompt, generateImage } from '@/libs/ZenMux'
+import { analyzeSigilVibe, buildSigilPrompt, generateImage, generateLifeTotem } from '@/libs/ZenMux'
 
 // Get authenticated user from cookies (optional)
 async function getAuthUser() {
@@ -56,10 +56,28 @@ async function uploadImageToStorage(base64Data: string, sigilId: string): Promis
   return `${EnvServer.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/spirit-images/${fileName}`
 }
 
+// Upload SVG to Storage, return public URL
+async function uploadSvgToStorage(svgContent: string, sigilId: string): Promise<string> {
+  const supabase = supabaseAdmin || supabaseServer
+
+  const fileName = `sigils/${sigilId}/${Date.now()}-totem.svg`
+
+  const { error } = await supabase.storage
+    .from('spirit-images')
+    .upload(fileName, svgContent, {
+      contentType: 'image/svg+xml',
+      upsert: false,
+    })
+
+  if (error) throw error
+
+  return `${EnvServer.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/spirit-images/${fileName}`
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, bio, userPhoto, orderId, aspectRatio = '1:1' } = body
+    const { name, bio, userPhoto, orderId, aspectRatio = '1:1', style = 'rune' } = body
 
     if (!name) {
       return NextResponse.json(
@@ -79,38 +97,45 @@ export async function POST(request: Request) {
     }
 
     try {
-      // Step 1: Analyze vibe from photo (if provided)
-      let vibeAnalysis = null
-      if (userPhoto) {
-        vibeAnalysis = await analyzeSigilVibe(userPhoto, name, bio)
+      const sigilId = orderId || `sigil-${Date.now()}`
+      let imageUrl: string
+      let prompt: string
+      let vibeAnalysis: object | null = null
+
+      if (style === 'totem') {
+        // Life Totem style: Claude Opus 4.5 生成 SVG
+        const svgContent = await generateLifeTotem(name, bio)
+        imageUrl = await uploadSvgToStorage(svgContent, sigilId)
+        prompt = `Life Totem for ${name}`
+        vibeAnalysis = { style: 'totem', name, bio }
       } else {
-        // Default vibe for users without photo
-        vibeAnalysis = {
-          dominantVibe: 'seeker',
-          traits: ['curious', 'open', 'balanced'],
-          runeAffinity: 'mystical' as const,
-          description: 'A soul seeking its true path',
+        // Rune style: Gemini 生成光栅图像
+        if (userPhoto) {
+          vibeAnalysis = await analyzeSigilVibe(userPhoto, name, bio)
+        } else {
+          vibeAnalysis = {
+            dominantVibe: 'seeker',
+            traits: ['curious', 'open', 'balanced'],
+            runeAffinity: 'mystical' as const,
+            description: 'A soul seeking its true path',
+          }
         }
+
+        prompt = buildSigilPrompt({
+          name,
+          bio,
+          vibeAnalysis: vibeAnalysis as any,
+          hasReferenceImage: !!userPhoto,
+        })
+
+        const generatedImageBase64 = await generateImage(prompt, userPhoto || undefined, {
+          aspectRatio,
+        })
+
+        imageUrl = await uploadImageToStorage(generatedImageBase64, sigilId)
       }
 
-      // Step 2: Build sigil prompt
-      const prompt = buildSigilPrompt({
-        name,
-        bio,
-        vibeAnalysis,
-        hasReferenceImage: !!userPhoto,
-      })
-
-      // Step 3: Generate sigil image
-      const generatedImageBase64 = await generateImage(prompt, userPhoto || undefined, {
-        aspectRatio,
-      })
-
-      // Step 4: Upload to storage
-      const sigilId = orderId || `sigil-${Date.now()}`
-      const imageUrl = await uploadImageToStorage(generatedImageBase64, sigilId)
-
-      // Step 5: Save to database
+      // Save to database
       if (orderId) {
         await db
           .from('sigil_generations')

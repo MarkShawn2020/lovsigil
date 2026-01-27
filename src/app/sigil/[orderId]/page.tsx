@@ -14,6 +14,7 @@ interface SigilOrder {
   order_id: string
   name: string
   bio: string | null
+  aspect_ratio: string | null
   generated_image: string | null
   vibe_analysis: {
     dominantVibe: string
@@ -30,6 +31,7 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
   const [error, setError] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
   const [isRetrying, setIsRetrying] = useState(false)
+  const [pollTrigger, setPollTrigger] = useState(0)
 
   // Unwrap params
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [orderId])
+  }, [orderId, pollTrigger])
 
   // Retry handler
   const handleRetry = async () => {
@@ -76,8 +78,9 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
     try {
       const res = await fetch(`/api/sigil-status?id=${orderId}&retry=1`)
       if (res.ok) {
-        // Reset order to trigger polling
-        setOrder(prev => prev ? { ...prev, status: 'pending' } : null)
+        // Reset order and restart polling
+        setOrder(prev => prev ? { ...prev, status: 'generating', generated_image: null } : null)
+        setPollTrigger(prev => prev + 1)
       }
     } catch (e) {
       console.error('Retry failed:', e)
@@ -187,6 +190,26 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
               )}
             </div>
           )}
+
+          {/* Generation Parameters */}
+          <div className="mt-4 space-y-2 rounded-lg bg-[#0D1B2A]/50 p-3 text-xs text-amber-200/60">
+            <div className="flex items-center justify-between">
+              <span>Name:</span>
+              <span className="text-amber-200/80">{order.name}</span>
+            </div>
+            {order.bio && (
+              <div className="flex items-start justify-between gap-4">
+                <span className="shrink-0">Bio:</span>
+                <span className="text-right text-amber-200/80">{order.bio}</span>
+              </div>
+            )}
+            {order.aspect_ratio && (
+              <div className="flex items-center justify-between">
+                <span>Aspect Ratio:</span>
+                <span className="text-amber-200/80">{order.aspect_ratio}</span>
+              </div>
+            )}
+          </div>
 
           {/* Actions */}
           <div className="mt-6 flex flex-wrap justify-center gap-3">

@@ -25,7 +25,7 @@
     "meta_description": "Full-stack SaaS template ที่สร้างด้วย Next.js 15, Supabase และ Tailwind CSS เริ่มโปรเจกต์ใหม่ได้ในไม่กี่นาที",
     "sponsors_title": "พันธมิตร"
   },
-  "LannaMirror": {
+  "SigilGenerator": {
     "title": "LovSigil",
     "subtitle": "เครื่องสร้าง Sigil ส่วนตัว AI",
     "loading_ai": "กำลังโหลด AI...",
@@ -308,6 +308,7 @@
     "name_placeholder": "ใส่ชื่อของคุณ",
     "your_bio": "เกี่ยวกับคุณ (ไม่บังคับ)",
     "bio_placeholder": "เช่น นักออกแบบที่ชอบความเงียบสงบ",
+    "select_style": "รูปแบบศิลปะ",
     "select_ratio": "สัดส่วนภาพ",
     "login_required": "ต้องเข้าสู่ระบบเพื่อใช้บริการ AI",
     "sign_in_to_generate": "เข้าสู่ระบบเพื่อสร้าง",

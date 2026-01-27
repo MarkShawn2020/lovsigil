@@ -249,3 +249,66 @@ The final image should evoke mystery, personal power, and ancient wisdom.`
 
   return prompt
 }
+
+// Life Totem 生成 (使用 Claude Opus 4.5 via ZenMux Anthropic endpoint)
+export async function generateLifeTotem(name: string, bio?: string): Promise<string> {
+  const apiKey = EnvServer.ZENMUX_API_KEY
+  if (!apiKey) {
+    throw new Error('ZENMUX_API_KEY is not configured')
+  }
+
+  const prompt = `你是一位创造生命图腾的大师。请为以下人物创造一个极简主义的抽象图腾。
+
+姓名：${name}
+${bio ? `附加信息：${bio}` : ''}
+
+请生成一个 SVG 图像，要求：
+1. 黑色背景 (#000000)
+2. 白色设计元素 (#FFFFFF)
+3. 边缘 2.5% 的留白
+4. 一个优雅的框架，包含：
+   - 顶部是人物姓名（优雅字体）
+   - 姓名下方有一条精致的水平分割线
+   - 中心是一个抽象的图腾符号（几何、神秘、个人化）
+   - 底部是一句禅意公案式的短句（深邃、含蓄，10-20个中文字）
+5. 右下角框架外部有 "@LovSigil" 水印，与框架边线保持 10px 以上间距
+
+图腾应该是：
+- 极简主义和抽象的
+- 象征性和神秘的
+- 对这个名字和本质独特而个人化
+- 平衡和谐
+
+仅返回完整的 SVG 代码，以 <svg 开始，以 </svg> 结束。
+SVG 应该是 400x400 像素，viewBox="0 0 400 400"。`
+
+  const response = await fetch('https://zenmux.ai/api/anthropic/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'anthropic/claude-opus-4.5',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Anthropic API error: ${response.status} - ${errorText}`)
+  }
+
+  const data = await response.json()
+  const text = data.content?.[0]?.text || ''
+
+  // 提取 SVG
+  const svgMatch = text.match(/<svg[\s\S]*<\/svg>/i)
+  if (!svgMatch) {
+    throw new Error('No SVG found in response')
+  }
+
+  return svgMatch[0]
+}

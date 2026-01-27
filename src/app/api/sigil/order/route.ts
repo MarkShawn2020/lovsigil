@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { EnvServer } from '@/libs/EnvServer'
 import { supabaseAdmin, supabaseServer } from '@/libs/SupabaseServer'
 
+export const dynamic = 'force-dynamic'
+
 // Get base URL from request headers or environment
 async function getBaseUrl() {
   const headersList = await headers()

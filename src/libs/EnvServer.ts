@@ -7,5 +7,6 @@ export const EnvServer = {
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
   ZENMUX_API_KEY: process.env.ZENMUX_API_KEY || '',
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
   NODE_ENV: process.env.NODE_ENV || 'development',
 } as const;

@@ -25,7 +25,7 @@
     "meta_description": "Next.js 15, Supabase, Tailwind CSS로 구축된 풀스택 SaaS 템플릿. 몇 분 만에 프로젝트를 시작하세요.",
     "sponsors_title": "파트너"
   },
-  "LannaMirror": {
+  "SigilGenerator": {
     "title": "LovSigil",
     "subtitle": "AI 개인 시길 생성기",
     "loading_ai": "AI 로딩 중...",
@@ -308,6 +308,7 @@
     "name_placeholder": "이름을 입력하세요",
     "your_bio": "소개 (선택)",
     "bio_placeholder": "예: 조용한 것을 좋아하는 디자이너",
+    "select_style": "아트 스타일",
     "select_ratio": "화면 비율",
     "login_required": "AI 서비스를 이용하려면 로그인이 필요합니다",
     "sign_in_to_generate": "로그인하여 생성",

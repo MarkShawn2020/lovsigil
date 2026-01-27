@@ -25,7 +25,7 @@
     "meta_description": "基于 Next.js 15、Supabase 和 Tailwind CSS 的全栈 SaaS 模板，快速启动您的下一个项目。",
     "sponsors_title": "合作伙伴"
   },
-  "LannaMirror": {
+  "SigilGenerator": {
     "title": "LovSigil",
     "subtitle": "AI 个人符文图腾生成器",
     "loading_ai": "AI 加载中...",
@@ -734,6 +734,7 @@
     "name_placeholder": "输入你的名字",
     "your_bio": "关于你（可选）",
     "bio_placeholder": "例如：喜欢安静的设计师",
+    "select_style": "艺术风格",
     "select_ratio": "画面比例",
     "login_required": "需要登录才能使用 AI 服务",
     "sign_in_to_generate": "登录以生成",

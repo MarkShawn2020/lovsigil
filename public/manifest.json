@@ -1,7 +1,7 @@
 {
-  "name": "LannaMirror3 - Discover Your Guardian Spirit",
-  "short_name": "LannaMirror3",
-  "description": "AI-powered facial expression analysis to discover your Lanna guardian spirit",
+  "name": "LovSigil - Create Your Personal Sigil",
+  "short_name": "LovSigil",
+  "description": "AI-powered personal sigil generator - transform your essence into mystical runes",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

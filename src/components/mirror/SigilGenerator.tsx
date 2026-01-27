@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -62,9 +63,14 @@ let persistentFaceLandmarker: any = null
 let persistentPoseLandmarker: any = null
 let persistentWebGLRenderer: WebGLRenderer | null = null
 
-export function LannaMirror() {
-  const t = useTranslations('LannaMirror')
+export function SigilGenerator() {
+  const t = useTranslations('SigilGenerator')
   const isMobile = useIsMobile()
+  const searchParams = useSearchParams()
+
+  // URL params for "Make Similar" feature
+  const urlBio = searchParams.get('bio') || ''
+  const urlRatio = (searchParams.get('ratio') as AspectRatio) || undefined
   const { user, isAdmin, credits, loading: authLoading, signInWithGoogle, signOut, spendCredits } = useAuth()
   const videoRef = useRef<HTMLVideoElement>(null)
   const rawVideoRef = useRef<HTMLVideoElement>(null)
@@ -127,6 +133,7 @@ export function LannaMirror() {
     generatedImage: string
     userPhoto: string | null
     name: string
+    bio?: string | null
     userId: string | null
     orderId?: string | null
     ratio?: string
@@ -187,6 +194,7 @@ export function LannaMirror() {
     open: boolean
     capturedPhoto?: string
     defaultRatio?: AspectRatio
+    defaultBio?: string
   }>({ open: false })
 
   // QR码弹窗状态
@@ -601,8 +609,8 @@ export function LannaMirror() {
   // 打开 Sigil 输入对话框
   const handleOpenSigilDialog = useCallback((person: TrackedPerson) => {
     const capturedPhoto = headThumbnails[person.id]
-    setSigilDialog({ open: true, capturedPhoto })
-  }, [headThumbnails])
+    setSigilDialog({ open: true, capturedPhoto, defaultRatio: urlRatio, defaultBio: urlBio })
+  }, [headThumbnails, urlRatio, urlBio])
 
   // 确认 Sigil 输入后开始生成
   const handleConfirmSigil = useCallback(async (input: SigilInput) => {
@@ -649,6 +657,7 @@ export function LannaMirror() {
           userPhoto: photo,
           orderId: orderData.orderId,
           aspectRatio: input.aspectRatio,
+          style: input.style,
         }),
       })
         .then((res) => res.json())
@@ -757,6 +766,7 @@ export function LannaMirror() {
                           generatedImage: record.generatedImage,
                           userPhoto: record.userPhoto,
                           name: record.name || 'Sigil',
+                          bio: record.bio,
                           userId: record.userId,
                           orderId: record.orderId,
                           ratio: record.ratio,
@@ -1275,6 +1285,7 @@ export function LannaMirror() {
                 <Button
                   onClick={() => {
                     const defaultRatio = previewRecord.ratio as AspectRatio | undefined
+                    const defaultBio = previewRecord.bio || ''
                     setPreviewRecord(null)
                     // 如果有检测到人，直接打开 Sigil 输入对话框
                     if (trackedPersons.length >= 1) {
@@ -1283,6 +1294,7 @@ export function LannaMirror() {
                         open: true,
                         capturedPhoto,
                         defaultRatio,
+                        defaultBio,
                       })
                     }
                     // 如果没有人，关闭悬浮窗后用户会看到"Step closer..."提示
@@ -1321,6 +1333,7 @@ export function LannaMirror() {
         onConfirm={handleConfirmSigil}
         userPhoto={sigilDialog.capturedPhoto}
         defaultRatio={sigilDialog.defaultRatio}
+        defaultBio={sigilDialog.defaultBio}
       />
     </div>
   )

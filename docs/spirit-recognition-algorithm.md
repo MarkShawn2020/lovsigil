@@ -215,7 +215,7 @@
     ├── personTracker.ts     # 多人追踪
     ├── spiritData.ts        # 守护灵数据定义
     ├── types.ts             # 类型定义
-    └── LannaMirror.tsx      # 主组件（渲染 + 交互）
+    └── SigilGenerator.tsx   # 主组件（渲染 + 交互）
 
 ## 性能考虑
 
