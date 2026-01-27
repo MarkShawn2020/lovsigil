@@ -1,5 +1,11 @@
 # lovsigil
 
+## 0.9.3
+
+### Patch Changes
+
+- Unify Mystic Rune design system with consistent color palette
+
 ## 1.0.3
 
 ### Patch Changes
