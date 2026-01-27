@@ -1,5 +1,15 @@
 # lovsigil
 
+## 1.0.1
+
+### Patch Changes
+
+- Add sigil detail page with order status tracking
+  - View sigil generation status at `/sigil/{orderId}`
+  - Auto-polling for pending/generating orders
+  - Display generated sigil with vibe analysis
+  - Download button for completed sigils
+
 ## 1.0.0
 
 ### Major Changes
