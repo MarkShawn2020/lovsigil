@@ -10,7 +10,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -51,15 +50,41 @@ export function SigilInputDialog({
   const [name, setName] = useState('')
   const [bio, setBio] = useState(defaultBio)
   const [selectedRatio, setSelectedRatio] = useState<AspectRatio>(defaultRatio)
-  const [selectedStyle, setSelectedStyle] = useState<SigilStyle>('rune')
+  const [selectedStyle, setSelectedStyle] = useState<SigilStyle>('totem')
 
-  // Reset form when dialog opens
+  // Load persisted preferences from localStorage
+  useEffect(() => {
+    const savedStyle = localStorage.getItem('sigil_style') as SigilStyle | null
+    const savedRatio = localStorage.getItem('sigil_ratio') as AspectRatio | null
+    if (savedStyle && SIGIL_STYLES.some(s => s.id === savedStyle)) {
+      setSelectedStyle(savedStyle)
+    }
+    if (savedRatio && ASPECT_RATIOS.some(r => r.id === savedRatio)) {
+      setSelectedRatio(savedRatio)
+    }
+  }, [])
+
+  // Persist style preference
+  const handleStyleChange = (style: SigilStyle) => {
+    setSelectedStyle(style)
+    localStorage.setItem('sigil_style', style)
+  }
+
+  // Persist ratio preference
+  const handleRatioChange = (ratio: AspectRatio) => {
+    setSelectedRatio(ratio)
+    localStorage.setItem('sigil_ratio', ratio)
+  }
+
+  // Reset form when dialog opens (keep persisted style/ratio)
   useEffect(() => {
     if (open) {
       setName('')
       setBio(defaultBio)
-      setSelectedRatio(defaultRatio)
-      setSelectedStyle('rune')
+      // Only reset ratio if no persisted value
+      if (!localStorage.getItem('sigil_ratio')) {
+        setSelectedRatio(defaultRatio)
+      }
     }
   }, [open, defaultRatio, defaultBio])
 
@@ -79,7 +104,7 @@ export function SigilInputDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] max-h-[85vh] overflow-y-auto bg-[#0D1B2A] border-[#C9A227]/30 text-white">
+      <DialogContent className="sm:max-w-[420px] max-h-[85vh] overflow-y-auto bg-[#0D1B2A] border-[#C9A227]/30 text-white">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-[#C9A227] flex items-center gap-2 text-base">
             <Sparkles className="w-4 h-4" />
@@ -91,38 +116,35 @@ export function SigilInputDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* User Photo Preview */}
-          {userPhoto && (
-            <div className="flex justify-center">
-              <div className="relative">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#C9A227]/50 bg-black/30 shadow-lg shadow-[#00D4FF]/20">
+          {/* 头像 + 昵称同行 */}
+          <div className="flex items-center gap-4">
+            {userPhoto && (
+              <div className="relative shrink-0">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#C9A227]/50 bg-black/30">
                   <img src={userPhoto} alt="" className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#0D1B2A] border-2 border-[#C9A227]/50 flex items-center justify-center">
-                  <User className="w-4 h-4 text-[#C9A227]" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#0D1B2A] border border-[#C9A227]/50 flex items-center justify-center">
+                  <User className="w-2.5 h-2.5 text-[#C9A227]" />
                 </div>
               </div>
+            )}
+            <div className="flex-1 space-y-1">
+              <label className="text-sm font-medium text-white/80 flex items-center gap-1">
+                {t('your_name')}
+                <span className="text-red-400">*</span>
+              </label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('name_placeholder')}
+                maxLength={50}
+                className="bg-black/30 border-white/20 text-white placeholder:text-white/40 focus:border-[#C9A227]/50 focus:ring-[#C9A227]/20"
+              />
             </div>
-          )}
-
-          {/* Name Input */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white/80 flex items-center gap-1">
-              {t('your_name')}
-              <span className="text-red-400">*</span>
-            </label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('name_placeholder')}
-              maxLength={50}
-              className="bg-black/30 border-white/20 text-white placeholder:text-white/40 focus:border-[#C9A227]/50 focus:ring-[#C9A227]/20"
-            />
-            <p className="text-xs text-white/40 text-right">{name.length}/50</p>
           </div>
 
-          {/* Bio Input */}
-          <div className="space-y-2">
+          {/* 简介 */}
+          <div className="space-y-1">
             <label className="text-sm font-medium text-white/80">
               {t('your_bio')}
             </label>
@@ -133,79 +155,66 @@ export function SigilInputDialog({
               maxLength={200}
               className="bg-black/30 border-white/20 text-white placeholder:text-white/40 focus:border-[#C9A227]/50 focus:ring-[#C9A227]/20"
             />
-            <p className="text-xs text-white/40 text-right">{bio.length}/200</p>
           </div>
 
-          {/* Style Selection */}
-          <div className="space-y-2">
+          {/* 风格选择 */}
+          <div className="space-y-1.5">
             <label className="text-sm font-medium text-white/80">
               {t('select_style') || 'Style'}
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex gap-2">
               {SIGIL_STYLES.map((style) => (
                 <button
                   key={style.id}
-                  onClick={() => setSelectedStyle(style.id)}
+                  onClick={() => handleStyleChange(style.id)}
                   className={cn(
-                    'p-3 rounded-lg border-2 transition-all text-left',
+                    'flex-1 py-2 rounded-lg border-2 transition-all text-center',
                     selectedStyle === style.id
                       ? 'border-[#C9A227] bg-[#C9A227]/10'
                       : 'border-white/20 hover:border-white/40',
                   )}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      'text-sm font-medium',
-                      selectedStyle === style.id ? 'text-[#C9A227]' : 'text-white/80',
-                    )}>
-                      {style.labelZh}
-                    </span>
-                    {selectedStyle === style.id && (
-                      <Check className="w-3 h-3 text-[#C9A227]" />
-                    )}
-                  </div>
-                  <p className="text-xs text-white/50 mt-1">{style.descZh}</p>
+                  <span className={cn(
+                    'text-sm font-medium',
+                    selectedStyle === style.id ? 'text-[#C9A227]' : 'text-white/80',
+                  )}>
+                    {style.labelZh}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Aspect Ratio Selection */}
-          <div className="space-y-2">
+          {/* 比例选择 */}
+          <div className="space-y-1.5">
             <label className="text-sm font-medium text-white/80">
               {t('select_ratio')}
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               {ASPECT_RATIOS.map((ratio) => (
                 <button
                   key={ratio.id}
-                  onClick={() => setSelectedRatio(ratio.id)}
+                  onClick={() => handleRatioChange(ratio.id)}
                   className={cn(
-                    'flex-1 px-2 py-1.5 rounded-md border-2 transition-all text-xs font-medium',
+                    'flex-1 py-1.5 rounded border-2 transition-all text-xs font-medium',
                     selectedRatio === ratio.id
                       ? 'border-[#C9A227] bg-[#C9A227]/20 text-[#C9A227]'
                       : 'border-white/20 text-white/60 hover:border-white/40 hover:text-white/80',
                   )}
                 >
                   {ratio.label}
-                  {selectedRatio === ratio.id && (
-                    <Check className="w-3 h-3 ml-1 inline-block" />
-                  )}
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Credits Info / Login Prompt */}
-        <div className="border-t border-white/10 pt-3 mt-2">
-          {authLoading ? (
-            <div className="flex items-center justify-center py-2">
+        {/* 底部：积分 + 按钮 */}
+        <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-1">
+          <div>
+            {authLoading ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#C9A227] border-t-transparent" />
-            </div>
-          ) : !isLoggedIn ? (
-            <div className="text-center space-y-2">
-              <p className="text-white/60 text-xs">{t('login_required')}</p>
+            ) : !isLoggedIn ? (
               <Button
                 type="button"
                 size="sm"
@@ -215,57 +224,54 @@ export function SigilInputDialog({
                 <LogIn className="w-4 h-4 mr-1.5" />
                 {t('sign_in_to_generate')}
               </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-1.5 text-white/60">
+            ) : (
+              <div className="flex items-center gap-2 text-sm">
                 <Coins className="w-4 h-4 text-[#C9A227]" />
-                <span>
-                  {t('your_credits')}: <span className="text-[#C9A227] font-medium">{credits}</span>
+                <span className="text-white/60">
+                  <span className="text-[#C9A227] font-medium">{credits}</span>
+                </span>
+                <span className={cn(
+                  'text-xs px-1.5 py-0.5 rounded',
+                  hasEnoughCredits ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400',
+                )}>
+                  -{SIGIL_CREDITS}
                 </span>
               </div>
-              <div className={cn(
-                'text-xs px-2 py-0.5 rounded',
-                hasEnoughCredits ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400',
-              )}>
-                {t('cost')}: {SIGIL_CREDITS}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter className="flex-row justify-end gap-2 pt-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="text-white/70 hover:text-white hover:bg-white/10"
-          >
-            {t('cancel')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleConfirm}
-            disabled={!isLoggedIn || !hasEnoughCredits || !isNameValid}
-            className={cn(
-              'text-white',
-              isLoggedIn && hasEnoughCredits && isNameValid
-                ? 'bg-gradient-to-r from-[#C9A227] to-[#00D4FF] hover:brightness-110'
-                : 'bg-white/20 cursor-not-allowed',
             )}
-          >
-            <Sparkles className="w-4 h-4 mr-1" />
-            {!isLoggedIn
-              ? t('login_first')
-              : !hasEnoughCredits
-                ? t('insufficient_credits')
-                : !isNameValid
-                  ? t('enter_name')
-                  : t('generate_sigil')}
-          </Button>
-        </DialogFooter>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="text-white/70 hover:text-white hover:bg-white/10"
+            >
+              {t('cancel')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleConfirm}
+              disabled={!isLoggedIn || !hasEnoughCredits || !isNameValid}
+              className={cn(
+                'text-white',
+                isLoggedIn && hasEnoughCredits && isNameValid
+                  ? 'bg-gradient-to-r from-[#C9A227] to-[#00D4FF] hover:brightness-110'
+                  : 'bg-white/20 cursor-not-allowed',
+              )}
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              {!isLoggedIn
+                ? t('login_first')
+                : !hasEnoughCredits
+                  ? t('insufficient_credits')
+                  : !isNameValid
+                    ? t('enter_name')
+                    : t('generate_sigil')}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -46,17 +46,17 @@ export type SigilStyle = 'rune' | 'totem'
 
 export const SIGIL_STYLES: { id: SigilStyle; label: string; labelZh: string; desc: string; descZh: string }[] = [
   {
-    id: 'rune',
-    label: 'Mystical Rune',
-    labelZh: '神秘符文',
-    desc: 'Golden rune sigil with ethereal glow',
-    descZh: '金色符文印记，带有空灵光芒',
-  },
-  {
     id: 'totem',
     label: 'Life Totem',
     labelZh: '生命图腾',
     desc: 'Minimalist B&W totem with zen koan',
     descZh: '极简黑白图腾，配禅意公案',
+  },
+  {
+    id: 'rune',
+    label: 'Mystical Rune',
+    labelZh: '神秘符文',
+    desc: 'Golden rune sigil with ethereal glow',
+    descZh: '金色符文印记，带有空灵光芒',
   },
 ]

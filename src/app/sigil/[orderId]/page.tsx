@@ -1,9 +1,9 @@
 'use client'
 
-import { RefreshCw } from 'lucide-react'
+import { Download, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ interface SigilOrder {
   name: string
   bio: string | null
   aspect_ratio: string | null
+  style: 'rune' | 'totem' | null
   generated_image: string | null
   vibe_analysis: {
     dominantVibe: string
@@ -70,6 +71,87 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
       if (interval) clearInterval(interval)
     }
   }, [orderId, pollTrigger])
+
+  // Download handler - converts SVG to PNG with 2x DPI
+  const handleDownload = useCallback(async () => {
+    if (!order?.generated_image) return
+
+    const imageUrl = order.generated_image
+    const isSvg = imageUrl.endsWith('.svg')
+
+    if (!isSvg) {
+      // Direct download for non-SVG
+      const link = document.createElement('a')
+      link.href = imageUrl
+      link.download = `${order.name}-sigil.png`
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      return
+    }
+
+    // SVG to PNG conversion with 2x DPI
+    try {
+      const res = await fetch(imageUrl)
+      const svgText = await res.text()
+
+      // Parse SVG to get dimensions
+      const parser = new DOMParser()
+      const svgDoc = parser.parseFromString(svgText, 'image/svg+xml')
+      const svgEl = svgDoc.querySelector('svg')
+      if (!svgEl) throw new Error('Invalid SVG')
+
+      const width = Number.parseInt(svgEl.getAttribute('width') || '400', 10)
+      const height = Number.parseInt(svgEl.getAttribute('height') || '400', 10)
+
+      // Create 2x canvas for higher DPI
+      const scale = 2
+      const canvas = document.createElement('canvas')
+      canvas.width = width * scale
+      canvas.height = height * scale
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Canvas context failed')
+
+      // Create image from SVG blob
+      const blob = new Blob([svgText], { type: 'image/svg+xml' })
+      const url = URL.createObjectURL(blob)
+
+      const img = new window.Image()
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        URL.revokeObjectURL(url)
+
+        // Download as PNG
+        const link = document.createElement('a')
+        link.href = canvas.toDataURL('image/png')
+        link.download = `${order.name}-sigil.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        // Fallback: direct download
+        const link = document.createElement('a')
+        link.href = imageUrl
+        link.download = `${order.name}-sigil.svg`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+      img.src = url
+    } catch (e) {
+      console.error('Download conversion failed:', e)
+      // Fallback: direct download
+      const link = document.createElement('a')
+      link.href = imageUrl
+      link.download = `${order.name}-sigil.svg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+  }, [order])
 
   // Retry handler
   const handleRetry = async () => {
@@ -192,23 +274,29 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
           )}
 
           {/* Generation Parameters */}
-          <div className="mt-4 space-y-2 rounded-lg bg-[#0D1B2A]/50 p-3 text-xs text-amber-200/60">
-            <div className="flex items-center justify-between">
-              <span>Name:</span>
+          <div className="mt-4 rounded-lg bg-[#0D1B2A]/50 p-3 text-xs">
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+              <span className="text-amber-200/60">Name</span>
               <span className="text-amber-200/80">{order.name}</span>
+              {order.bio && (
+                <>
+                  <span className="text-amber-200/60">Bio</span>
+                  <span className="text-amber-200/80">{order.bio}</span>
+                </>
+              )}
+              {order.style && (
+                <>
+                  <span className="text-amber-200/60">Style</span>
+                  <span className="text-amber-200/80">{order.style === 'totem' ? '生命图腾' : '神秘符文'}</span>
+                </>
+              )}
+              {order.aspect_ratio && (
+                <>
+                  <span className="text-amber-200/60">Ratio</span>
+                  <span className="text-amber-200/80">{order.aspect_ratio}</span>
+                </>
+              )}
             </div>
-            {order.bio && (
-              <div className="flex items-start justify-between gap-4">
-                <span className="shrink-0">Bio:</span>
-                <span className="text-right text-amber-200/80">{order.bio}</span>
-              </div>
-            )}
-            {order.aspect_ratio && (
-              <div className="flex items-center justify-between">
-                <span>Aspect Ratio:</span>
-                <span className="text-amber-200/80">{order.aspect_ratio}</span>
-              </div>
-            )}
           </div>
 
           {/* Actions */}
@@ -235,11 +323,10 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
               </Button>
             )}
             {order.status === 'completed' && order.generated_image && (
-              <a href={order.generated_image} download={`${order.name}-sigil.png`} target="_blank">
-                <Button className="bg-amber-600 hover:bg-amber-700">
-                  Download
-                </Button>
-              </a>
+              <Button className="bg-amber-600 hover:bg-amber-700" onClick={handleDownload}>
+                <Download className="mr-2 size-4" />
+                Download
+              </Button>
             )}
           </div>
         </CardContent>

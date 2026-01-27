@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     // Get existing order data
     const { data: existingOrder, error: fetchError } = await supabaseAdmin
       .from('sigil_generations')
-      .select('name, bio, user_photo, aspect_ratio')
+      .select('name, bio, user_photo, aspect_ratio, style')
       .eq('order_id', orderId)
       .single()
 
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         bio: existingOrder.bio,
         userPhoto: existingOrder.user_photo,
         aspectRatio: existingOrder.aspect_ratio,
-        style: 'rune',
+        style: existingOrder.style || 'totem',
         orderId,
       }),
     }).catch(console.error)
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
   // Normal mode: get status
   const { data, error } = await supabaseAdmin
     .from('sigil_generations')
-    .select('order_id, name, bio, aspect_ratio, generated_image, vibe_analysis, status, created_at')
+    .select('order_id, name, bio, aspect_ratio, style, generated_image, vibe_analysis, status, created_at')
     .eq('order_id', orderId)
     .single()
 
