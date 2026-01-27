@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
-import { Spinner } from '@/components/ui/spinner'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Spinner } from '@/components/ui/spinner'
 
 interface SigilOrder {
   order_id: string
@@ -28,6 +29,7 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
   const [order, setOrder] = useState<SigilOrder | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
+  const [isRetrying, setIsRetrying] = useState(false)
 
   // Unwrap params
   useEffect(() => {
@@ -67,9 +69,29 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
     }
   }, [orderId])
 
+  // Retry handler
+  const handleRetry = async () => {
+    if (!orderId || isRetrying) return
+    setIsRetrying(true)
+    try {
+      const res = await fetch(`/api/sigil-status?id=${orderId}&retry=1`)
+      if (res.ok) {
+        // Reset order to trigger polling
+        setOrder(prev => prev ? { ...prev, status: 'pending' } : null)
+      }
+    } catch (e) {
+      console.error('Retry failed:', e)
+    } finally {
+      setIsRetrying(false)
+    }
+  }
+
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0D1B2A] p-4">
+        <Link href="/" className="absolute left-4 top-4 text-amber-300/60 hover:text-amber-300 transition-colors">
+          &larr; Back to Home
+        </Link>
         <Card className="w-full max-w-md border-amber-500/20 bg-[#1B2838]">
           <CardContent className="p-8 text-center">
             <p className="text-lg text-red-400">{error}</p>
@@ -87,6 +109,9 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
   if (!order) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0D1B2A]">
+        <Link href="/" className="absolute left-4 top-4 text-amber-300/60 hover:text-amber-300 transition-colors">
+          &larr; Back to Home
+        </Link>
         <Spinner className="size-8 text-amber-500" />
       </div>
     )
@@ -103,6 +128,11 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#0D1B2A] p-4">
+      {/* Back to Home */}
+      <Link href="/" className="absolute left-4 top-4 text-amber-300/60 hover:text-amber-300 transition-colors">
+        &larr; Back to Home
+      </Link>
+
       <Card className="w-full max-w-lg border-amber-500/20 bg-[#1B2838]">
         <CardContent className="p-6">
           {/* Header */}
@@ -136,31 +166,51 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
           </div>
 
           {/* Vibe Analysis */}
-          {order.status === 'completed' && order.vibe_analysis && (
+          {order.status === 'completed' && order.vibe_analysis?.description && (
             <div className="space-y-3 rounded-lg bg-[#0D1B2A] p-4">
               <p className="text-center text-sm italic text-amber-200/80">
                 &quot;{order.vibe_analysis.description}&quot;
               </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                <Badge variant="outline" className="border-amber-500/30 text-amber-300">
-                  {order.vibe_analysis.dominantVibe}
-                </Badge>
-                {order.vibe_analysis.traits.map(trait => (
-                  <Badge key={trait} variant="outline" className="border-cyan-500/30 text-cyan-300">
-                    {trait}
-                  </Badge>
-                ))}
-              </div>
+              {(order.vibe_analysis.dominantVibe || order.vibe_analysis.traits?.length) && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {order.vibe_analysis.dominantVibe && (
+                    <Badge variant="outline" className="border-amber-500/30 text-amber-300">
+                      {order.vibe_analysis.dominantVibe}
+                    </Badge>
+                  )}
+                  {order.vibe_analysis.traits?.map(trait => (
+                    <Badge key={trait} variant="outline" className="border-cyan-500/30 text-cyan-300">
+                      {trait}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Actions */}
-          <div className="mt-6 flex justify-center gap-3">
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link href="/">
               <Button variant="outline" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
                 Create Your Own
               </Button>
             </Link>
+            {/* Retry button - show for completed or failed */}
+            {(order.status === 'completed' || order.status === 'failed') && (
+              <Button
+                variant="outline"
+                className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10"
+                onClick={handleRetry}
+                disabled={isRetrying}
+              >
+                {isRetrying ? (
+                  <Spinner className="mr-2 size-4" />
+                ) : (
+                  <RefreshCw className="mr-2 size-4" />
+                )}
+                Retry
+              </Button>
+            )}
             {order.status === 'completed' && order.generated_image && (
               <a href={order.generated_image} download={`${order.name}-sigil.png`} target="_blank">
                 <Button className="bg-amber-600 hover:bg-amber-700">
