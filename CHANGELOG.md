@@ -1,5 +1,14 @@
 # lovsigil
 
+## 0.9.4
+
+### Patch Changes
+
+- 修复关闭再打开摄像头后 AI Effect 静止的问题
+
+  根本原因：initCamera 依赖 cameraEnabled state，导致状态变化时 useEffect cleanup 取消 renderLoop 的 animationFrame。
+  修复方案：使用 cameraEnabledRef 替代 state，避免函数重建和 cleanup 执行。
+
 ## 0.9.3
 
 ### Patch Changes
