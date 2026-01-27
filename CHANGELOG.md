@@ -1,5 +1,14 @@
 # lovsigil
 
+## 1.0.2
+
+### Patch Changes
+
+- 修复 Sigil 重试功能和添加生成参数显示
+  - 修复 retry 时 404 错误（移除不存在的 style 字段）
+  - 修复 retry 后 polling 不重启的问题
+  - 在详情页显示生成参数（name, bio, aspect_ratio）
+
 ## 1.0.1
 
 ### Patch Changes
