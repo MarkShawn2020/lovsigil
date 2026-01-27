@@ -3,7 +3,7 @@ import { cookies, headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 import { EnvServer } from '@/libs/EnvServer'
-import { supabaseServer } from '@/libs/SupabaseServer'
+import { supabaseAdmin } from '@/libs/SupabaseServer'
 
 // Get base URL from request headers or environment
 async function getBaseUrl() {
@@ -47,8 +47,12 @@ export async function POST(request: Request) {
 
     const user = await getAuthUser()
 
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+    }
+
     // Create order record with pending status
-    const { data: order, error } = await supabaseServer
+    const { data: order, error } = await supabaseAdmin
       .from('sigil_generations')
       .insert({
         name,
