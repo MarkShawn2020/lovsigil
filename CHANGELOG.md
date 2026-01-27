@@ -1,4 +1,15 @@
-# lanna-mirror-3
+# lovsigil
+
+## 1.0.0
+
+### Major Changes
+
+- Initial release of LovSigil - AI-powered personal Sigil totem generator
+  - Camera-based face detection with MediaPipe
+  - AI vibe/personality analysis from facial features
+  - Rune-style personalized Sigil generation
+  - Name + bio input for enhanced personalization
+  - Multi-language support (EN/ZH/TH/KO)
 
 ## 0.9.2
 
