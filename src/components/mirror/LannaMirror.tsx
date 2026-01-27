@@ -47,6 +47,7 @@ import { useAuth } from '@/providers/AuthProvider'
 import { PersonTracker } from './personTracker'
 import { downloadImage } from './posterGenerator'
 import { SigilInputDialog } from './SigilInputDialog'
+import type { AspectRatio } from './sigilTypes'
 import { hexToNormalizedRgb, WebGLRenderer } from './webglRenderer'
 
 // Sigil 默认发光颜色（深金色）
@@ -185,7 +186,7 @@ export function LannaMirror() {
   const [sigilDialog, setSigilDialog] = useState<{
     open: boolean
     capturedPhoto?: string
-    defaultRatio?: string
+    defaultRatio?: AspectRatio
   }>({ open: false })
 
   // QR码弹窗状态
@@ -1273,7 +1274,7 @@ export function LannaMirror() {
               <div className="flex flex-wrap justify-center gap-3 p-3 bg-black/50 rounded-xl backdrop-blur-sm">
                 <Button
                   onClick={() => {
-                    const defaultRatio = previewRecord.ratio
+                    const defaultRatio = previewRecord.ratio as AspectRatio | undefined
                     setPreviewRecord(null)
                     // 如果有检测到人，直接打开 Sigil 输入对话框
                     if (trackedPersons.length >= 1) {
@@ -1319,7 +1320,7 @@ export function LannaMirror() {
         onOpenChange={(open) => setSigilDialog(prev => ({ ...prev, open }))}
         onConfirm={handleConfirmSigil}
         userPhoto={sigilDialog.capturedPhoto}
-        defaultRatio={sigilDialog.defaultRatio as SigilInput['aspectRatio']}
+        defaultRatio={sigilDialog.defaultRatio}
       />
     </div>
   )
