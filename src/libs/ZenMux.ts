@@ -85,7 +85,7 @@ Return JSON only:
   const [, mimeType, base64Data] = match
 
   const response = await client.models.generateContent({
-    model: 'google/gemini-2.0-flash',
+    model: 'google/gemini-3-pro-preview',
     contents: [
       {
         role: 'user',

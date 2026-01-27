@@ -68,9 +68,11 @@ export async function POST(request: Request) {
       )
     }
 
+    const db = supabaseAdmin || supabaseServer
+
     // If orderId provided, update existing order status to 'generating'
     if (orderId) {
-      await supabaseServer
+      await db
         .from('sigil_generations')
         .update({ status: 'generating' })
         .eq('order_id', orderId)
@@ -110,7 +112,7 @@ export async function POST(request: Request) {
 
       // Step 5: Save to database
       if (orderId) {
-        await supabaseServer
+        await db
           .from('sigil_generations')
           .update({
             generated_image: imageUrl,
@@ -121,7 +123,7 @@ export async function POST(request: Request) {
           .eq('order_id', orderId)
       } else {
         const user = await getAuthUser()
-        await supabaseServer.from('sigil_generations').insert({
+        await db.from('sigil_generations').insert({
           name,
           bio: bio || null,
           user_photo: userPhoto || null,
@@ -144,7 +146,7 @@ export async function POST(request: Request) {
     } catch (genError) {
       // Update order status to failed if orderId was provided
       if (orderId) {
-        await supabaseServer
+        await db
           .from('sigil_generations')
           .update({
             status: 'failed',

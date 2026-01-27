@@ -1,9 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies, headers } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 import { EnvServer } from '@/libs/EnvServer'
-import { supabaseAdmin } from '@/libs/SupabaseServer'
+import { supabaseAdmin, supabaseServer } from '@/libs/SupabaseServer'
 
 // Get base URL from request headers or environment
 async function getBaseUrl() {
@@ -79,6 +79,36 @@ export async function POST(request: Request) {
     console.error('Create sigil order error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create order' },
+      { status: 500 },
+    )
+  }
+}
+
+// Get order by ID
+export async function GET(request: NextRequest) {
+  try {
+    const orderId = request.nextUrl.searchParams.get('id')
+
+    if (!orderId) {
+      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 })
+    }
+
+    const { data: order, error } = await supabaseServer
+      .from('sigil_generations')
+      .select('order_id, name, bio, generated_image, vibe_analysis, status, created_at')
+      .eq('order_id', orderId)
+      .single()
+
+    if (error || !order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(order)
+  }
+  catch (error) {
+    console.error('Get sigil order error:', error)
+    return NextResponse.json(
+      { error: 'Failed to get order' },
       { status: 500 },
     )
   }
