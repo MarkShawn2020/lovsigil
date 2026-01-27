@@ -2,9 +2,6 @@
 
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 import {
-  AlertTriangle,
-  ArrowRight,
-  Check,
   Coins,
   Download,
   LogOut,
@@ -12,7 +9,6 @@ import {
   Sparkles,
   ThumbsDown,
   ThumbsUp,
-  Users,
   Video,
   X,
 } from 'lucide-react'
@@ -43,34 +39,18 @@ if (typeof window !== 'undefined') {
     originalError.apply(console, args)
   }
 }
-import type {GenerationOptions} from './GenerationOptionsDialog';
 import type { TrackedPerson } from './personTracker'
-import type { LannaSpirit } from './types'
-import { useGenerateSpirit } from '@/hooks/useGenerateSpirit'
+import type { SigilInput } from './sigilTypes'
 import { useSpiritHistory } from '@/hooks/useSpiritHistory'
 import { spiritKeys } from '@/libs/queryKeys'
 import { useAuth } from '@/providers/AuthProvider'
-import { SPIRIT_INFO } from './facsAnalyzer'
-import {
-  GENERATION_STYLES,
-  GenerationOptionsDialog,
-  type GenerationStyle,
-  type AspectRatio,
-} from './GenerationOptionsDialog'
 import { PersonTracker } from './personTracker'
 import { downloadImage } from './posterGenerator'
-import { LANNA_SPIRITS } from './spiritData'
+import { SigilInputDialog } from './SigilInputDialog'
 import { hexToNormalizedRgb, WebGLRenderer } from './webglRenderer'
 
-// 合像生成中单人的状态
-interface GroupGenerationPerson {
-  personId: string
-  photo: string | null
-  spirit: LannaSpirit
-  status: 'pending' | 'generating' | 'done' | 'error'
-  generatedImage: string | null
-  error: string | null
-}
+// Sigil 默认发光颜色（深金色）
+const DEFAULT_GLOW_COLOR: [number, number, number] = [0.79, 0.64, 0.15] // #C9A227
 
 type MirrorState = 'attract' | 'generate' | 'result'
 
@@ -104,7 +84,7 @@ export function LannaMirror() {
   // 多人追踪状态
   const [trackedPersons, setTrackedPersons] = useState<TrackedPerson[]>([])
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
-  const lastSpiritUpdateRef = useRef<number>(0)
+  const lastTrackedUpdateRef = useRef<number>(0)
   // 头部抠像缩略图 (personId -> dataURL)
   const [headThumbnails, setHeadThumbnails] = useState<Record<string, string>>({})
   const lastThumbnailUpdateRef = useRef<number>(0)
@@ -112,7 +92,6 @@ export function LannaMirror() {
 
   // 匹配相关状态
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
-  const [matchedSpirit, setMatchedSpirit] = useState<LannaSpirit | null>(null)
 
   // 生成相关状态
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
@@ -129,8 +108,6 @@ export function LannaMirror() {
   const hasMoreHistory = hasNextPage ?? false
   const isLoadingMoreHistory = isFetchingNextPage
 
-  // Mutations
-  const generateMutation = useGenerateSpirit()
   const queryClient = useQueryClient()
 
   // Get or create visitor ID for voting
@@ -148,10 +125,9 @@ export function LannaMirror() {
     id: number
     generatedImage: string
     userPhoto: string | null
-    spiritId: string
+    name: string
     userId: string | null
     orderId?: string | null
-    style?: string
     ratio?: string
     votes?: number
     userVote?: number | null // 1 = liked, -1 = disliked, null = no vote
@@ -205,34 +181,23 @@ export function LannaMirror() {
     }).catch(console.error)
   }, [getVisitorId, previewRecord?.id, queryClient])
 
-  // 合像相关状态
-  const [groupGenerating, setGroupGenerating] = useState(false)
-  const [groupPersons, setGroupPersons] = useState<GroupGenerationPerson[]>([])
-  const [groupPoster, setGroupPoster] = useState<string | null>(null)
-
-  // 生成选项对话框状态（包含捕获时刻的截图）
-  const [optionsDialog, setOptionsDialog] = useState<{
+  // Sigil 输入对话框状态
+  const [sigilDialog, setSigilDialog] = useState<{
     open: boolean
-    person: TrackedPerson | null
-    isGroup: boolean
-    capturedPhoto?: string  // 单人时捕获的截图
-    capturedPhotos?: string[]  // 合照时捕获的截图列表
-    defaultStyle?: string  // 默认风格（制作同款时使用）
-    defaultRatio?: string  // 默认比例（制作同款时使用）
-  }>({ open: false, person: null, isGroup: false })
+    capturedPhoto?: string
+    defaultRatio?: string
+  }>({ open: false })
 
   // QR码弹窗状态
   const [qrModal, setQrModal] = useState<{
     show: boolean
     orderId: string | null
     orderUrl: string | null
-    spiritName: string | null
-    spiritEmoji: string | null
-    spiritId: string | null
+    sigilName: string | null
     userPhoto: string | null
     completed: boolean
     resultImage: string | null
-  }>({ show: false, orderId: null, orderUrl: null, spiritName: null, spiritEmoji: null, spiritId: null, userPhoto: null, completed: false, resultImage: null })
+  }>({ show: false, orderId: null, orderUrl: null, sigilName: null, userPhoto: null, completed: false, resultImage: null })
 
   // 初始化摄像头 - 移动端使用较低分辨率以提升性能
   const initCamera = useCallback(async () => {
@@ -392,43 +357,30 @@ export function LannaMirror() {
       // 节流检查（在 setState 外部进行，避免闭包问题）
       // 移动端使用更长的节流间隔以降低 CPU 负载 (400ms vs 200ms)
       const throttleInterval = isMobile ? 400 : 200
-      const shouldUpdate = now - lastSpiritUpdateRef.current >= throttleInterval
+      const shouldUpdate = now - lastTrackedUpdateRef.current >= throttleInterval
 
       // 更新追踪人员状态
       if (persons.length > 0) {
-        const currentPersons = persons // 捕获当前帧的 persons 引用
-        const currentTime = now // 捕获当前时间
+        const currentPersons = persons
+        const currentTime = now
 
         setTrackedPersons((prev) => {
           const prevIds = prev.map(p => p.id).join(',')
           const newIds = currentPersons.map(p => p.id).join(',')
 
-          // ID 变化时立即更新（深拷贝 spiritScores 避免引用问题）
+          // ID 变化时立即更新
           if (prevIds !== newIds) {
-            lastSpiritUpdateRef.current = currentTime
-            return currentPersons.map(p => ({
-              ...p,
-              spiritScores: { ...p.spiritScores },
-            }))
+            lastTrackedUpdateRef.current = currentTime
+            return currentPersons
           }
 
-          // 节流：每 200ms 更新一次 spiritScores
+          // 节流更新
           if (!shouldUpdate) {
             return prev
           }
 
-          lastSpiritUpdateRef.current = currentTime
-          // 返回新数组以触发 React 重渲染（按 ID 匹配，而非索引）
-          const prevMap = new Map(prev.map(p => [p.id, p]))
-          return currentPersons.map((newPerson) => {
-            const prevPerson = prevMap.get(newPerson.id)
-            return prevPerson ? {
-              ...prevPerson,
-              currentFeatures: newPerson.currentFeatures,
-              spiritScores: { ...newPerson.spiritScores }, // 深拷贝 spiritScores
-              dominantSpirit: newPerson.dominantSpirit,
-            } : newPerson
-          })
+          lastTrackedUpdateRef.current = currentTime
+          return currentPersons
         })
       } else {
         // 没有检测到人脸时清空
@@ -459,16 +411,8 @@ export function LannaMirror() {
     if (result.categoryMask) {
       const mask = result.categoryMask.getAsUint8Array()
 
-      // 确定发光颜色（使用最大脸部的守护灵颜色）
-      let glowColor: [number, number, number] = [0.83, 0.69, 0.22] // 默认金色
-      if (persons.length > 0) {
-        // 按脸部大小排序，取最大的
-        const primaryPerson = persons.reduce((a, b) => a.size > b.size ? a : b)
-        const spiritInfo = SPIRIT_INFO[primaryPerson.dominantSpirit as keyof typeof SPIRIT_INFO]
-        if (spiritInfo) {
-          glowColor = hexToNormalizedRgb(spiritInfo.color)
-        }
-      }
+      // 使用默认发光颜色（Sigil 深金色）
+      const glowColor: [number, number, number] = DEFAULT_GLOW_COLOR
 
       // 使用 WebGL 渲染（如果可用）
       if (webglRenderer) {
@@ -645,7 +589,6 @@ export function LannaMirror() {
   // 重新开始
   const restart = useCallback(() => {
     setCapturedPhoto(null)
-    setMatchedSpirit(null)
     setGeneratedImage(null)
     setGenerateError(null)
     setTrackedPersons([])
@@ -654,80 +597,20 @@ export function LannaMirror() {
     setState('attract')
   }, [])
 
-  // 生成灵魂画像
-  const generateSpiritImage = useCallback(async () => {
-    if (!matchedSpirit)
-      return
-
-    setState('generate')
-    setGenerateError(null)
-
-    try {
-      const response = await fetch('/api/generate-spirit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          spirit: matchedSpirit,
-          userPhoto: capturedPhoto,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Generation failed')
-      }
-
-      setGeneratedImage(data.image)
-      setState('result')
-    }
-    catch (err) {
-      console.error('Generation error:', err)
-      setGenerateError(err instanceof Error ? err.message : 'Generation failed')
-    }
-  }, [matchedSpirit, capturedPhoto])
-
-
-  // 打开生成选项对话框（在此时捕获截图）
-  const handleOpenOptionsDialog = useCallback((person: TrackedPerson) => {
+  // 打开 Sigil 输入对话框
+  const handleOpenSigilDialog = useCallback((person: TrackedPerson) => {
     const capturedPhoto = headThumbnails[person.id]
-    setOptionsDialog({ open: true, person, isGroup: false, capturedPhoto })
+    setSigilDialog({ open: true, capturedPhoto })
   }, [headThumbnails])
 
-  // 打开合像生成选项对话框（在此时捕获所有人的截图）
-  const handleOpenGroupOptionsDialog = useCallback(() => {
-    if (trackedPersons.length < 2) return
-    const capturedPhotos = trackedPersons
-      .map(p => headThumbnails[p.id])
-      .filter((p): p is string => !!p)
-    setOptionsDialog({ open: true, person: null, isGroup: true, capturedPhotos })
-  }, [trackedPersons, headThumbnails])
+  // 确认 Sigil 输入后开始生成
+  const handleConfirmSigil = useCallback(async (input: SigilInput) => {
+    setSigilDialog({ open: false })
 
-  // 确认生成选项后开始生成
-  const handleConfirmGeneration = useCallback(async (options: GenerationOptions) => {
-    setOptionsDialog({ open: false, person: null, isGroup: false })
+    const photo = sigilDialog.capturedPhoto || null
 
-    if (optionsDialog.isGroup) {
-      // 合像生成
-      handleGenerateGroupPortraitWithOptions(options)
-    } else if (optionsDialog.person) {
-      // 单人生成
-      handleGenerateForPersonWithOptions(optionsDialog.person, options)
-    }
-  }, [optionsDialog])
-
-  // 从 attract 状态直接生成某人的守护灵画像（带选项）
-  const handleGenerateForPersonWithOptions = useCallback(async (person: TrackedPerson, options: GenerationOptions) => {
-    const spirit = LANNA_SPIRITS.find(s => s.id === person.dominantSpirit)
-    if (!spirit)
-      return
-
-    const photo = headThumbnails[person.id] || null
-    const spiritInfo = SPIRIT_INFO[person.dominantSpirit as keyof typeof SPIRIT_INFO]
-    const styleConfig = GENERATION_STYLES.find(s => s.id === options.style)
-
-    // 先扣除积分（单人 2 credits）
-    const creditResult = await spendCredits(2, `Spirit generation: ${spirit.name}`)
+    // 先扣除积分（2 credits）
+    const creditResult = await spendCredits(2, `Sigil generation: ${input.name}`)
     if (!creditResult.success) {
       alert(creditResult.error || 'Failed to spend credits')
       return
@@ -735,20 +618,14 @@ export function LannaMirror() {
 
     try {
       // Step 1: Create order first and get orderId
-      const orderRes = await fetch('/api/spirit/order', {
+      const orderRes = await fetch('/api/sigil/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          spirit: {
-            id: spirit.id,
-            name: spirit.name,
-            nameEn: spirit.nameEn,
-            element: spirit.element,
-            traits: spirit.traits,
-          },
+          name: input.name,
+          bio: input.bio,
           userPhoto: photo,
-          spiritScores: person.spiritScores,
-          generationOptions: options,
+          aspectRatio: input.aspectRatio,
         }),
       })
 
@@ -759,29 +636,18 @@ export function LannaMirror() {
       const orderData = await orderRes.json()
 
       // Step 2: Open detail page in new tab immediately
-      window.open(`/spirit/${orderData.orderId}`, '_blank')
+      window.open(`/sigil/${orderData.orderId}`, '_blank')
 
-      // Step 3: Trigger generation in background (with orderId and options)
-      fetch('/api/generate-spirit', {
+      // Step 3: Trigger generation in background
+      fetch('/api/generate-sigil', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          spirit: {
-            id: spirit.id,
-            name: spirit.name,
-            nameEn: spirit.nameEn,
-            element: spirit.element,
-            traits: spirit.traits,
-            imagePrompt: spirit.imagePrompt,
-          },
+          name: input.name,
+          bio: input.bio,
           userPhoto: photo,
-          spiritScores: person.spiritScores,
           orderId: orderData.orderId,
-          generationOptions: {
-            style: options.style,
-            stylePromptModifier: styleConfig?.promptModifier,
-            aspectRatio: options.aspectRatio,
-          },
+          aspectRatio: input.aspectRatio,
         }),
       })
         .then((res) => res.json())
@@ -795,133 +661,8 @@ export function LannaMirror() {
       console.error('Create order error:', err)
       alert(err instanceof Error ? err.message : 'Failed to create order')
     }
-  }, [headThumbnails, spendCredits])
+  }, [sigilDialog.capturedPhoto, spendCredits])
 
-  // 生成合像（单次 API 调用，多人一起生成）- 带选项
-  const handleGenerateGroupPortraitWithOptions = useCallback(async (options: GenerationOptions) => {
-    if (trackedPersons.length < 2) return
-
-    // 先扣除积分（合照 2 * n credits）
-    const creditCost = 2 * trackedPersons.length
-    const creditResult = await spendCredits(creditCost, `Group spirit generation: ${trackedPersons.length} people`)
-    if (!creditResult.success) {
-      alert(creditResult.error || 'Failed to spend credits')
-      return
-    }
-
-    // 准备所有人的数据
-    const persons: GroupGenerationPerson[] = trackedPersons.map((person) => {
-      const spirit = LANNA_SPIRITS.find(s => s.id === person.dominantSpirit)!
-      return {
-        personId: person.id,
-        photo: headThumbnails[person.id] || null,
-        spirit,
-        status: 'generating' as const,
-        generatedImage: null,
-        error: null,
-      }
-    })
-
-    const styleConfig = GENERATION_STYLES.find(s => s.id === options.style)
-
-    const groupData = {
-      persons: persons.map(p => ({
-        photo: p.photo,
-        spirit: {
-          id: p.spirit.id,
-          name: p.spirit.name,
-          nameEn: p.spirit.nameEn,
-          element: p.spirit.element,
-          traits: p.spirit.traits,
-        },
-      })),
-    }
-
-    try {
-      // Step 1: Create order first
-      const orderRes = await fetch('/api/spirit/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ group: groupData, generationOptions: options }),
-      })
-
-      if (!orderRes.ok) {
-        throw new Error('Failed to create order')
-      }
-
-      const orderData = await orderRes.json()
-
-      // Step 2: Open detail page in new tab immediately
-      window.open(`/spirit/${orderData.orderId}`, '_blank')
-
-      // Also start the group generation modal for those staying at the mirror
-      setGroupPersons(persons)
-      setGroupGenerating(true)
-      setGroupPoster(null)
-
-      // Step 3: Trigger generation in background (with orderId and options)
-      const response = await fetch('/api/generate-spirit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          group: groupData,
-          orderId: orderData.orderId,
-          generationOptions: {
-            style: options.style,
-            stylePromptModifier: styleConfig?.promptModifier,
-            aspectRatio: options.aspectRatio,
-          },
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Generation failed')
-      }
-
-      const data = await response.json()
-
-      // 全部标记为完成，共享同一张生成图
-      setGroupPersons(prev => prev.map(p => ({
-        ...p,
-        status: 'done' as const,
-        generatedImage: data.image,
-      })))
-
-      // 直接使用生成的合像作为海报
-      setGroupPoster(data.image)
-    } catch (err) {
-      console.error('Group generation error:', err)
-      // 全部标记为错误
-      setGroupPersons(prev => prev.map(p => ({
-        ...p,
-        status: 'error' as const,
-        error: err instanceof Error ? err.message : 'Failed',
-      })))
-    }
-
-    setGroupGenerating(false)
-  }, [trackedPersons, headThumbnails, spendCredits])
-
-  // 关闭合像弹窗
-  const closeGroupModal = useCallback(() => {
-    setGroupGenerating(false)
-    setGroupPersons([])
-    setGroupPoster(null)
-  }, [])
-
-  // 下载当前生成的图片（结果页使用）
-  const downloadCurrentImage = useCallback(() => {
-    if (!generatedImage || !matchedSpirit)
-      return
-
-    const link = document.createElement('a')
-    link.href = generatedImage
-    link.download = `lanna-spirit-${matchedSpirit.id}-${Date.now()}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }, [generatedImage, matchedSpirit])
 
   // 标记组件已挂载（避免 ResizablePanel 宽度闪烁）
   useEffect(() => {
@@ -1014,10 +755,9 @@ export function LannaMirror() {
                           id: record.id,
                           generatedImage: record.generatedImage,
                           userPhoto: record.userPhoto,
-                          spiritId: record.spiritId,
+                          name: record.name || 'Sigil',
                           userId: record.userId,
                           orderId: record.orderId,
-                          style: record.style,
                           ratio: record.ratio,
                           votes: record.votes,
                           userVote: null, // Will be fetched when needed
@@ -1026,7 +766,7 @@ export function LannaMirror() {
                     >
                       <img
                         src={record.generatedImage}
-                        alt={record.spiritName || record.spiritId}
+                        alt={record.name || 'Sigil'}
                         className="w-36 h-36 object-cover rounded-lg border border-white/10 group-hover/item:border-[#D4AF37]/50 transition-colors"
                       />
                     </div>
@@ -1077,7 +817,7 @@ export function LannaMirror() {
                   <div className="w-7 h-7 rounded-lg bg-[#CC785C]/20 flex items-center justify-center">
                     <Sparkles className="w-4 h-4 text-[#CC785C]" />
                   </div>
-                  <span className="text-sm font-semibold text-white/90">LannaMirror</span>
+                  <span className="text-sm font-semibold text-white/90">LovSigil</span>
                 </div>
                 {/* 右侧：紧凑操作区 */}
                 <div className="flex items-center gap-1.5">
@@ -1123,24 +863,13 @@ export function LannaMirror() {
                 </div>
 
                 {/* 生成按钮 */}
-                {trackedPersons.length === 1 ? (
-                  <Button
-                    onClick={() => handleOpenOptionsDialog(trackedPersons[0]!)}
-                    className="shrink-0 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] text-white font-medium touch-manipulation"
-                  >
-                    <Sparkles className="w-4 h-4 mr-1" />
-                    Generate
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleOpenGroupOptionsDialog}
-                    disabled={groupGenerating}
-                    className="shrink-0 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] text-white font-medium touch-manipulation"
-                  >
-                    <Users className="w-4 h-4 mr-1" />
-                    Group
-                  </Button>
-                )}
+                <Button
+                  onClick={() => handleOpenSigilDialog(trackedPersons[0]!)}
+                  className="shrink-0 bg-gradient-to-r from-[#C9A227] to-[#00D4FF] text-white font-medium touch-manipulation"
+                >
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  Generate Sigil
+                </Button>
               </div>
             ) : !isLoading ? (
               <div className="text-center py-2">
@@ -1273,199 +1002,22 @@ export function LannaMirror() {
                           </div>
                           {/* 生成按钮 */}
                           <Button
-                            onClick={() => handleOpenOptionsDialog(person)}
+                            onClick={() => handleOpenSigilDialog(person)}
                             size="sm"
-                            className="shrink-0 ml-auto"
+                            className="shrink-0 ml-auto bg-gradient-to-r from-[#C9A227] to-[#00D4FF] hover:brightness-110"
                           >
                             <Sparkles className="w-4 h-4 mr-1" />
-                            Generate
+                            Sigil
                           </Button>
                         </div>
                       )
                     })}
                   </div>
-
-                  {/* 合像按钮 - 固定底部 */}
-                  <Button
-                    onClick={handleOpenGroupOptionsDialog}
-                    disabled={groupGenerating || trackedPersons.length < 2}
-                    className="w-full mt-4 bg-gradient-to-r from-[#D4AF37] to-[#CC785C] hover:from-[#E5C04B] hover:to-[#DD896D] text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {groupGenerating ? (
-                      <>
-                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        {t('generating_group')}
-                      </>
-                    ) : (
-                      <>
-                        <Users className="w-4 h-4 mr-1" />
-                        Group
-                      </>
-                    )}
-                  </Button>
                 </div>
               )}
             </>
           )}
 
-          {/* 结果展示 */}
-          {state === 'result' && matchedSpirit && (
-            <div className="space-y-4">
-              {/* 守护灵名称 */}
-              <div className="text-center">
-                <div
-                  className="text-3xl font-bold mb-1"
-                  style={{ color: matchedSpirit.color }}
-                >
-                  {matchedSpirit.nameCn}
-                </div>
-                <div className="text-lg text-white/60">
-                  {matchedSpirit.name}
-                </div>
-                <div className="text-sm text-white/40">
-                  {matchedSpirit.nameEn}
-                </div>
-              </div>
-
-              {/* 描述 */}
-              <p className="text-sm text-white/70 leading-relaxed">
-                {matchedSpirit.description}
-              </p>
-
-              {/* 特质标签 */}
-              <div className="flex flex-wrap gap-2">
-                {matchedSpirit.traits.map(trait => (
-                  <span
-                    key={trait}
-                    className="px-3 py-1 rounded-full text-xs font-medium"
-                    style={{
-                      backgroundColor: `${matchedSpirit.color}20`,
-                      color: matchedSpirit.color,
-                    }}
-                  >
-                    {trait}
-                  </span>
-                ))}
-              </div>
-
-              {/* 原始头像 vs 生成画像对比 */}
-              {generatedImage && (
-                <div className="space-y-2">
-                  <div className="flex gap-3 items-center justify-center">
-                    {/* 原始头像 */}
-                    {capturedPhoto && (
-                      <div className="text-center">
-                        <p className="text-white/40 text-xs mb-1">{t('original')}</p>
-                        <div
-                          className="w-20 h-20 rounded-full overflow-hidden border-2"
-                          style={{
-                            borderColor: matchedSpirit.color,
-                            background: `radial-gradient(circle, ${matchedSpirit.color}40 0%, ${matchedSpirit.color}20 100%)`,
-                          }}
-                        >
-                          <img src={capturedPhoto} alt="Original" className="w-full h-full object-contain" />
-                        </div>
-                      </div>
-                    )}
-                    {/* 箭头 */}
-                    <div className="text-white/30">
-                      <ArrowRight className="w-5 h-5" />
-                    </div>
-                    {/* 生成结果缩略图 */}
-                    <div className="text-center">
-                      <p className="text-white/40 text-xs mb-1">{t('spirit')}</p>
-                      <div
-                        className="w-20 h-20 rounded-full overflow-hidden border-2"
-                        style={{ borderColor: matchedSpirit.color }}
-                      >
-                        <img src={generatedImage} alt="Spirit" className="w-full h-full object-cover" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 操作按钮 */}
-              <div className="pt-2">
-                {generatedImage ? (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setPreviewRecord({
-                        id: 0,
-                        generatedImage,
-                        userPhoto: capturedPhoto || '',
-                        spiritId: matchedSpirit.id,
-                        userId: null,
-                      })}
-                      className="flex-1"
-                      style={{ backgroundColor: matchedSpirit.color }}
-                    >
-                      {t('preview')}
-                    </Button>
-                    <Button
-                      onClick={restart}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      {t('another_one')}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={generateSpiritImage}
-                    className="w-full"
-                    style={{ backgroundColor: matchedSpirit.color }}
-                  >
-                    {t('generate_portrait')}
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* 生成中状态 */}
-          {state === 'generate' && (
-            <div className="text-center py-8">
-              {/* 原始采集头像 */}
-              {capturedPhoto && matchedSpirit && (
-                <div className="mb-4">
-                  <p className="text-white/40 text-xs mb-2">{t('original')}</p>
-                  <div
-                    className="w-24 h-24 mx-auto rounded-full overflow-hidden border-2"
-                    style={{
-                      borderColor: matchedSpirit.color,
-                      background: `radial-gradient(circle, ${matchedSpirit.color}40 0%, ${matchedSpirit.color}20 100%)`,
-                    }}
-                  >
-                    <img src={capturedPhoto} alt="Original" className="w-full h-full object-contain" />
-                  </div>
-                </div>
-              )}
-              {generateError ? (
-                <>
-                  <div className="flex justify-center mb-4">
-                    <AlertTriangle className="w-10 h-10 text-yellow-500" />
-                  </div>
-                  <p className="text-red-400 mb-2">{t('generation_failed')}</p>
-                  <p className="text-xs text-white/50 mb-4">{generateError}</p>
-                  <div className="space-y-2">
-                    <Button onClick={generateSpiritImage} size="sm" style={{ backgroundColor: '#CC785C' }}>
-                      {t('retry')}
-                    </Button>
-                    <Button onClick={restart} variant="outline" size="sm" className="ml-2">
-                      {t('start_over')}
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#D4AF37] border-t-transparent mx-auto" />
-                  <p className="text-white/80 text-sm">{t('generating')}</p>
-                  <p className="text-xs text-white/30 mt-2">{t('generation_time')}</p>
-                </>
-              )}
-            </div>
-          )}
         </div>
 
         {/* 用户登录区域 */}
@@ -1583,126 +1135,6 @@ export function LannaMirror() {
     </ResizablePanelGroup>
       )}
 
-      {/* 合像生成浮层 */}
-      {(groupGenerating || groupPersons.length > 0) && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-          onClick={closeGroupModal}
-        >
-          <div
-            className="relative flex flex-col items-center gap-6 max-w-4xl w-full"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* 标题 */}
-            <h2 className="text-2xl font-bold text-[#D4AF37] flex items-center gap-2 justify-center">
-              <Users className="w-6 h-6" />
-              {t('group_portrait')}
-            </h2>
-
-            {/* 生成进度或海报结果 */}
-            {groupPoster ? (
-              // 显示合像海报
-              <>
-                <img
-                  src={groupPoster}
-                  alt="Group Portrait"
-                  className="max-h-[70vh] object-contain rounded-lg shadow-2xl"
-                />
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => downloadImage(groupPoster, `lanna-group-portrait-${Date.now()}.png`)}
-                    className="bg-[#D4AF37] hover:bg-[#E5C04B] text-white"
-                  >
-                    <Download className="w-4 h-4 mr-1.5" />
-                    {t('download')}
-                  </Button>
-                  <Button
-                    onClick={closeGroupModal}
-                    variant="outline"
-                    className="text-white border-white/30 hover:bg-white/10"
-                  >
-                    {t('close')}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              // 显示生成进度
-              <div className="w-full max-w-md space-y-4">
-                {groupPersons.map((person, idx) => {
-                  const spiritInfo = SPIRIT_INFO[person.spirit.id as keyof typeof SPIRIT_INFO]
-                  return (
-                    <div
-                      key={person.personId}
-                      className="flex items-center gap-4 p-3 rounded-lg bg-white/5 border border-white/10"
-                    >
-                      {/* 头像/缩略图 */}
-                      <div
-                        className="w-12 h-12 rounded-full overflow-hidden border-2 shrink-0"
-                        style={{
-                          borderColor: spiritInfo?.color || '#D4AF37',
-                          background: `radial-gradient(circle, ${spiritInfo?.color}40 0%, ${spiritInfo?.color}20 100%)`,
-                        }}
-                      >
-                        {person.photo ? (
-                          <img src={person.photo} alt="" className="w-full h-full object-contain" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white/30">
-                            {idx + 1}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 守护灵信息 */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{spiritInfo?.emoji}</span>
-                          <span className="text-white/80 text-sm">{spiritInfo?.name}</span>
-                        </div>
-                        <p className="text-xs text-white/40 truncate">{spiritInfo?.nameEn}</p>
-                      </div>
-
-                      {/* 状态指示 */}
-                      <div className="shrink-0">
-                        {person.status === 'pending' && (
-                          <span className="text-white/30 text-sm">{t('waiting')}</span>
-                        )}
-                        {person.status === 'generating' && (
-                          <div className="w-5 h-5 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
-                        )}
-                        {person.status === 'done' && (
-                          <Check className="w-5 h-5 text-green-400" />
-                        )}
-                        {person.status === 'error' && (
-                          <span title={person.error || ''}>
-                            <X className="w-5 h-5 text-red-400" />
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {/* 合像生成提示 */}
-                {groupPersons.every(p => p.status === 'done' || p.status === 'error') && !groupPoster && (
-                  <div className="text-center py-4">
-                    <div className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent mx-auto" />
-                    <p className="text-white/60 text-sm">{t('composing_group_poster')}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 关闭按钮 */}
-            <button
-              className="absolute -top-2 -right-2 w-8 h-8 bg-black/60 rounded-full text-white/80 hover:text-white flex items-center justify-center"
-              onClick={closeGroupModal}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* QR 码弹窗 - 生成时显示 */}
       {qrModal.show && qrModal.orderUrl && (
         <div
@@ -1730,13 +1162,13 @@ export function LannaMirror() {
                 )}
               </div>
 
-              {/* 右侧栏：原照片 + 信息 + QR码 + 操作 */}
+              {/* 右侧栏：原照片 + QR码 + 操作 */}
               <div className="w-48 shrink-0 flex flex-col gap-4">
-                {/* 守护神信息 */}
+                {/* 标题 */}
                 <div className="text-center">
-                  <span className="text-2xl">{qrModal.spiritEmoji}</span>
+                  <span className="text-2xl">✨</span>
                   <h2 className="text-lg font-bold text-[#D4AF37] mt-1">
-                    {qrModal.spiritName}
+                    {qrModal.sigilName || 'Personal Sigil'}
                   </h2>
                 </div>
 
@@ -1769,10 +1201,9 @@ export function LannaMirror() {
                   <Button
                     onClick={() => downloadImage(
                       qrModal.resultImage!,
-                      `lanna-spirit-${qrModal.spiritId || 'group'}-${Date.now()}.png`
+                      `lovsigil-${qrModal.sigilName || 'sigil'}-${Date.now()}.png`
                     )}
-                    className="w-full text-white font-medium"
-                    style={{ backgroundColor: qrModal.spiritId ? (SPIRIT_INFO[qrModal.spiritId as keyof typeof SPIRIT_INFO]?.color || '#D4AF37') : '#D4AF37' }}
+                    className="w-full text-white font-medium bg-[#D4AF37] hover:bg-[#E5C04B]"
                   >
                     <Download className="w-4 h-4 mr-1.5" />
                     {t('download')}
@@ -1802,7 +1233,7 @@ export function LannaMirror() {
             {/* 生成效果图 */}
             <img
               src={previewRecord.generatedImage}
-              alt="Generated Spirit"
+              alt="Generated Sigil"
               className="max-h-[70vh] object-contain rounded-lg shadow-2xl"
               onClick={e => e.stopPropagation()}
             />
@@ -1842,30 +1273,14 @@ export function LannaMirror() {
               <div className="flex flex-wrap justify-center gap-3 p-3 bg-black/50 rounded-xl backdrop-blur-sm">
                 <Button
                   onClick={() => {
-                    const defaultStyle = previewRecord.style
                     const defaultRatio = previewRecord.ratio
                     setPreviewRecord(null)
-                    // 如果有检测到人，直接打开生成选项对话框（带默认值）
-                    if (trackedPersons.length === 1) {
+                    // 如果有检测到人，直接打开 Sigil 输入对话框
+                    if (trackedPersons.length >= 1) {
                       const capturedPhoto = headThumbnails[trackedPersons[0]!.id]
-                      setOptionsDialog({
+                      setSigilDialog({
                         open: true,
-                        person: trackedPersons[0]!,
-                        isGroup: false,
                         capturedPhoto,
-                        defaultStyle,
-                        defaultRatio,
-                      })
-                    } else if (trackedPersons.length > 1) {
-                      const capturedPhotos = trackedPersons
-                        .map(p => headThumbnails[p.id])
-                        .filter((p): p is string => !!p)
-                      setOptionsDialog({
-                        open: true,
-                        person: null,
-                        isGroup: true,
-                        capturedPhotos,
-                        defaultStyle,
                         defaultRatio,
                       })
                     }
@@ -1878,7 +1293,7 @@ export function LannaMirror() {
                 </Button>
                 {previewRecord.orderId && (
                   <Button
-                    onClick={() => window.open(`/spirit/${previewRecord.orderId}`, '_blank')}
+                    onClick={() => window.open(`/sigil/${previewRecord.orderId}`, '_blank')}
                     className="bg-white/20 text-white border border-white/30 hover:bg-white/30"
                   >
                     {t('view_detail')}
@@ -1898,17 +1313,13 @@ export function LannaMirror() {
         </div>
       )}
 
-      {/* 生成选项对话框 */}
-      <GenerationOptionsDialog
-        open={optionsDialog.open}
-        onOpenChange={(open) => setOptionsDialog(prev => ({ ...prev, open }))}
-        onConfirm={handleConfirmGeneration}
-        personName={optionsDialog.person ? SPIRIT_INFO[optionsDialog.person.dominantSpirit as keyof typeof SPIRIT_INFO]?.name : undefined}
-        personCount={optionsDialog.isGroup ? trackedPersons.length : 1}
-        userPhoto={optionsDialog.capturedPhoto}
-        userPhotos={optionsDialog.capturedPhotos}
-        defaultStyle={optionsDialog.defaultStyle as GenerationStyle | undefined}
-        defaultRatio={optionsDialog.defaultRatio as AspectRatio | undefined}
+      {/* Sigil 输入对话框 */}
+      <SigilInputDialog
+        open={sigilDialog.open}
+        onOpenChange={(open) => setSigilDialog(prev => ({ ...prev, open }))}
+        onConfirm={handleConfirmSigil}
+        userPhoto={sigilDialog.capturedPhoto}
+        defaultRatio={sigilDialog.defaultRatio as SigilInput['aspectRatio']}
       />
     </div>
   )

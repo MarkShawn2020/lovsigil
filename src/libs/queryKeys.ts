@@ -1,6 +1,9 @@
-export const spiritKeys = {
-  all: ['spirit'] as const,
-  history: () => [...spiritKeys.all, 'history'] as const,
+export const sigilKeys = {
+  all: ['sigil'] as const,
+  history: () => [...sigilKeys.all, 'history'] as const,
   historyList: (filters?: { limit?: number }) =>
-    [...spiritKeys.history(), { ...filters }] as const,
+    [...sigilKeys.history(), { ...filters }] as const,
 }
+
+// Keep spiritKeys as alias for backwards compatibility
+export const spiritKeys = sigilKeys

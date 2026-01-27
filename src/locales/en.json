@@ -727,6 +727,24 @@
       }
     ]
   },
+  "Sigil": {
+    "create_sigil_title": "Create Your Sigil",
+    "create_sigil_desc": "Enter your name and a brief description to create your personal rune sigil",
+    "your_name": "Your Name",
+    "name_placeholder": "Enter your name",
+    "your_bio": "About You (optional)",
+    "bio_placeholder": "e.g., A curious designer who loves quiet moments",
+    "select_ratio": "Aspect Ratio",
+    "login_required": "Login required to use AI services",
+    "sign_in_to_generate": "Sign in to generate",
+    "your_credits": "Credits",
+    "cost": "Cost",
+    "cancel": "Cancel",
+    "login_first": "Login first",
+    "insufficient_credits": "Insufficient credits",
+    "enter_name": "Enter your name",
+    "generate_sigil": "Generate Sigil"
+  },
   "Gallery": {
     "title": "Spirit Gallery",
     "back": "Back",

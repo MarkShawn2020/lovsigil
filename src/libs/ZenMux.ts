@@ -23,51 +23,59 @@ function getClient(): GoogleGenAI {
   return genaiClient
 }
 
-// Vision AI 气质分析结果
-export interface VibeAnalysisResult {
-  scores: {
-    mom: number // 野性实诚、敦实稳重
-    naga: number // 清冷魅惑、仙气飘飘
-    singha: number // 威严霸气、天生领袖
-    makara: number // 能说会道、欲望强烈
-    hadsadiling: number // 清高贵族、疏离优雅
-  }
-  dominantVibe: string
-  description: string
+// Sigil 气质分析结果
+export interface SigilVibeAnalysis {
+  dominantVibe: string // "warrior", "sage", "mystic", "guardian", "seeker", "creator", "healer"
+  traits: string[] // ["determined", "intuitive", "grounded"]
+  runeAffinity: 'elder_futhark' | 'younger_futhark' | 'anglo_saxon' | 'mystical'
+  description: string // poetic one-sentence description
 }
 
-// 使用 Vision AI 分析面部气质（30% 权重）
-export async function analyzeVibeFromImage(imageBase64: string): Promise<VibeAnalysisResult> {
+// 使用 Vision AI 分析面部气质（用于 Sigil 生成）
+export async function analyzeSigilVibe(
+  imageBase64: string,
+  name?: string,
+  bio?: string,
+): Promise<SigilVibeAnalysis> {
   const client = getClient()
 
-  const prompt = `分析这张人脸照片的气质特征，判断最符合以下哪种类型：
+  const contextInfo = [
+    name ? `Their name is "${name}".` : '',
+    bio ? `About them: "${bio}"` : '',
+  ].filter(Boolean).join('\n')
 
-1. Mom (莫) - 野性实诚、敦实稳重、外冷内热、忠诚可靠
-2. Naga (纳迦) - 清冷魅惑、仙气飘飘、直觉敏锐、艺术天分
-3. Singha (醒狮) - 威严霸气、天生领袖、掌控欲强、正义感重
-4. Makara (摩羯) - 能说会道、欲望强烈、务实精明、看透本质
-5. Hadsadiling (哈萨迪灵) - 清高贵族、疏离优雅、多才多艺、精神洁癖
+  const prompt = `Analyze this person's face to understand their inner essence for creating a personal sigil.
 
-请根据：
-- 整体气场和氛围
-- 眼神特质（清澈/深邃/锐利/温和）
-- 面部给人的第一印象
-- 是否有"发量浓密"、"混血感"、"五官立体"等特征
+${contextInfo}
 
-返回 JSON 格式：
+Based on the facial features, expression, and overall energy, determine:
+
+1. dominantVibe: One word capturing their core energy. Choose from:
+   - "warrior" - strength, determination, courage
+   - "sage" - wisdom, knowledge, contemplation
+   - "mystic" - spiritual depth, intuition, mystery
+   - "guardian" - protection, reliability, steadfastness
+   - "seeker" - curiosity, exploration, growth
+   - "creator" - creativity, innovation, artistry
+   - "healer" - compassion, nurturing, harmony
+
+2. traits: 3-5 personality traits visible in their features (e.g., ["determined", "intuitive", "grounded", "passionate"])
+
+3. runeAffinity: Which rune tradition best matches their energy:
+   - "elder_futhark" - Ancient, primal power (strong, earthy features)
+   - "younger_futhark" - Refined, focused energy (sharp, precise features)
+   - "anglo_saxon" - Expansive, worldly wisdom (open, expressive features)
+   - "mystical" - Transcendent, spiritual depth (ethereal, dreamlike quality)
+
+4. description: A poetic one-sentence description of their essence (max 100 chars)
+
+Return JSON only:
 {
-  "scores": {
-    "mom": 0.0-1.0,
-    "naga": 0.0-1.0,
-    "singha": 0.0-1.0,
-    "makara": 0.0-1.0,
-    "hadsadiling": 0.0-1.0
-  },
-  "dominantVibe": "最匹配的类型ID",
-  "description": "简短的气质描述（20字以内）"
-}
-
-只返回 JSON，不要其他内容。`
+  "dominantVibe": "...",
+  "traits": ["...", "...", "..."],
+  "runeAffinity": "...",
+  "description": "..."
+}`
 
   // 解析 base64
   const match = imageBase64.match(/^data:([^;]+);base64,(.+)$/)
@@ -96,13 +104,14 @@ export async function analyzeVibeFromImage(imageBase64: string): Promise<VibeAna
   if (!jsonMatch) {
     // 返回默认值
     return {
-      scores: { mom: 0.2, naga: 0.2, singha: 0.2, makara: 0.2, hadsadiling: 0.2 },
-      dominantVibe: 'mom',
-      description: '无法分析',
+      dominantVibe: 'seeker',
+      traits: ['curious', 'open', 'balanced'],
+      runeAffinity: 'mystical',
+      description: 'A soul seeking its true path',
     }
   }
 
-  const result = JSON.parse(jsonMatch[0]) as VibeAnalysisResult
+  const result = JSON.parse(jsonMatch[0]) as SigilVibeAnalysis
   return result
 }
 
@@ -178,183 +187,65 @@ export async function generateImageWithMultipleRefs(prompt: string, referenceIma
   throw new Error('No image found in response')
 }
 
-// 构建兰纳灵魂画像的 prompt
-export function buildLannaSpiritPrompt(params: {
-  spiritName: string
-  spiritNameEn: string
-  element: string
-  traits: string[]
-  basePrompt: string
-  hasReferenceImage?: boolean
-  styleModifier?: string
+// 构建 Sigil 生成的 prompt
+export function buildSigilPrompt(params: {
+  name: string
+  bio?: string
+  vibeAnalysis: SigilVibeAnalysis
+  hasReferenceImage: boolean
 }): string {
-  const { spiritName, spiritNameEn, element, traits, basePrompt, hasReferenceImage, styleModifier } = params
+  const { name, bio, vibeAnalysis, hasReferenceImage } = params
 
-  // 当有参考图像时，强调保持人物相似性和年龄
-  const referenceInstruction = hasReferenceImage
-    ? `⚠️ ABSOLUTE CRITICAL - AGE PRESERVATION REQUIREMENTS ⚠️
-The person in the reference image is YOUNG. You MUST:
-- Preserve their EXACT AGE - they should look the SAME AGE as in the photo, NOT older
-- Keep their youthful, smooth, flawless skin - NO wrinkles, NO aging lines, NO mature features
-- Maintain their young facial structure - soft features, not hardened or aged
-- Eyes should be bright and lively, not tired or aged
-- If the person looks like a teenager or young adult (18-25), keep them looking 18-25
-- DO NOT add any signs of aging: no crow's feet, no forehead lines, no nasolabial folds
-- Hair should be full and healthy, not thinned or grayed
-- The person should radiate youth and vitality
-
-FACE PRESERVATION:
-- Preserve EXACT facial features (eyes shape, nose, mouth, face contour, skin tone)
-- Keep their natural expression and energy
-- The generated face must be immediately recognizable as the same person
+  // 当有参考图像时，将面部本质抽象融入符文设计
+  const faceInstruction = hasReferenceImage
+    ? `FACE ESSENCE INTEGRATION:
+Subtly incorporate the facial essence and energy of the reference photo into the sigil's design:
+- NOT as a portrait, but as geometric abstraction of their unique features
+- The person's facial angles and proportions can inspire the sigil's geometry
+- Their expression's energy should influence the sigil's flow and balance
+- This is a spiritual transformation - turning their physical form into pure symbol
 
 `
     : ''
 
-  // 使用自定义风格或默认兰纳壁画风格
-  const artStyleDescription = styleModifier || 'traditional Lanna temple mural art style, rich gold leaf accents, Thai Buddhist artistic elements, warm earth tones'
-
-  const prompt = `${referenceInstruction}Create a mystical portrait artwork. Art style: ${artStyleDescription}.
-
-COMPOSITION (TWO SEPARATE ENTITIES):
-- The HUMAN: ${hasReferenceImage ? 'The person from the reference image' : 'A young person'}, depicted realistically with youthful features
-- The SPIRIT: ${spiritNameEn} (${spiritName}), a mystical ${element} element guardian spirit
-
-IMPORTANT: The human and the spirit guardian must be SEPARATE entities in the image:
-- The spirit appears BEHIND or BESIDE the person as a protective guardian
-- The spirit can be semi-transparent, ethereal, or glowing
-- They are NOT merged or fused together - the person remains fully human
-- The spirit watches over and protects the person
-
-Style Requirements:
-- ${artStyleDescription}
-- Intricate patterns inspired by Lanna textiles
-- Mystical aura emanating from the spirit
-
-Spirit Guardian (${spiritNameEn}) Characteristics:
-${traits.map(t => `- ${t}`).join('\n')}
-
-${basePrompt}
-
-The artwork should feel sacred and mystical. The person appears blessed and protected by their guardian spirit from Lanna traditions.`
-
-  return prompt
-}
-
-// 多人合像 prompt 构建
-export interface GroupPersonInfo {
-  spiritName: string
-  spiritNameEn: string
-  element: string
-  traits: string[]
-}
-
-export function buildLannaGroupSpiritPrompt(params: {
-  persons: GroupPersonInfo[]
-  hasReferenceImages: boolean
-  styleModifier?: string
-}): string {
-  const { persons, hasReferenceImages, styleModifier } = params
-  const count = persons.length
-
-  // 使用自定义风格或默认兰纳壁画风格
-  const artStyleDescription = styleModifier || 'traditional Lanna temple mural art style, rich gold leaf accents, Thai Buddhist artistic elements, warm earth tones'
-
-  const referenceInstruction = hasReferenceImages
-    ? `⚠️ ABSOLUTE CRITICAL - AGE PRESERVATION FOR ALL ${count} PERSONS ⚠️
-The people in the reference images are YOUNG. You MUST for EACH person:
-- Preserve their EXACT AGE - they should look the SAME AGE as in photos, NOT older
-- Keep youthful, smooth, flawless skin - NO wrinkles, NO aging lines, NO mature features
-- Maintain young facial structures - soft features, not hardened or aged
-- Eyes should be bright and lively, not tired or aged
-- DO NOT add any signs of aging to anyone
-- Each person should radiate youth and vitality
-
-FACE PRESERVATION FOR EACH PERSON:
-- Preserve EXACT facial features (eyes, nose, mouth, face contour, skin tone)
-- Each person must be clearly distinguishable and immediately recognizable
-- Maintain their natural expressions and energy
-
-`
-    : ''
-
-  // 构建每个人的守护灵描述
-  const spiritDescriptions = persons.map((p, i) => {
-    return `Person ${i + 1}: Protected by ${p.spiritNameEn} (${p.spiritName}), a ${p.element} element spirit
-   Traits: ${p.traits.slice(0, 3).join(', ')}`
-  }).join('\n')
-
-  const prompt = `${referenceInstruction}Create a mystical GROUP PORTRAIT artwork. Art style: ${artStyleDescription}. Featuring ${count} PEOPLE TOGETHER.
-
-COMPOSITION (GROUP PORTRAIT with ${count} PERSONS):
-${spiritDescriptions}
-
-IMPORTANT GROUP PORTRAIT REQUIREMENTS:
-- All ${count} persons must appear TOGETHER in ONE harmonious composition
-- Each person has their OWN guardian spirit appearing behind/beside them
-- The spirits should be semi-transparent, ethereal, or glowing
-- The people are NOT merged with spirits - they remain fully human
-- Create a sense of unity and connection between the group
-- Balance the composition so all persons are equally prominent
-
-Style Requirements:
-- ${artStyleDescription}
-- Intricate patterns inspired by Lanna textiles
-- Mystical auras emanating from each spirit guardian
-
-The artwork should feel sacred and mystical, showing a group blessed and protected by their guardian spirits from Lanna traditions. The composition should celebrate their connection and shared spiritual protection.`
-
-  return prompt
-}
-
-// 守护灵信息（用于祝福语生成）
-const SPIRIT_BLESSING_INFO: Record<string, { name: string; element: string; traits: string[] }> = {
-  mom: { name: 'Mom (莫)', element: 'Earth-Water', traits: ['resilience', 'loyalty', 'hard work'] },
-  naga: { name: 'Naga (纳迦)', element: 'Water-Spirit', traits: ['wisdom', 'protection', 'artistry'] },
-  singha: { name: 'Singha (醒狮)', element: 'Fire-Gold', traits: ['leadership', 'justice', 'majesty'] },
-  makara: { name: 'Makara (摩羯)', element: 'Illusion', traits: ['ambition', 'eloquence', 'perception'] },
-  hadsadiling: { name: 'Hadsadiling (哈萨迪灵)', element: 'Wind-Air', traits: ['nobility', 'versatility', 'distinction'] },
-}
-
-/**
- * 使用 LLM 生成兰纳风格祝福语
- */
-export async function generateLannaBlessing(spiritIds: string[]): Promise<string> {
-  const client = getClient()
-
-  const spirits = spiritIds
-    .map(id => SPIRIT_BLESSING_INFO[id])
-    .filter((s): s is { name: string; element: string; traits: string[] } => !!s)
-
-  if (spirits.length === 0) {
-    return ''
+  // 根据 runeAffinity 调整风格描述
+  const runeStyleMap: Record<string, string> = {
+    elder_futhark: 'Elder Futhark runes - ancient, primal, angular strokes with powerful energy',
+    younger_futhark: 'Younger Futhark runes - refined, simplified, focused geometric forms',
+    anglo_saxon: 'Anglo-Saxon Futhorc runes - expansive, complex, interwoven patterns',
+    mystical: 'Mystical runes - ethereal, flowing, transcendent sacred geometry',
   }
 
-  const spiritDesc = spirits.map(s => `${s.name} (${s.element} element, traits: ${s.traits.join(', ')})`).join(' and ')
+  const runeStyle = runeStyleMap[vibeAnalysis.runeAffinity] || runeStyleMap.mystical
 
-  const prompt = `You are a wise monk from the ancient Lanna Kingdom of Northern Thailand. Generate a short, heartfelt blessing (1-2 sentences, max 80 characters) for people protected by ${spiritDesc}.
+  const prompt = `Create a mystical personal sigil for "${name}".
+${bio ? `Their essence: ${bio}` : ''}
 
-Requirements:
-- Draw from Lanna Buddhist traditions and Thai Northern culture
-- Reference the spirits' elemental powers and traits
-- Focus on harmony, protection, prosperity, or spiritual growth
-- Keep it poetic but accessible
-- Output in English only
-- Do not use quotation marks
+VIBE ANALYSIS:
+- Dominant energy: ${vibeAnalysis.dominantVibe}
+- Core traits: ${vibeAnalysis.traits.join(', ')}
+- Rune affinity: ${vibeAnalysis.runeAffinity}
+- Soul description: ${vibeAnalysis.description}
 
-Example blessings for reference (do not copy these exactly):
-- "May the steadfast earth guide your path and flowing waters cleanse your spirit"
-- "Under the dragon's wise gaze, may wisdom illuminate your journey"
-- "Let the lion's courage kindle the sacred fire within your heart"
+${faceInstruction}ART STYLE REQUIREMENTS:
+- ${runeStyle}
+- Dark mystical background (deep navy #0D1B2A, charcoal, or cosmic black)
+- Glowing golden/amber (#C9A227) rune lines and symbols
+- Add electric blue (#00D4FF) accent glows for ethereal effect
+- Incorporate bind rune principles (multiple runes combined into ONE unified symbol)
+- Sacred geometric elements (circles, triangles, interlocking patterns)
+- Subtle ethereal glow effects emanating from the sigil
+- The sigil should feel personal, powerful, and ancient
 
-Generate a unique blessing for these guardians:`
+CRITICAL REQUIREMENTS:
+- Create ONE single, centered sigil design
+- NO text, NO letters, NO readable words - only symbolic rune-like patterns
+- The sigil represents the person's inner essence and destiny
+- Could be worn as a talisman or used as a personal seal
+- Clean, balanced composition with the sigil as the focal point
+- The design should feel like it was carved in stone or forged in fire
 
-  const response = await client.models.generateContent({
-    model: 'gemini-2.0-flash',
-    contents: prompt,
-  })
+The final image should evoke mystery, personal power, and ancient wisdom.`
 
-  const text = response.text?.trim() || ''
-  // 清理可能的引号
-  return text.replace(/^["']|["']$/g, '').trim()
+  return prompt
 }

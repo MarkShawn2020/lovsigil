@@ -301,6 +301,24 @@
       }
     ]
   },
+  "Sigil": {
+    "create_sigil_title": "당신의 시길 만들기",
+    "create_sigil_desc": "이름과 간단한 소개를 입력하여 개인 룬 시길을 생성하세요",
+    "your_name": "이름",
+    "name_placeholder": "이름을 입력하세요",
+    "your_bio": "소개 (선택)",
+    "bio_placeholder": "예: 조용한 것을 좋아하는 디자이너",
+    "select_ratio": "화면 비율",
+    "login_required": "AI 서비스를 이용하려면 로그인이 필요합니다",
+    "sign_in_to_generate": "로그인하여 생성",
+    "your_credits": "크레딧",
+    "cost": "비용",
+    "cancel": "취소",
+    "login_first": "먼저 로그인하세요",
+    "insufficient_credits": "크레딧이 부족합니다",
+    "enter_name": "이름을 입력하세요",
+    "generate_sigil": "시길 생성"
+  },
   "Gallery": {
     "title": "수호신 갤러리",
     "back": "뒤로",

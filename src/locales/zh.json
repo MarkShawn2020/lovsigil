@@ -727,6 +727,24 @@
       }
     ]
   },
+  "Sigil": {
+    "create_sigil_title": "创建你的符文图腾",
+    "create_sigil_desc": "输入你的名字和简介，AI将为你生成专属的卢恩符文图腾",
+    "your_name": "你的名字",
+    "name_placeholder": "输入你的名字",
+    "your_bio": "关于你（可选）",
+    "bio_placeholder": "例如：喜欢安静的设计师",
+    "select_ratio": "画面比例",
+    "login_required": "需要登录才能使用 AI 服务",
+    "sign_in_to_generate": "登录以生成",
+    "your_credits": "积分",
+    "cost": "消耗",
+    "cancel": "取消",
+    "login_first": "请先登录",
+    "insufficient_credits": "积分不足",
+    "enter_name": "请输入名字",
+    "generate_sigil": "生成图腾"
+  },
   "Gallery": {
     "title": "守护灵画廊",
     "back": "返回",

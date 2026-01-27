@@ -301,6 +301,24 @@
       }
     ]
   },
+  "Sigil": {
+    "create_sigil_title": "สร้าง Sigil ของคุณ",
+    "create_sigil_desc": "ใส่ชื่อและคำอธิบายสั้นๆ เพื่อสร้าง Sigil รูนส่วนตัว",
+    "your_name": "ชื่อของคุณ",
+    "name_placeholder": "ใส่ชื่อของคุณ",
+    "your_bio": "เกี่ยวกับคุณ (ไม่บังคับ)",
+    "bio_placeholder": "เช่น นักออกแบบที่ชอบความเงียบสงบ",
+    "select_ratio": "สัดส่วนภาพ",
+    "login_required": "ต้องเข้าสู่ระบบเพื่อใช้บริการ AI",
+    "sign_in_to_generate": "เข้าสู่ระบบเพื่อสร้าง",
+    "your_credits": "เครดิต",
+    "cost": "ราคา",
+    "cancel": "ยกเลิก",
+    "login_first": "กรุณาเข้าสู่ระบบก่อน",
+    "insufficient_credits": "เครดิตไม่เพียงพอ",
+    "enter_name": "กรุณาใส่ชื่อ",
+    "generate_sigil": "สร้าง Sigil"
+  },
   "Gallery": {
     "title": "แกลเลอรีวิญญาณ",
     "back": "กลับ",
