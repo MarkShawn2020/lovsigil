@@ -1,5 +1,11 @@
 # lovsigil
 
+## 0.9.5
+
+### Patch Changes
+
+- fix(mirror): remove overlay X button from captured thumbnail
+
 ## 0.9.4
 
 ### Patch Changes
