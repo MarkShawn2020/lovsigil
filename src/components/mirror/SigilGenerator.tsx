@@ -857,16 +857,8 @@ export function SigilGenerator() {
             {/* 已拍照：显示头像 + 生成按钮 */}
             {capturedThumbnail ? (
               <div className="flex items-center gap-3 px-4 py-3 bg-bg-card/80 backdrop-blur-sm rounded-2xl border border-primary/20">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary">
-                    <img src={capturedThumbnail} alt="" className="w-full h-full object-cover" />
-                  </div>
-                  <button
-                    onClick={handleClearPhoto}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary">
+                  <img src={capturedThumbnail} alt="" className="w-full h-full object-cover" />
                 </div>
                 <Button
                   onClick={handleOpenSigilDialog}
