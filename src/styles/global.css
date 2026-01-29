@@ -173,22 +173,34 @@
   --color-gold: #D4AF37;        /* Rune Gold - primary accent */
   --color-copper: #CC785C;      /* Rune Copper - secondary accent */
 
-  /* === Neutral Palette === */
-  --color-text-main: #F5F5F5;   /* Light text on dark */
-  --color-text-muted: #9CA3AF;  /* Muted text */
-  --color-text-faded: #6B7280;  /* Faded text */
+  /* === Text Colors (simplified names) === */
+  --color-light: #F5F5F5;       /* Light text on dark */
+  --color-muted: #9CA3AF;       /* Muted text */
+  --color-faded: #6B7280;       /* Faded text */
 
-  /* === Background Palette === */
-  --color-bg-deep: #0A0A0B;     /* Deepest black */
-  --color-bg-dark: #121214;     /* Primary dark background */
-  --color-bg-card: #1A1A1E;     /* Card/elevated surfaces */
-  --color-bg-elevated: #252529; /* More elevated surfaces */
-  --color-bg-hover: #2A2A2E;    /* Hover states */
+  /* === Background Colors (simplified names) === */
+  --color-deep: #0A0A0B;        /* Deepest black */
+  --color-dark: #121214;        /* Primary dark background */
+  --color-surface: #1A1A1E;     /* Card/elevated surfaces */
+  --color-elevated: #252529;    /* More elevated surfaces */
+  --color-hover: #2A2A2E;       /* Hover states */
 
   /* === Border Colors === */
-  --color-border-subtle: #2A2A2E;   /* Subtle borders */
-  --color-border-default: #3A3A3E;  /* Default borders */
-  --color-border-gold: #D4AF37;     /* Gold accent borders */
+  --color-subtle: #2A2A2E;      /* Subtle borders */
+  --color-outline: #3A3A3E;     /* Default borders */
+
+  /* === Legacy aliases (for backward compatibility) === */
+  --color-text-main: #F5F5F5;
+  --color-text-muted: #9CA3AF;
+  --color-text-faded: #6B7280;
+  --color-bg-deep: #0A0A0B;
+  --color-bg-dark: #121214;
+  --color-bg-card: #1A1A1E;
+  --color-bg-elevated: #252529;
+  --color-bg-hover: #2A2A2E;
+  --color-border-subtle: #2A2A2E;
+  --color-border-default: #3A3A3E;
+  --color-border-gold: #D4AF37;
 
   /* === Semantic Colors === */
   --color-success: #10B981;

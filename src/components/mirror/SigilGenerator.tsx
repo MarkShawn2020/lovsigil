@@ -430,8 +430,11 @@ export function SigilGenerator() {
     ctx.scale(-1, 1)
     ctx.drawImage(video, sx, sy, cropSize, cropSize, 0, 0, size, size)
 
-    setCapturedThumbnail(canvas.toDataURL('image/png'))
-  }, [])
+    const photoData = canvas.toDataURL('image/png')
+    setCapturedThumbnail(photoData)
+    // 直接打开 dialog
+    setSigilDialog({ open: true, capturedPhoto: photoData, defaultRatio: urlRatio, defaultBio: urlBio })
+  }, [urlRatio, urlBio])
 
   // 清除已拍照
   const handleClearPhoto = useCallback(() => {
@@ -685,24 +688,24 @@ export function SigilGenerator() {
       <video ref={videoRef} className="hidden" playsInline muted />
 
       {/* 顶部历史记录 */}
-      <div className={`shrink-0 border-b border-primary/20 bg-bg-dark ${isMobile ? 'hidden' : ''}`}>
+      <div className={`shrink-0 border-b-2 border-gold/60 bg-elevated ${isMobile ? 'hidden' : ''}`}>
         <div className="h-32 px-4 flex items-center gap-4">
           {/* Logo + 标题 */}
           <div className="shrink-0 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-xl bg-gold/30 border border-gold/50 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-gold" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold tracking-widest text-secondary">{t('title')}</h1>
-                <Badge variant="outline" className="text-[10px] text-muted-foreground border-muted">v{version}</Badge>
+                <h1 className="text-lg font-bold tracking-widest text-gold">{t('title')}</h1>
+                <Badge variant="outline" className="text-[10px] text-gold/70 border-gold/50">v{version}</Badge>
               </div>
-              <p className="text-muted-foreground text-xs">{t('subtitle')}</p>
+              <p className="text-light text-xs">{t('subtitle')}</p>
             </div>
           </div>
 
           {/* 分割线 */}
-          {historyRecords.length > 0 && <div className="w-px h-16 bg-primary/20" />}
+          {historyRecords.length > 0 && <div className="w-px h-16 bg-gold/60" />}
 
           {/* 历史记录滚动 */}
           {historyRecords.length > 0 && (
@@ -757,7 +760,7 @@ export function SigilGenerator() {
       {/* 主体区域 */}
       {isMobile ? (
         /* 移动端布局 - 直接表单 */
-        <div className="flex-1 min-h-0 relative flex flex-col bg-bg-dark">
+        <div className="flex-1 min-h-0 relative flex flex-col bg-dark">
           {/* 顶部状态栏 */}
           <div className="shrink-0 safe-area-top">
             <div className="flex items-center justify-between px-4 py-3">
@@ -801,7 +804,7 @@ export function SigilGenerator() {
                   onChange={(e) => setMobileName(e.target.value)}
                   placeholder={tSigil('name_placeholder')}
                   maxLength={50}
-                  className="bg-bg-card border-primary/20 text-foreground placeholder:text-muted-foreground"
+                  className="bg-surface border-primary/20 text-foreground placeholder:text-muted-foreground"
                 />
               </div>
 
@@ -814,7 +817,7 @@ export function SigilGenerator() {
                   onChange={(e) => setMobileBio(e.target.value)}
                   placeholder={tSigil('bio_placeholder')}
                   maxLength={200}
-                  className="bg-bg-card border-primary/20 text-foreground placeholder:text-muted-foreground"
+                  className="bg-surface border-primary/20 text-foreground placeholder:text-muted-foreground"
                 />
               </div>
             </div>
@@ -900,7 +903,7 @@ export function SigilGenerator() {
             />
             {/* 加载中 */}
             {cameraEnabled && isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-bg-card rounded-2xl">
+              <div className="absolute inset-0 flex items-center justify-center bg-surface rounded-2xl">
                 <div className="w-16 h-16 rounded-xl border-2 border-primary/40 flex items-center justify-center animate-pulse">
                   <Sparkles className="w-8 h-8 text-primary/60" />
                 </div>
@@ -908,7 +911,7 @@ export function SigilGenerator() {
             )}
             {/* 摄像头关闭时的占位 */}
             {!cameraEnabled && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-card rounded-2xl border border-primary/20">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface rounded-2xl border border-primary/20">
                 <CameraOff className="w-16 h-16 text-primary/40 mb-4" />
                 <p className="text-muted-foreground">{t('camera_off') || '摄像头已关闭'}</p>
               </div>
@@ -957,11 +960,11 @@ export function SigilGenerator() {
           </div>
 
           {/* 底部控制面板 */}
-          <div className="mt-6 flex items-center gap-4">
+          <div className="mt-6 flex items-stretch gap-4">
             {/* 已拍照：显示头像 + 生成按钮 */}
             {capturedThumbnail ? (
-              <div className="flex items-center gap-3 px-4 py-3 bg-[#252528] rounded-2xl border-2 border-primary">
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary">
+              <div className="flex items-center gap-3 px-4 py-3 bg-elevated rounded-2xl border-2 border-gold">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gold">
                   <img src={capturedThumbnail} alt="" className="w-full h-full object-cover" />
                 </div>
                 <Button
@@ -975,14 +978,14 @@ export function SigilGenerator() {
                   onClick={handleClearPhoto}
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-muted hover:text-light"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               </div>
             ) : (
               /* 未拍照：拍照按钮 + 无头像生成 */
-              <div className="flex items-center gap-3 px-4 py-3 bg-[#252528] rounded-2xl border-2 border-primary">
+              <div className="flex items-center gap-3 px-4 py-3 bg-elevated rounded-2xl border-2 border-gold">
                 {cameraEnabled ? (
                   <>
                     <Button
@@ -990,20 +993,20 @@ export function SigilGenerator() {
                       disabled={!hasFaceDetected}
                       className={hasFaceDetected
                         ? 'gradient-gold-copper hover:brightness-110'
-                        : 'bg-[#3A3A3E] border-2 border-white/20 cursor-not-allowed text-white/50'
+                        : 'bg-outline border-2 border-light/20 cursor-not-allowed text-light/50'
                       }
                     >
                       <Camera className="w-4 h-4 mr-1.5" />
                       {t('capture_photo') || '拍照'}
                     </Button>
                     {!hasFaceDetected && (
-                      <span className="text-muted-foreground text-sm">{t('step_closer')}</span>
+                      <span className="text-muted text-sm">{t('step_closer')}</span>
                     )}
                   </>
                 ) : null}
                 <Button
                   onClick={handleOpenSigilDialogWithoutPhoto}
-                  className="bg-[#2A2A2E] border-2 border-primary text-primary hover:bg-primary/20"
+                  className="bg-hover border-2 border-gold text-gold hover:bg-gold/20"
                 >
                   <Sparkles className="w-4 h-4 mr-1.5" />
                   {t('generate_without_photo')}
@@ -1012,30 +1015,30 @@ export function SigilGenerator() {
             )}
 
             {/* 用户信息 */}
-            <div className="px-3 py-2 bg-[#252528] rounded-xl border-2 border-primary">
+            <div className="px-3 py-2 bg-elevated rounded-xl border-2 border-gold">
               {authLoading ? (
                 <div className="h-8 w-8 flex items-center justify-center">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gold border-t-transparent" />
                 </div>
               ) : user ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-medium shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center text-gold font-medium shrink-0 overflow-hidden">
                     {user.profile?.avatarUrl ? (
                       <img src={user.profile.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
                       user.profile?.displayName?.[0] || user.email?.[0]?.toUpperCase() || '?'
                     )}
                   </div>
-                  <Link href="/credits" className="text-xs text-muted-foreground flex items-center gap-1 hover:text-primary">
-                    <Coins className="w-3 h-3 text-primary" />
-                    <span className="text-primary font-medium">{credits}</span>
+                  <Link href="/credits" className="text-xs text-muted flex items-center gap-1 hover:text-gold">
+                    <Coins className="w-3 h-3 text-gold" />
+                    <span className="text-gold font-medium">{credits}</span>
                   </Link>
-                  <Button variant="ghost" size="icon" onClick={() => signOut()} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                  <Button variant="ghost" size="icon" onClick={() => signOut()} className="h-8 w-8 text-light/70 hover:text-light">
                     <LogOut className="w-4 h-4" />
                   </Button>
                 </div>
               ) : (
-                <Button onClick={() => signInWithGoogle()} variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                <Button onClick={() => signInWithGoogle()} variant="ghost" size="sm" className="text-muted hover:text-light">
                   <svg className="w-4 h-4 mr-1.5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -1048,14 +1051,14 @@ export function SigilGenerator() {
             </div>
 
             {/* 工具栏 */}
-            <div className="flex items-center gap-1 px-2 py-2 bg-[#252528] rounded-xl border-2 border-primary">
+            <div className="flex items-center gap-1 px-2 bg-elevated rounded-xl border-2 border-gold">
               <Link
                 href="/gallery"
-                className="p-2 rounded-lg hover:bg-primary/20 text-primary transition-colors"
+                className="p-2 rounded-lg hover:bg-gold/20 text-gold transition-colors"
               >
                 <Palette className="w-4 h-4" />
               </Link>
-              <LocaleSwitcher className="text-muted-foreground" />
+              <LocaleSwitcher className="text-muted" />
             </div>
           </div>
         </div>

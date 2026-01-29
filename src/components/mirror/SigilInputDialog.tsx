@@ -76,7 +76,7 @@ export function SigilInputDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px] max-h-[85vh] overflow-y-auto border-primary/30 text-white" style={{ backgroundColor: '#1A1A1E' }}>
+      <DialogContent className="sm:max-w-[420px] max-h-[85vh] overflow-y-auto !bg-surface border-primary/30 text-white">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-primary flex items-center gap-2 text-base">
             <Sparkles className="w-4 h-4" />
