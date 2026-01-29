@@ -1,5 +1,11 @@
 # lovsigil
 
+## 0.9.9
+
+### Patch Changes
+
+- 历史记录跑马灯只显示生命图腾风格的 sigil
+
 ## 0.9.8
 
 ### Patch Changes
