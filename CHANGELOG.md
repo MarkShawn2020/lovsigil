@@ -1,5 +1,11 @@
 # lovsigil
 
+## 0.9.6
+
+### Patch Changes
+
+- fix(mirror): mobile default camera off for better performance
+
 ## 0.9.5
 
 ### Patch Changes
