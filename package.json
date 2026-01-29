@@ -1,6 +1,6 @@
 {
   "name": "lovsigil",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "private": true,
   "packageManager": "pnpm@10.18.1",
   "author": "Ixartz (https://github.com/ixartz)",

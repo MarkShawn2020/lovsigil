@@ -1,5 +1,11 @@
 # lovsigil
 
+## 0.9.8
+
+### Patch Changes
+
+- feat(mirror): mobile inline form - direct input without dialog
+
 ## 0.9.7
 
 ### Patch Changes
