@@ -1,5 +1,11 @@
 # lovsigil
 
+## 0.9.7
+
+### Patch Changes
+
+- fix(mirror): simplify mobile UI - direct to generation without camera
+
 ## 0.9.6
 
 ### Patch Changes
