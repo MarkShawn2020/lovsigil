@@ -16,7 +16,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/providers/AuthProvider'
-import { ASPECT_RATIOS, SIGIL_STYLES } from './sigilTypes'
 
 export interface SigilInput {
   name: string
@@ -52,39 +51,12 @@ export function SigilInputDialog({
   const [selectedRatio, setSelectedRatio] = useState<AspectRatio>(defaultRatio)
   const [selectedStyle, setSelectedStyle] = useState<SigilStyle>('totem')
 
-  // Load persisted preferences from localStorage
-  useEffect(() => {
-    const savedStyle = localStorage.getItem('sigil_style') as SigilStyle | null
-    const savedRatio = localStorage.getItem('sigil_ratio') as AspectRatio | null
-    if (savedStyle && SIGIL_STYLES.some(s => s.id === savedStyle)) {
-      setSelectedStyle(savedStyle)
-    }
-    if (savedRatio && ASPECT_RATIOS.some(r => r.id === savedRatio)) {
-      setSelectedRatio(savedRatio)
-    }
-  }, [])
-
-  // Persist style preference
-  const handleStyleChange = (style: SigilStyle) => {
-    setSelectedStyle(style)
-    localStorage.setItem('sigil_style', style)
-  }
-
-  // Persist ratio preference
-  const handleRatioChange = (ratio: AspectRatio) => {
-    setSelectedRatio(ratio)
-    localStorage.setItem('sigil_ratio', ratio)
-  }
-
-  // Reset form when dialog opens (keep persisted style/ratio)
+  // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setName('')
       setBio(defaultBio)
-      // Only reset ratio if no persisted value
-      if (!localStorage.getItem('sigil_ratio')) {
-        setSelectedRatio(defaultRatio)
-      }
+      setSelectedRatio(defaultRatio)
     }
   }, [open, defaultRatio, defaultBio])
 
@@ -104,7 +76,7 @@ export function SigilInputDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px] max-h-[85vh] overflow-y-auto bg-card border-primary/30 text-white">
+      <DialogContent className="sm:max-w-[420px] max-h-[85vh] overflow-y-auto border-primary/30 text-white" style={{ backgroundColor: '#1A1A1E' }}>
         <DialogHeader className="pb-2">
           <DialogTitle className="text-primary flex items-center gap-2 text-base">
             <Sparkles className="w-4 h-4" />
@@ -157,56 +129,6 @@ export function SigilInputDialog({
             />
           </div>
 
-          {/* 风格选择 */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-white/80">
-              {t('select_style') || 'Style'}
-            </label>
-            <div className="flex gap-2">
-              {SIGIL_STYLES.map((style) => (
-                <button
-                  key={style.id}
-                  onClick={() => handleStyleChange(style.id)}
-                  className={cn(
-                    'flex-1 py-2 rounded-lg border-2 transition-all text-center',
-                    selectedStyle === style.id
-                      ? 'border-primary bg-primary/10'
-                      : 'border-white/20 hover:border-white/40',
-                  )}
-                >
-                  <span className={cn(
-                    'text-sm font-medium',
-                    selectedStyle === style.id ? 'text-primary' : 'text-white/80',
-                  )}>
-                    {style.labelZh}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 比例选择 */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-white/80">
-              {t('select_ratio')}
-            </label>
-            <div className="flex gap-1.5">
-              {ASPECT_RATIOS.map((ratio) => (
-                <button
-                  key={ratio.id}
-                  onClick={() => handleRatioChange(ratio.id)}
-                  className={cn(
-                    'flex-1 py-1.5 rounded border-2 transition-all text-xs font-medium',
-                    selectedRatio === ratio.id
-                      ? 'border-primary bg-primary/20 text-primary'
-                      : 'border-white/20 text-white/60 hover:border-white/40 hover:text-white/80',
-                  )}
-                >
-                  {ratio.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* 底部：积分 + 按钮 */}

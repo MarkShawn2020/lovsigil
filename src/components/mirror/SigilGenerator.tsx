@@ -565,9 +565,22 @@ export function SigilGenerator() {
     setMounted(true)
   }, [])
 
+  // 首次初始化标记
+  const initializedRef = useRef(false)
+
   useEffect(() => {
-    if (!mounted) return
-    initCamera()
+    if (!mounted || initializedRef.current) return
+    initializedRef.current = true
+
+    // 移动端默认不开启相机（性能和体验优化）
+    const isMobileDevice = window.innerWidth < 768
+    if (isMobileDevice) {
+      setCameraEnabled(false)
+      cameraEnabledRef.current = false
+    } else {
+      initCamera()
+    }
+
     initMediaPipe()
     initWebGL()
     return () => {
@@ -701,11 +714,17 @@ export function SigilGenerator() {
               ref={overlayCanvasRef}
               className={`absolute inset-0 h-full w-full object-cover pointer-events-none ${showRawVideoInput ? 'hidden' : ''}`}
             />
-            {isLoading && (
+            {cameraEnabled && isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-black">
                 <div className="w-16 h-16 rounded-xl border-2 border-primary/40 flex items-center justify-center animate-pulse">
                   <Sparkles className="w-8 h-8 text-primary/60" />
                 </div>
+              </div>
+            )}
+            {!cameraEnabled && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-card">
+                <CameraOff className="w-12 h-12 text-primary/40 mb-3" />
+                <p className="text-muted-foreground text-sm">{t('camera_off') || '相机已关闭'}</p>
               </div>
             )}
             {/* 顶部状态栏 */}
@@ -750,7 +769,7 @@ export function SigilGenerator() {
                       <RotateCcw className="w-4 h-4" />
                     </Button>
                   </>
-                ) : (
+                ) : cameraEnabled ? (
                   <>
                     <Button
                       onClick={handleCapturePhoto}
@@ -765,6 +784,24 @@ export function SigilGenerator() {
                       variant="outline"
                       className="border-primary/40 text-primary"
                     >
+                      {t('generate_without_photo')}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={toggleCamera}
+                      variant="outline"
+                      className="border-primary/40 text-primary"
+                    >
+                      <Camera className="w-4 h-4 mr-1" />
+                      {t('turn_on_camera') || '开启相机'}
+                    </Button>
+                    <Button
+                      onClick={handleOpenSigilDialogWithoutPhoto}
+                      className="flex-1 gradient-gold-copper"
+                    >
+                      <Sparkles className="w-4 h-4 mr-1" />
                       {t('generate_without_photo')}
                     </Button>
                   </>
