@@ -94,9 +94,11 @@ export function SigilGenerator() {
 
   const queryClient = useQueryClient()
 
-  // 历史记录
+  // 历史记录 - 只显示生命图腾风格
   const { data: historyData } = useSpiritHistory()
-  const historyRecords = historyData?.records ?? []
+  const historyRecords = (historyData?.records ?? []).filter(
+    r => (r.vibeAnalysis as { style?: string } | null)?.style === 'totem'
+  )
 
   // Visitor ID for voting
   const getVisitorId = useCallback(() => {
