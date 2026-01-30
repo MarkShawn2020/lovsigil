@@ -1,5 +1,11 @@
 # lovsigil
 
+## 0.9.10
+
+### Patch Changes
+
+- 修复移动端主题颜色和布局问题，统一 Mystic Rune 深色风格
+
 ## 0.9.9
 
 ### Patch Changes
