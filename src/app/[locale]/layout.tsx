@@ -199,7 +199,7 @@ export default async function RootLayout(props: {
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={`${inter.variable} ${firaCode.variable}`}>
+    <html lang={locale} className={`dark ${inter.variable} ${firaCode.variable}`}>
       <head>
         {/* Preconnect to critical third-party origins for faster resource loading */}
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />

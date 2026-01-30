@@ -172,10 +172,10 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-deep flex flex-col items-center justify-center p-4">
         <p className="text-lg text-red-400 mb-4">{error}</p>
         <Link href="/">
-          <Button variant="outline" className="border-white/10">
+          <Button variant="outline" className="border-gold/30 text-light hover:bg-gold/10">
             Go Home
           </Button>
         </Link>
@@ -185,26 +185,26 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Spinner className="size-8 text-primary" />
+      <div className="min-h-screen bg-deep flex items-center justify-center">
+        <Spinner className="size-8 text-gold" />
       </div>
     )
   }
 
   const statusConfig = {
-    pending: { label: 'Pending', color: 'bg-yellow-500/20 text-yellow-400' },
-    generating: { label: 'Generating...', color: 'bg-blue-500/20 text-blue-400' },
-    completed: { label: 'Complete', color: 'bg-green-500/20 text-green-400' },
-    failed: { label: 'Failed', color: 'bg-red-500/20 text-red-400' },
+    pending: { label: 'Pending', color: 'bg-gold/20 text-gold border border-gold/30' },
+    generating: { label: 'Generating...', color: 'bg-copper/20 text-copper border border-copper/30' },
+    completed: { label: 'Complete', color: 'bg-green-500/20 text-green-400 border border-green-500/30' },
+    failed: { label: 'Failed', color: 'bg-red-500/20 text-red-400 border border-red-500/30' },
   }
 
   const status = statusConfig[order.status]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-deep text-light">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-sm border-b border-white/5">
-        <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
+      <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-deep/90 backdrop-blur-sm border-b border-gold/20">
+        <Link href="/" className="text-light/60 hover:text-gold transition-colors text-sm">
           &larr; Back
         </Link>
         <Badge className={`${status.color} text-xs`}>{status.label}</Badge>
@@ -213,12 +213,12 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
       {/* Main Content */}
       <main className="px-4 py-6 max-w-lg mx-auto">
         {/* Title */}
-        <h1 className="text-xl font-semibold text-center text-foreground mb-4">
+        <h1 className="text-2xl font-bold text-center text-gold tracking-wide mb-6">
           {order.name}&apos;s Sigil
         </h1>
 
         {/* Sigil Image */}
-        <div className="relative w-full overflow-hidden rounded-xl shadow-2xl shadow-black/50">
+        <div className="relative w-full overflow-hidden rounded-2xl border-2 border-gold/30 sigil-glow">
           {order.status === 'completed' && order.generated_image ? (
             <Image
               src={order.generated_image}
@@ -229,41 +229,41 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
               unoptimized
             />
           ) : order.status === 'failed' ? (
-            <div className="aspect-square flex items-center justify-center bg-card">
+            <div className="aspect-square flex items-center justify-center bg-surface">
               <p className="text-red-400">Generation failed</p>
             </div>
           ) : (
-            <div className="aspect-square flex flex-col items-center justify-center gap-4 bg-card">
-              <Spinner className="size-12 text-primary" />
-              <p className="text-muted-foreground">
+            <div className="aspect-square flex flex-col items-center justify-center gap-4 bg-surface">
+              <Spinner className="size-12 text-gold" />
+              <p className="text-light/60">
                 {order.status === 'pending' ? 'Waiting to start...' : 'Creating your sigil...'}
               </p>
             </div>
           )}
         </div>
 
-        {/* Meta Tags - Compact inline style */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+        {/* Meta Tags */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs">
           {order.style && (
-            <span className="px-2 py-1 rounded-full bg-white/5">
+            <span className="px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold">
               {order.style === 'totem' ? '生命图腾' : '神秘符文'}
             </span>
           )}
           {order.aspect_ratio && (
-            <span className="px-2 py-1 rounded-full bg-white/5">
+            <span className="px-3 py-1.5 rounded-full bg-surface border border-subtle text-light/60">
               {order.aspect_ratio}
             </span>
           )}
-          <span className="px-2 py-1 rounded-full bg-white/5">
+          <span className="px-3 py-1.5 rounded-full bg-surface border border-subtle text-light/60">
             {new Date(order.created_at).toLocaleDateString()}
           </span>
         </div>
 
-        {/* Actions - Primary action emphasized */}
-        <div className="mt-6 space-y-3">
+        {/* Actions */}
+        <div className="mt-8 space-y-3">
           {order.status === 'completed' && order.generated_image && (
             <Button
-              className="w-full h-12 gradient-gold-copper text-base font-medium"
+              className="w-full h-12 gradient-gold-copper text-deep text-base font-semibold sigil-glow"
               onClick={handleDownload}
             >
               <Download className="mr-2 size-5" />
@@ -275,7 +275,7 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
             <Link href="/" className="flex-1">
               <Button
                 variant="outline"
-                className="w-full border-white/10 text-foreground/80 hover:bg-white/5"
+                className="w-full h-11 bg-surface border-gold/30 text-light hover:bg-elevated hover:border-gold/50"
               >
                 Create New
               </Button>
@@ -283,7 +283,7 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
             {(order.status === 'completed' || order.status === 'failed') && (
               <Button
                 variant="outline"
-                className="flex-1 border-white/10 text-foreground/80 hover:bg-white/5"
+                className="flex-1 h-11 bg-surface border-gold/30 text-light hover:bg-elevated hover:border-gold/50"
                 onClick={handleRetry}
                 disabled={isRetrying}
               >
@@ -300,7 +300,7 @@ export default function SigilPage({ params }: { params: Promise<{ orderId: strin
       </main>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 inset-x-0 py-3 text-center text-xs text-muted-foreground/40">
+      <footer className="fixed bottom-0 inset-x-0 py-3 text-center text-xs text-gold/40">
         LovSigil
       </footer>
     </div>

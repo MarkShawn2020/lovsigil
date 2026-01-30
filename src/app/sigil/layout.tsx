@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 
 export default function SigilLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="font-sans antialiased">
+    <html lang="en" className={`dark ${inter.variable}`}>
+      <body className="font-sans antialiased bg-deep text-light">
         {children}
       </body>
     </html>

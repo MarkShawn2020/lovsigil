@@ -685,11 +685,11 @@ export function SigilGenerator() {
   }
 
   return (
-    <div className="h-dvh w-screen overflow-hidden bg-black flex flex-col">
+    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden">
       {/* 隐藏的视频元素 */}
       <video ref={videoRef} className="hidden" playsInline muted />
 
-      {/* 顶部历史记录 */}
+      {/* 顶部历史记录 - 仅桌面端 */}
       <div className={`shrink-0 border-b-2 border-gold/60 bg-elevated ${isMobile ? 'hidden' : ''}`}>
         <div className="h-32 px-4 flex items-center gap-4">
           {/* Logo + 标题 */}
@@ -761,125 +761,122 @@ export function SigilGenerator() {
 
       {/* 主体区域 */}
       {isMobile ? (
-        /* 移动端布局 - 直接表单 */
-        <div className="flex-1 min-h-0 relative flex flex-col bg-dark">
-          {/* 顶部状态栏 */}
-          <div className="shrink-0 safe-area-top">
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-base font-semibold text-foreground">LovSigil</span>
+        /* 移动端布局 - Mystic Rune 风格 */
+        <div className="flex-1 flex flex-col min-h-0 bg-deep">
+          {/* 顶部导航栏 */}
+          <div className="shrink-0 px-4 py-3 flex items-center justify-between border-b border-gold/30">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gold/20 border border-gold/40 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-gold" />
               </div>
-              <div className="flex items-center gap-2">
-                <LocaleSwitcher className="text-muted-foreground" />
-                <Link
-                  href="/gallery"
-                  className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary"
-                >
-                  <Palette className="w-4 h-4" />
-                </Link>
+              <span className="text-base font-semibold text-gold tracking-wide">LovSigil</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <LocaleSwitcher className="text-light/60" />
+              <Link href="/gallery" className="p-2 rounded-lg text-light/60 hover:text-gold">
+                <Palette className="w-5 h-5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* 主内容区 */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-5 py-6 space-y-6">
+              {/* 标题区 - 神秘风格 */}
+              <div className="text-center space-y-3 py-4">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gold/10 border-2 border-gold/40 flex items-center justify-center sigil-glow">
+                  <Sparkles className="w-8 h-8 text-gold" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gold tracking-wider">{t('title')}</h1>
+                  <p className="text-light/60 text-sm mt-1">{t('subtitle')}</p>
+                </div>
+              </div>
+
+              {/* 表单卡片 */}
+              <div className="p-5 rounded-2xl bg-surface border border-gold/20 space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-light/80">
+                    {tSigil('your_name')} <span className="text-copper">*</span>
+                  </label>
+                  <Input
+                    value={mobileName}
+                    onChange={(e) => setMobileName(e.target.value)}
+                    placeholder={tSigil('name_placeholder')}
+                    maxLength={50}
+                    className="h-12 bg-elevated border-subtle focus:border-gold/50 text-light placeholder:text-faded"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-light/80">
+                    {tSigil('your_bio')}
+                  </label>
+                  <Input
+                    value={mobileBio}
+                    onChange={(e) => setMobileBio(e.target.value)}
+                    placeholder={tSigil('bio_placeholder')}
+                    maxLength={200}
+                    className="h-12 bg-elevated border-subtle focus:border-gold/50 text-light placeholder:text-faded"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 主内容区 - 表单 */}
-          <div className="flex-1 flex flex-col px-5 py-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-primary" />
+          {/* 底部操作区 */}
+          <div className="shrink-0 px-5 py-4 border-t border-gold/30 bg-surface/80 backdrop-blur-sm">
+            {authLoading ? (
+              <div className="flex justify-center py-3">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold border-t-transparent" />
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-foreground">{t('title')}</h2>
-                <p className="text-muted-foreground text-xs">{t('subtitle')}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground/80">
-                  {tSigil('your_name')} <span className="text-red-400">*</span>
-                </label>
-                <Input
-                  value={mobileName}
-                  onChange={(e) => setMobileName(e.target.value)}
-                  placeholder={tSigil('name_placeholder')}
-                  maxLength={50}
-                  className="bg-surface border-primary/20 text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground/80">
-                  {tSigil('your_bio')}
-                </label>
-                <Input
-                  value={mobileBio}
-                  onChange={(e) => setMobileBio(e.target.value)}
-                  placeholder={tSigil('bio_placeholder')}
-                  maxLength={200}
-                  className="bg-surface border-primary/20 text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1" />
-
-            {/* 底部操作区 */}
-            <div className="space-y-3 safe-area-bottom">
-              {authLoading ? (
-                <div className="flex justify-center py-4">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                </div>
-              ) : !user ? (
-                <Button onClick={() => signInWithGoogle()} className="w-full" variant="outline">
-                  <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                  {tSigil('sign_in_to_generate')}
-                </Button>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-medium overflow-hidden">
-                        {user.profile?.avatarUrl ? (
-                          <img src={user.profile.avatarUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          user.profile?.displayName?.[0] || user.email?.[0]?.toUpperCase() || '?'
-                        )}
-                      </div>
-                      <span className="text-muted-foreground">{user.profile?.displayName || user.email}</span>
+            ) : !user ? (
+              <Button onClick={() => signInWithGoogle()} className="w-full h-12 bg-elevated border-gold/30 text-light hover:bg-hover" variant="outline">
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                {tSigil('sign_in_to_generate')}
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center text-gold text-sm font-medium overflow-hidden">
+                      {user.profile?.avatarUrl ? (
+                        <img src={user.profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        user.profile?.displayName?.[0] || user.email?.[0]?.toUpperCase() || '?'
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Coins className="w-4 h-4 text-primary" />
-                      <span className="text-primary font-medium">{credits}</span>
-                      <span className="text-xs text-muted-foreground">(-2)</span>
-                    </div>
+                    <span className="text-sm text-light/60">{user.profile?.displayName || user.email}</span>
                   </div>
-                  <Button
-                    onClick={handleMobileSubmit}
-                    disabled={!mobileName.trim() || credits < 2 || mobileSubmitting}
-                    className="w-full gradient-gold-copper"
-                  >
-                    {mobileSubmitting ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
-                    ) : (
-                      <Sparkles className="w-4 h-4 mr-2" />
-                    )}
-                    {!mobileName.trim()
-                      ? tSigil('enter_name')
-                      : credits < 2
-                        ? tSigil('insufficient_credits')
-                        : tSigil('generate_sigil')}
-                  </Button>
-                </>
-              )}
-            </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/30">
+                    <Coins className="w-4 h-4 text-gold" />
+                    <span className="text-gold font-semibold">{credits}</span>
+                    <span className="text-xs text-light/40">(-2)</span>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleMobileSubmit}
+                  disabled={!mobileName.trim() || credits < 2 || mobileSubmitting}
+                  className="w-full h-12 text-base font-semibold gradient-gold-copper text-deep disabled:opacity-50 sigil-glow"
+                >
+                  {mobileSubmitting ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-deep border-t-transparent mr-2" />
+                  ) : (
+                    <Sparkles className="w-5 h-5 mr-2" />
+                  )}
+                  {!mobileName.trim()
+                    ? tSigil('enter_name')
+                    : credits < 2
+                      ? tSigil('insufficient_credits')
+                      : tSigil('generate_sigil')}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       ) : (
