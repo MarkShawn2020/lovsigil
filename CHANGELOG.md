@@ -1,5 +1,16 @@
 # lovsigil
 
+## 0.10.0
+
+### Minor Changes
+
+- Add game mode with audience wall
+  - GameGenerator component for real-time sigil generation game
+  - AudienceWall for audience participation and voting
+  - GameModeLayout for game interface structure
+  - Game API endpoints for sigil management
+  - Database migration for game sessions
+
 ## 0.9.12
 
 ### Patch Changes
