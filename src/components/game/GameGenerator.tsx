@@ -5,7 +5,6 @@ import { Camera, CameraOff, Sparkles, RotateCcw, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Spinner } from '@/components/ui/spinner'
 import type { AudienceSigil } from './GameModeLayout'
 
 interface GameGeneratorProps {
@@ -30,7 +29,6 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
-  const [isGenerating, setIsGenerating] = useState(false)
 
   // Initialize camera
   const initCamera = useCallback(async () => {
@@ -79,7 +77,7 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
     }
   }, [cameraEnabled, stopCamera, initCamera])
 
-  // Capture photo - immediately add to audience wall
+  // Capture photo - update current entry or create new one
   const capturePhoto = useCallback(() => {
     const video = videoRef.current
     if (!video || video.readyState < 2) return
@@ -104,29 +102,33 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
     ctx.drawImage(video, sx, sy, cropSize, cropSize, 0, 0, size, size)
 
     const photoData = canvas.toDataURL('image/png')
-    const newId = Date.now()
 
+    // 只更新头像，不重置姓名和简介
     setCapturedPhoto(photoData)
-    setCurrentId(newId)
-    currentIdRef.current = newId
-    setName('')
-    setBio('')
 
-    // Immediately add to audience wall with pending status
-    onSigilAdded({
-      id: newId,
-      name: '新观众',
-      userPhoto: photoData,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    })
-  }, [onSigilAdded])
+    // 如果已有条目则更新头像，否则创建新条目
+    if (currentIdRef.current) {
+      onSigilUpdated(currentIdRef.current, { userPhoto: photoData })
+    } else {
+      const newId = Date.now()
+      setCurrentId(newId)
+      currentIdRef.current = newId
+      onSigilAdded({
+        id: newId,
+        name: name || '新玩家',
+        bio: bio || undefined,
+        userPhoto: photoData,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      })
+    }
+  }, [name, bio, onSigilAdded, onSigilUpdated])
 
   // Update name in real-time
   const handleNameChange = useCallback((newName: string) => {
     setName(newName)
     if (currentIdRef.current) {
-      onSigilUpdated(currentIdRef.current, { name: newName || '新观众' })
+      onSigilUpdated(currentIdRef.current, { name: newName || '新玩家' })
     }
   }, [onSigilUpdated])
 
@@ -152,22 +154,45 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
 
   // Generate sigil
   const handleGenerate = useCallback(async () => {
-    if (!name.trim() || !currentId) return
+    if (!name.trim()) return
 
-    setIsGenerating(true)
+    // 捕获当前值
+    const genName = name.trim()
+    const genBio = bio.trim() || undefined
+    const genPhoto = capturedPhoto || undefined
+    const genId = currentIdRef.current
 
-    // Update status to generating
-    onSigilUpdated(currentId, { status: 'generating' })
+    // 如果没有拍照，先创建一个新条目
+    let sigilId = genId
+    if (!sigilId) {
+      sigilId = Date.now()
+      onSigilAdded({
+        id: sigilId,
+        name: genName,
+        bio: genBio,
+        status: 'generating',
+        createdAt: new Date().toISOString(),
+      })
+    } else {
+      onSigilUpdated(sigilId, { status: 'generating' })
+    }
 
+    // 立即重置表单，允许新输入
+    setCapturedPhoto(null)
+    setCurrentId(null)
+    currentIdRef.current = null
+    setName('')
+    setBio('')
+
+    // 后台生成
     try {
-      // Create order first
       const orderRes = await fetch('/api/sigil/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
-          bio: bio.trim() || undefined,
-          userPhoto: capturedPhoto || undefined,
+          name: genName,
+          bio: genBio,
+          userPhoto: genPhoto,
           aspectRatio: '1:1',
           style: 'totem',
           sessionId,
@@ -177,14 +202,13 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
       if (!orderRes.ok) throw new Error('Failed to create order')
       const { orderId } = await orderRes.json()
 
-      // Generate sigil
       const genRes = await fetch('/api/generate-sigil', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
-          bio: bio.trim() || undefined,
-          userPhoto: capturedPhoto || undefined,
+          name: genName,
+          bio: genBio,
+          userPhoto: genPhoto,
           orderId,
           aspectRatio: '1:1',
           style: 'totem',
@@ -195,26 +219,16 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
       if (!genRes.ok) throw new Error('Generation failed')
       const result = await genRes.json()
 
-      // Update with completed status and generated image
-      onSigilUpdated(currentId, {
+      onSigilUpdated(sigilId, {
         orderId,
         generatedImage: result.image,
         status: 'completed',
       })
-
-      // Reset form for next audience
-      setCapturedPhoto(null)
-      setCurrentId(null)
-      setName('')
-      setBio('')
     } catch (err) {
       console.error('Generation error:', err)
-      // Revert to pending on error
-      onSigilUpdated(currentId, { status: 'pending' })
-    } finally {
-      setIsGenerating(false)
+      onSigilUpdated(sigilId, { status: 'pending' })
     }
-  }, [name, bio, capturedPhoto, currentId, sessionId, onSigilUpdated])
+  }, [name, bio, capturedPhoto, sessionId, onSigilAdded, onSigilUpdated])
 
   // Init camera on mount
   useEffect(() => {
@@ -257,7 +271,6 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
               variant="default"
               size="sm"
               onClick={capturePhoto}
-              disabled={isGenerating}
               className="gradient-gold-copper"
             >
               <Camera className="w-4 h-4 mr-1" />
@@ -276,8 +289,7 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
             {capturedPhoto ? (
               <button
                 onClick={clearPhoto}
-                disabled={isGenerating}
-                className="relative group disabled:opacity-50"
+                className="relative group"
                 title="点击重拍"
               >
                 <img
@@ -299,14 +311,13 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
           {/* 右侧姓名 */}
           <div className="flex-1">
             <label className="text-sm text-muted-foreground mb-1 block">
-              观众姓名 *
+              玩家姓名 *
             </label>
             <Input
               value={name}
               onChange={e => handleNameChange(e.target.value)}
-              placeholder="输入观众姓名..."
+              placeholder="输入玩家姓名..."
               className="bg-bg-card border-primary/30 text-lg"
-              disabled={isGenerating || !capturedPhoto}
             />
           </div>
         </div>
@@ -318,10 +329,9 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
           <Textarea
             value={bio}
             onChange={e => handleBioChange(e.target.value)}
-            placeholder="简单介绍一下这位观众..."
+            placeholder="简单介绍一下这位玩家..."
             className="bg-bg-card border-primary/30 resize-none"
             rows={2}
-            disabled={isGenerating || !capturedPhoto}
           />
         </div>
 
@@ -329,23 +339,14 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
         <div className="flex gap-3">
           <Button
             onClick={handleGenerate}
-            disabled={!name.trim() || !capturedPhoto || isGenerating}
+            disabled={!name.trim()}
             className="flex-1 gradient-gold-copper text-lg py-6"
           >
-            {isGenerating ? (
-              <>
-                <Spinner className="w-5 h-5 mr-2" />
-                生成中...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 mr-2" />
-                生成图腾
-              </>
-            )}
+            <Sparkles className="w-5 h-5 mr-2" />
+            生成图腾
           </Button>
 
-          {capturedPhoto && !isGenerating && (
+          {capturedPhoto && (
             <Button
               variant="outline"
               onClick={clearPhoto}
@@ -357,11 +358,9 @@ export function GameGenerator({ sessionId, onSigilAdded, onSigilUpdated, onSigil
           )}
         </div>
 
-        {!capturedPhoto && (
-          <p className="text-sm text-muted-foreground text-center">
-            请先拍照捕获观众头像
-          </p>
-        )}
+        <p className="text-sm text-muted-foreground text-center">
+          拍照可选，输入姓名即可生成
+        </p>
       </div>
     </div>
   )

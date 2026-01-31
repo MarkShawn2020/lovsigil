@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Users } from 'lucide-react'
+import { Users, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { GameGenerator } from './GameGenerator'
 import { AudienceWall } from './AudienceWall'
+import packageJson from '../../../package.json'
 
 export interface AudienceSigil {
   id: number
@@ -76,20 +79,28 @@ export function GameModeLayout() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-primary/20 bg-bg-card/50 backdrop-blur-sm">
+      <header className="border-b border-primary/20 bg-background relative z-10">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-              <span className="text-xl">🎮</span>
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">游戏模式</h1>
-              <p className="text-xs text-muted-foreground">为观众生成专属图腾</p>
-            </div>
+            <img src="/logo.svg" alt="LovSigil" className="h-8" />
+            <h1 className="text-xl font-bold text-primary">LovSigil</h1>
+            <Badge variant="outline" className="text-xs">v{packageJson.version}</Badge>
+            <Badge className="text-xs bg-primary/20 text-primary hover:bg-primary/30">游戏模式</Badge>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Users className="w-4 h-4" />
-            <span className="text-sm font-medium">{sigils.filter(s => s.status === 'completed').length} 位观众</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Users className="w-4 h-4" />
+              <span className="text-sm font-medium">{sigils.filter(s => s.status === 'completed').length} 位玩家</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/game?session=game-${Date.now()}`)}
+              className="border-primary/30"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              新游戏
+            </Button>
           </div>
         </div>
       </header>
@@ -97,7 +108,7 @@ export function GameModeLayout() {
       {/* Main Content - Split Layout */}
       <main className="flex-1 flex overflow-hidden">
         {/* Left: Generator */}
-        <div className="w-1/2 border-r border-primary/10 flex flex-col">
+        <div className="w-1/3 border-r border-primary/10 flex flex-col">
           <GameGenerator
             sessionId={sessionId}
             onSigilAdded={handleSigilAdded}
@@ -106,8 +117,8 @@ export function GameModeLayout() {
           />
         </div>
 
-        {/* Right: Audience Wall */}
-        <div className="w-1/2 flex flex-col bg-bg-deep/50">
+        {/* Right: Player Wall */}
+        <div className="flex-1 flex flex-col bg-background">
           <AudienceWall sigils={sigils} isLoading={isLoading} />
         </div>
       </main>
