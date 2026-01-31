@@ -600,8 +600,7 @@ export function SigilGenerator() {
       if (!orderRes.ok) throw new Error('Failed to create order')
       const orderData = await orderRes.json()
 
-      window.location.href = `/sigil/${orderData.orderId}`
-
+      // 先触发生成（不等待完成），再跳转，避免页面卸载取消请求
       fetch('/api/generate-sigil', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -614,6 +613,8 @@ export function SigilGenerator() {
           style: 'totem',
         }),
       }).catch(console.error)
+
+      window.location.href = `/sigil/${orderData.orderId}`
 
       setMobileName('')
       setMobileBio('')

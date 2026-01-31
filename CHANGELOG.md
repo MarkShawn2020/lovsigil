@@ -1,5 +1,13 @@
 # lovsigil
 
+## 0.9.11
+
+### Patch Changes
+
+- fix(mobile): 修复移动端 Sigil 生成卡在 Waiting to start 的问题
+
+  调整 fetch 和 window.location.href 顺序，避免页面跳转取消生成请求
+
 ## 0.9.10
 
 ### Patch Changes
