@@ -1,5 +1,11 @@
 # lovsigil
 
+## 0.9.12
+
+### Patch Changes
+
+- feat(desktop): 添加右侧边栏二维码供手机扫描访问
+
 ## 0.9.11
 
 ### Patch Changes
