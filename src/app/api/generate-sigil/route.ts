@@ -77,7 +77,7 @@ async function uploadSvgToStorage(svgContent: string, sigilId: string): Promise<
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, bio, userPhoto, orderId, aspectRatio = '1:1', style = 'rune' } = body
+    const { name, bio, userPhoto, orderId, aspectRatio = '1:1', style = 'rune', sessionId } = body
 
     if (!name) {
       return NextResponse.json(
@@ -158,6 +158,7 @@ export async function POST(request: Request) {
           aspect_ratio: aspectRatio,
           user_id: user?.id || null,
           status: 'completed',
+          session_id: sessionId || null, // Game mode session
         })
       }
 

@@ -41,7 +41,7 @@ async function getAuthUser() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, bio, userPhoto, aspectRatio = '1:1' } = body
+    const { name, bio, userPhoto, aspectRatio = '1:1', sessionId } = body
 
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
@@ -63,6 +63,7 @@ export async function POST(request: Request) {
         aspect_ratio: aspectRatio,
         user_id: user?.id || null,
         status: 'pending',
+        session_id: sessionId || null, // Game mode session
       })
       .select('order_id')
       .single()

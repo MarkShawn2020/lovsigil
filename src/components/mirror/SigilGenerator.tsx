@@ -5,6 +5,7 @@ import {
   Camera,
   CameraOff,
   Coins,
+  Gamepad2,
   LogOut,
   Palette,
   RotateCcw,
@@ -1054,14 +1055,21 @@ export function SigilGenerator() {
             </div>
 
             {/* 工具栏 */}
-            <div className="flex items-center gap-1 px-2 bg-elevated rounded-xl border-2 border-gold">
+            <div className="flex items-center gap-1 px-2 py-1 bg-elevated rounded-xl border-2 border-gold">
+              <Link
+                href="/game"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gold/20 text-gold transition-colors"
+                title="游戏模式"
+              >
+                <Gamepad2 className="w-4 h-4" />
+              </Link>
               <Link
                 href="/gallery"
-                className="p-2 rounded-lg hover:bg-gold/20 text-gold transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gold/20 text-gold transition-colors"
               >
                 <Palette className="w-4 h-4" />
               </Link>
-              <LocaleSwitcher className="text-muted" />
+              <LocaleSwitcher className="text-muted [&>button]:w-8 [&>button]:h-8 [&>button]:p-0 [&>button]:justify-center" />
             </div>
           </div>
           </div>
