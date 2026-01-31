@@ -96,7 +96,8 @@
     "make_same": "我要做同款",
     "turn_off_camera": "关闭摄像头",
     "turn_on_camera": "开启摄像头",
-    "camera_off": "摄像头已关闭"
+    "camera_off": "摄像头已关闭",
+    "scan_qr": "手机扫码访问"
   },
   "Counter": {
     "meta_title": "计数器",

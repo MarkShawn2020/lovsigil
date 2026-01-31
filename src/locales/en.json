@@ -96,7 +96,8 @@
     "make_same": "Make Same Style",
     "turn_off_camera": "Turn off camera",
     "turn_on_camera": "Turn on camera",
-    "camera_off": "Camera is off"
+    "camera_off": "Camera is off",
+    "scan_qr": "Scan to visit on mobile"
   },
   "Counter": {
     "meta_title": "Counter",

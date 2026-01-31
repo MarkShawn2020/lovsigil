@@ -23,6 +23,7 @@ import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { QRCode } from '@/components/ui/qr-code'
 import {
   Tooltip,
   TooltipContent,
@@ -881,8 +882,10 @@ export function SigilGenerator() {
           </div>
         </div>
       ) : (
-        /* 桌面端布局：居中镜子 + 悬浮控制 */
-        <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative">
+        /* 桌面端布局：居中镜子 + 右侧边栏 */
+        <div className="flex-1 min-h-0 flex relative">
+          {/* 主内容区 */}
+          <div className="flex-1 flex flex-col items-center justify-center">
           {/* 镜子区域 - 居中显示 */}
           <div className="relative w-full max-w-4xl aspect-video mx-auto">
             {/* 始终渲染 video/canvas，用 CSS 控制显隐，保持 refs 有效 */}
@@ -1059,6 +1062,22 @@ export function SigilGenerator() {
                 <Palette className="w-4 h-4" />
               </Link>
               <LocaleSwitcher className="text-muted" />
+            </div>
+          </div>
+          </div>
+
+          {/* 右侧边栏 - 二维码 */}
+          <div className="w-48 shrink-0 flex flex-col items-center justify-center px-4 border-l border-gold/30">
+            <div className="bg-card rounded-xl p-4 border border-gold/30 shadow-lg">
+              <QRCode
+                size={140}
+                bgColor="#FFFFFF"
+                fgColor="#121214"
+                includeMargin={false}
+              />
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                {t('scan_qr') || '手机扫码访问'}
+              </p>
             </div>
           </div>
         </div>
